@@ -3,6 +3,7 @@
   "features": {
     "ghcr.io/devcontainers/features/azure-cli:1": {
       "installBicep": true
-    }
+    },
+    "ghcr.io/devcontainers/features/dotnet:1": {}
   }
 }

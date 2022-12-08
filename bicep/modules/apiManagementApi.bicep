@@ -84,7 +84,7 @@ resource api 'Microsoft.ApiManagement/service/apis@2021-08-01' = {
     }
 
     format: 'openapi+json'
-    value: loadTextContent('./../../../.azure-pipelines/api-definitions/Servers.openapi+json.json')
+    value: loadTextContent('./../../servers-integration-api.openapi+json.json')
   }
 }
 

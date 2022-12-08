@@ -91,7 +91,7 @@ module slotKeyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/mod
   }
 }
 
-module apiManagementApi 'serversApi/apiManagementApi.bicep' = {
+module apiManagementApi 'modules/apiManagementApi.bicep' = {
   name: '${varDeploymentPrefix}-apiManagementApi'
   scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
 

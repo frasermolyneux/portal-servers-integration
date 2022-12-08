@@ -1,0 +1,1169 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.13.1.58284",
+      "templateHash": "14097550235556967664"
+    }
+  },
+  "parameters": {
+    "parLocation": {
+      "type": "string"
+    },
+    "parEnvironment": {
+      "type": "string"
+    },
+    "parKeyVaultName": {
+      "type": "string"
+    },
+    "parAppInsightsName": {
+      "type": "string"
+    },
+    "parServersApiAppId": {
+      "type": "string"
+    },
+    "parConnectivitySubscriptionId": {
+      "type": "string"
+    },
+    "parFrontDoorResourceGroupName": {
+      "type": "string"
+    },
+    "parDnsResourceGroupName": {
+      "type": "string"
+    },
+    "parFrontDoorName": {
+      "type": "string"
+    },
+    "parParentDnsName": {
+      "type": "string"
+    },
+    "parStrategicServicesSubscriptionId": {
+      "type": "string"
+    },
+    "parApiManagementResourceGroupName": {
+      "type": "string"
+    },
+    "parApiManagementName": {
+      "type": "string"
+    },
+    "parWebAppsResourceGroupName": {
+      "type": "string"
+    },
+    "parAppServicePlanName": {
+      "type": "string"
+    },
+    "parTags": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "varDeploymentPrefix": "serversApi",
+    "varServersWebAppName": "[format('webapi-servers-portal-{0}-{1}', parameters('parEnvironment'), parameters('parLocation'))]",
+    "varWorkloadName": "[format('webapi-servers-portal-{0}', parameters('parEnvironment'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-serversIntegrationApiManagementSubscription', variables('varDeploymentPrefix'))]",
+      "subscriptionId": "[parameters('parStrategicServicesSubscriptionId')]",
+      "resourceGroup": "[parameters('parApiManagementResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parDeploymentPrefix": {
+            "value": "[variables('varDeploymentPrefix')]"
+          },
+          "parApiManagementName": {
+            "value": "[parameters('parApiManagementName')]"
+          },
+          "parWorkloadSubscriptionId": {
+            "value": "[subscription().subscriptionId]"
+          },
+          "parWorkloadResourceGroupName": {
+            "value": "[resourceGroup().name]"
+          },
+          "parWorkloadName": {
+            "value": "[variables('varServersWebAppName')]"
+          },
+          "parKeyVaultName": {
+            "value": "[parameters('parKeyVaultName')]"
+          },
+          "parSubscriptionScopeIdentifier": {
+            "value": "portal-repository"
+          },
+          "parSubscriptionScope": {
+            "value": "/apis/repository-api"
+          },
+          "parTags": {
+            "value": "[parameters('parTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.9.1.41621",
+              "templateHash": "2492016835671773273"
+            }
+          },
+          "parameters": {
+            "parDeploymentPrefix": {
+              "type": "string"
+            },
+            "parApiManagementName": {
+              "type": "string"
+            },
+            "parWorkloadSubscriptionId": {
+              "type": "string"
+            },
+            "parWorkloadResourceGroupName": {
+              "type": "string"
+            },
+            "parWorkloadName": {
+              "type": "string"
+            },
+            "parKeyVaultName": {
+              "type": "string"
+            },
+            "parSubscriptionScopeIdentifier": {
+              "type": "string"
+            },
+            "parSubscriptionScope": {
+              "type": "string"
+            },
+            "parTags": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service/subscriptions",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('parApiManagementName'), format('{0}-{1}-subscription', parameters('parWorkloadName'), parameters('parSubscriptionScopeIdentifier')))]",
+              "properties": {
+                "allowTracing": false,
+                "displayName": "[parameters('parWorkloadName')]",
+                "scope": "[parameters('parSubscriptionScope')]"
+              }
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-{1}-keyVaultSecret', parameters('parDeploymentPrefix'), parameters('parSubscriptionScopeIdentifier'))]",
+              "subscriptionId": "[parameters('parWorkloadSubscriptionId')]",
+              "resourceGroup": "[parameters('parWorkloadResourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "parKeyVaultName": {
+                    "value": "[parameters('parKeyVaultName')]"
+                  },
+                  "parSecretName": {
+                    "value": "[format('{0}-{1}-apikey', parameters('parApiManagementName'), format('{0}-{1}-subscription', parameters('parWorkloadName'), parameters('parSubscriptionScopeIdentifier')))]"
+                  },
+                  "parSecretValue": {
+                    "value": "[reference(resourceId('Microsoft.ApiManagement/service/subscriptions', parameters('parApiManagementName'), format('{0}-{1}-subscription', parameters('parWorkloadName'), parameters('parSubscriptionScopeIdentifier')))).primaryKey]"
+                  },
+                  "parTags": {
+                    "value": "[parameters('parTags')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.9.1.41621",
+                      "templateHash": "7482814590112248889"
+                    }
+                  },
+                  "parameters": {
+                    "parKeyVaultName": {
+                      "type": "string"
+                    },
+                    "parSecretName": {
+                      "type": "string"
+                    },
+                    "parSecretValue": {
+                      "type": "secureString"
+                    },
+                    "parTags": {
+                      "type": "object"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.KeyVault/vaults/secrets",
+                      "apiVersion": "2021-11-01-preview",
+                      "name": "[format('{0}/{1}', parameters('parKeyVaultName'), parameters('parSecretName'))]",
+                      "tags": "[parameters('parTags')]",
+                      "properties": {
+                        "contentType": "text/plain",
+                        "value": "[parameters('parSecretValue')]"
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/subscriptions', parameters('parApiManagementName'), format('{0}-{1}-subscription', parameters('parWorkloadName'), parameters('parSubscriptionScopeIdentifier')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "outSubscriptionName": {
+              "type": "string",
+              "value": "[format('{0}-{1}-subscription', parameters('parWorkloadName'), parameters('parSubscriptionScopeIdentifier'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-webApp', variables('varDeploymentPrefix'))]",
+      "subscriptionId": "[parameters('parStrategicServicesSubscriptionId')]",
+      "resourceGroup": "[parameters('parWebAppsResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parLocation": {
+            "value": "[parameters('parLocation')]"
+          },
+          "parEnvironment": {
+            "value": "[parameters('parEnvironment')]"
+          },
+          "parKeyVaultName": {
+            "value": "[parameters('parKeyVaultName')]"
+          },
+          "parAppInsightsName": {
+            "value": "[parameters('parAppInsightsName')]"
+          },
+          "parServersApiAppId": {
+            "value": "[parameters('parServersApiAppId')]"
+          },
+          "parStrategicServicesSubscriptionId": {
+            "value": "[parameters('parStrategicServicesSubscriptionId')]"
+          },
+          "parApiManagementResourceGroupName": {
+            "value": "[parameters('parApiManagementResourceGroupName')]"
+          },
+          "parApiManagementName": {
+            "value": "[parameters('parApiManagementName')]"
+          },
+          "parAppServicePlanName": {
+            "value": "[parameters('parAppServicePlanName')]"
+          },
+          "parConnectivitySubscriptionId": {
+            "value": "[parameters('parConnectivitySubscriptionId')]"
+          },
+          "parFrontDoorResourceGroupName": {
+            "value": "[parameters('parFrontDoorResourceGroupName')]"
+          },
+          "parFrontDoorName": {
+            "value": "[parameters('parFrontDoorName')]"
+          },
+          "parWorkloadSubscriptionId": {
+            "value": "[subscription().subscriptionId]"
+          },
+          "parWorkloadResourceGroupName": {
+            "value": "[resourceGroup().name]"
+          },
+          "parTags": {
+            "value": "[parameters('parTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.13.1.58284",
+              "templateHash": "11858838018903119540"
+            }
+          },
+          "parameters": {
+            "parLocation": {
+              "type": "string"
+            },
+            "parEnvironment": {
+              "type": "string"
+            },
+            "parKeyVaultName": {
+              "type": "string"
+            },
+            "parAppInsightsName": {
+              "type": "string"
+            },
+            "parServersApiAppId": {
+              "type": "string"
+            },
+            "parStrategicServicesSubscriptionId": {
+              "type": "string"
+            },
+            "parApiManagementResourceGroupName": {
+              "type": "string"
+            },
+            "parApiManagementName": {
+              "type": "string"
+            },
+            "parAppServicePlanName": {
+              "type": "string"
+            },
+            "parConnectivitySubscriptionId": {
+              "type": "string"
+            },
+            "parFrontDoorResourceGroupName": {
+              "type": "string"
+            },
+            "parFrontDoorName": {
+              "type": "string"
+            },
+            "parWorkloadSubscriptionId": {
+              "type": "string"
+            },
+            "parWorkloadResourceGroupName": {
+              "type": "string"
+            },
+            "parTags": {
+              "type": "object"
+            }
+          },
+          "variables": {
+            "varWebAppName": "[format('webapi-servers-portal-{0}-{1}', parameters('parEnvironment'), parameters('parLocation'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2020-06-01",
+              "name": "[variables('varWebAppName')]",
+              "location": "[parameters('parLocation')]",
+              "kind": "app",
+              "tags": "[parameters('parTags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('parAppServicePlanName'))]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "ftpsState": "Disabled",
+                  "alwaysOn": true,
+                  "linuxFxVersion": "DOTNETCORE|6.0",
+                  "netFrameworkVersion": "v6.0",
+                  "minTlsVersion": "1.2",
+                  "ipSecurityRestrictions": [
+                    {
+                      "ipAddress": "AzureFrontDoor.Backend",
+                      "action": "Allow",
+                      "tag": "ServiceTag",
+                      "priority": 1000,
+                      "name": "RestrictToFrontDoor",
+                      "headers": {
+                        "x-azure-fdid": [
+                          "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parConnectivitySubscriptionId'), parameters('parFrontDoorResourceGroupName')), 'Microsoft.Cdn/profiles', parameters('parFrontDoorName')), '2021-06-01').frontDoorId]"
+                        ]
+                      }
+                    },
+                    {
+                      "ipAddress": "Any",
+                      "action": "Deny",
+                      "priority": 2147483647,
+                      "name": "Deny all",
+                      "description": "Deny all access"
+                    }
+                  ],
+                  "appSettings": [
+                    {
+                      "name": "READ_ONLY_MODE",
+                      "value": "[if(equals(parameters('parEnvironment'), 'prd'), 'true', 'false')]"
+                    },
+                    {
+                      "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-instrumentationkey)', parameters('parKeyVaultName'), parameters('parAppInsightsName'))]"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-connectionstring)', parameters('parKeyVaultName'), parameters('parAppInsightsName'))]"
+                    },
+                    {
+                      "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                      "value": "~3"
+                    },
+                    {
+                      "name": "ASPNETCORE_ENVIRONMENT",
+                      "value": "Production"
+                    },
+                    {
+                      "name": "WEBSITE_RUN_FROM_PACKAGE",
+                      "value": "1"
+                    },
+                    {
+                      "name": "AzureAd__TenantId",
+                      "value": "[tenant().tenantId]"
+                    },
+                    {
+                      "name": "AzureAd__Instance",
+                      "value": "[environment().authentication.loginEndpoint]"
+                    },
+                    {
+                      "name": "AzureAd__ClientId",
+                      "value": "[parameters('parServersApiAppId')]"
+                    },
+                    {
+                      "name": "AzureAd__ClientSecret",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName=portal-servers-api-{1}-clientsecret)', parameters('parKeyVaultName'), parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "AzureAd__Audience",
+                      "value": "[format('api://portal-servers-api-{0}', parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "apim_base_url",
+                      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parApiManagementResourceGroupName')), 'Microsoft.ApiManagement/service', parameters('parApiManagementName')), '2021-12-01-preview').gatewayUrl]"
+                    },
+                    {
+                      "name": "portal_repository_apim_subscription_key",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-{2}-portal-repository-subscription-apikey)', parameters('parKeyVaultName'), parameters('parApiManagementName'), variables('varWebAppName'))]"
+                    },
+                    {
+                      "name": "repository_api_application_audience",
+                      "value": "[format('api://portal-repository-api-{0}', parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "xtremeidiots_ftp_certificate_thumbprint",
+                      "value": "65173167144EA988088DA20915ABB83DB27645FA"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "condition": "[equals(parameters('parEnvironment'), 'prd')]",
+              "type": "Microsoft.Web/sites/slots",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', variables('varWebAppName'), 'staging')]",
+              "location": "[parameters('parLocation')]",
+              "kind": "app",
+              "tags": "[parameters('parTags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('parAppServicePlanName'))]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "ftpsState": "Disabled",
+                  "alwaysOn": true,
+                  "linuxFxVersion": "DOTNETCORE|6.0",
+                  "netFrameworkVersion": "v6.0",
+                  "minTlsVersion": "1.2",
+                  "ipSecurityRestrictions": [
+                    {
+                      "ipAddress": "AzureFrontDoor.Backend",
+                      "action": "Allow",
+                      "tag": "ServiceTag",
+                      "priority": 1000,
+                      "name": "RestrictToFrontDoor",
+                      "headers": {
+                        "x-azure-fdid": [
+                          "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parConnectivitySubscriptionId'), parameters('parFrontDoorResourceGroupName')), 'Microsoft.Cdn/profiles', parameters('parFrontDoorName')), '2021-06-01').frontDoorId]"
+                        ]
+                      }
+                    },
+                    {
+                      "ipAddress": "Any",
+                      "action": "Deny",
+                      "priority": 2147483647,
+                      "name": "Deny all",
+                      "description": "Deny all access"
+                    }
+                  ],
+                  "appSettings": [
+                    {
+                      "name": "READ_ONLY_MODE",
+                      "value": "[if(equals(parameters('parEnvironment'), 'prd'), 'true', 'false')]"
+                    },
+                    {
+                      "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-instrumentationkey)', parameters('parKeyVaultName'), parameters('parAppInsightsName'))]"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-connectionstring)', parameters('parKeyVaultName'), parameters('parAppInsightsName'))]"
+                    },
+                    {
+                      "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                      "value": "~3"
+                    },
+                    {
+                      "name": "ASPNETCORE_ENVIRONMENT",
+                      "value": "Production"
+                    },
+                    {
+                      "name": "WEBSITE_RUN_FROM_PACKAGE",
+                      "value": "1"
+                    },
+                    {
+                      "name": "AzureAd__TenantId",
+                      "value": "[tenant().tenantId]"
+                    },
+                    {
+                      "name": "AzureAd__Instance",
+                      "value": "[environment().authentication.loginEndpoint]"
+                    },
+                    {
+                      "name": "AzureAd__ClientId",
+                      "value": "[parameters('parServersApiAppId')]"
+                    },
+                    {
+                      "name": "AzureAd__ClientSecret",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName=portal-servers-api-{1}-clientsecret)', parameters('parKeyVaultName'), parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "AzureAd__Audience",
+                      "value": "[format('api://portal-servers-api-{0}', parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "apim_base_url",
+                      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parApiManagementResourceGroupName')), 'Microsoft.ApiManagement/service', parameters('parApiManagementName')), '2021-12-01-preview').gatewayUrl]"
+                    },
+                    {
+                      "name": "portal_repository_apim_subscription_key",
+                      "value": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1}-{2}-portal-repository-subscription-apikey)', parameters('parKeyVaultName'), parameters('parApiManagementName'), variables('varWebAppName'))]"
+                    },
+                    {
+                      "name": "repository_api_application_audience",
+                      "value": "[format('api://portal-repository-api-{0}', parameters('parEnvironment'))]"
+                    },
+                    {
+                      "name": "xtremeidiots_ftp_certificate_thumbprint",
+                      "value": "65173167144EA988088DA20915ABB83DB27645FA"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('varWebAppName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "outWebAppDefaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', variables('varWebAppName')), '2020-06-01').defaultHostName]"
+            },
+            "outWebAppIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', variables('varWebAppName')), '2020-06-01', 'full').identity.principalId]"
+            },
+            "outWebAppName": {
+              "type": "string",
+              "value": "[variables('varWebAppName')]"
+            },
+            "outWebAppStagingIdentityPrincipalId": {
+              "type": "string",
+              "value": "[if(equals(parameters('parEnvironment'), 'prd'), reference(resourceId('Microsoft.Web/sites/slots', variables('varWebAppName'), 'staging'), '2020-06-01', 'full').identity.principalId, '')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-keyVaultAccessPolicy', variables('varDeploymentPrefix'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parKeyVaultName": {
+            "value": "[parameters('parKeyVaultName')]"
+          },
+          "parPrincipalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix'))), '2020-10-01').outputs.outWebAppIdentityPrincipalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.9.1.41621",
+              "templateHash": "16559599861732060636"
+            }
+          },
+          "parameters": {
+            "parKeyVaultName": {
+              "type": "string"
+            },
+            "parPrincipalId": {
+              "type": "string"
+            },
+            "parSecretsPermissions": {
+              "type": "array",
+              "defaultValue": [
+                "get"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults/accessPolicies",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('parKeyVaultName'), 'add')]",
+              "properties": {
+                "accessPolicies": [
+                  {
+                    "objectId": "[parameters('parPrincipalId')]",
+                    "permissions": {
+                      "certificates": [],
+                      "keys": [],
+                      "secrets": "[parameters('parSecretsPermissions')]",
+                      "storage": []
+                    },
+                    "tenantId": "[tenant().tenantId]"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix')))]"
+      ]
+    },
+    {
+      "condition": "[equals(parameters('parEnvironment'), 'prd')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-slotKeyVaultAccessPolicy', variables('varDeploymentPrefix'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parKeyVaultName": {
+            "value": "[parameters('parKeyVaultName')]"
+          },
+          "parPrincipalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix'))), '2020-10-01').outputs.outWebAppStagingIdentityPrincipalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.9.1.41621",
+              "templateHash": "16559599861732060636"
+            }
+          },
+          "parameters": {
+            "parKeyVaultName": {
+              "type": "string"
+            },
+            "parPrincipalId": {
+              "type": "string"
+            },
+            "parSecretsPermissions": {
+              "type": "array",
+              "defaultValue": [
+                "get"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults/accessPolicies",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('parKeyVaultName'), 'add')]",
+              "properties": {
+                "accessPolicies": [
+                  {
+                    "objectId": "[parameters('parPrincipalId')]",
+                    "permissions": {
+                      "certificates": [],
+                      "keys": [],
+                      "secrets": "[parameters('parSecretsPermissions')]",
+                      "storage": []
+                    },
+                    "tenantId": "[tenant().tenantId]"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-apiManagementApi', variables('varDeploymentPrefix'))]",
+      "subscriptionId": "[parameters('parStrategicServicesSubscriptionId')]",
+      "resourceGroup": "[parameters('parApiManagementResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parApiManagementName": {
+            "value": "[parameters('parApiManagementName')]"
+          },
+          "parFrontDoorDns": {
+            "value": "[variables('varWorkloadName')]"
+          },
+          "parParentDnsName": {
+            "value": "[parameters('parParentDnsName')]"
+          },
+          "parEnvironment": {
+            "value": "[parameters('parEnvironment')]"
+          },
+          "parWorkloadSubscriptionId": {
+            "value": "[subscription().subscriptionId]"
+          },
+          "parWorkloadResourceGroupName": {
+            "value": "[resourceGroup().name]"
+          },
+          "parAppInsightsName": {
+            "value": "[parameters('parAppInsightsName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.13.1.58284",
+              "templateHash": "4267271448901255072"
+            }
+          },
+          "parameters": {
+            "parApiManagementName": {
+              "type": "string"
+            },
+            "parFrontDoorDns": {
+              "type": "string"
+            },
+            "parParentDnsName": {
+              "type": "string"
+            },
+            "parEnvironment": {
+              "type": "string"
+            },
+            "parWorkloadSubscriptionId": {
+              "type": "string"
+            },
+            "parWorkloadResourceGroupName": {
+              "type": "string"
+            },
+            "parAppInsightsName": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "$fxv#0": "{\n    \"openapi\": \"3.0.1\",\n    \"info\": {\n        \"title\": \"servers-integration-api\",\n        \"version\": \"1.0\"\n    },\n    \"paths\": {\n        \"/maps/{gameServerId}\": {\n            \"get\": {\n                \"tags\": [\n                    \"Maps\"\n                ],\n                \"parameters\": [\n                    {\n                        \"name\": \"gameServerId\",\n                        \"in\": \"path\",\n                        \"required\": true,\n                        \"schema\": {\n                            \"type\": \"string\",\n                            \"format\": \"uuid\"\n                        }\n                    }\n                ],\n                \"responses\": {\n                    \"200\": {\n                        \"description\": \"Success\"\n                    }\n                }\n            }\n        },\n        \"/maps/{gameServerId}/{mapName}\": {\n            \"post\": {\n                \"tags\": [\n                    \"Maps\"\n                ],\n                \"parameters\": [\n                    {\n                        \"name\": \"gameServerId\",\n                        \"in\": \"path\",\n                        \"required\": true,\n                        \"schema\": {\n                            \"type\": \"string\",\n                            \"format\": \"uuid\"\n                        }\n                    },\n                    {\n                        \"name\": \"mapName\",\n                        \"in\": \"path\",\n                        \"required\": true,\n                        \"schema\": {\n                            \"type\": \"string\"\n                        }\n                    }\n                ],\n                \"responses\": {\n                    \"200\": {\n                        \"description\": \"Success\"\n                    }\n                }\n            }\n        },\n        \"/query/{gameServerId}/status\": {\n            \"get\": {\n                \"tags\": [\n                    \"Query\"\n                ],\n                \"parameters\": [\n                    {\n                        \"name\": \"gameServerId\",\n                        \"in\": \"path\",\n                        \"required\": true,\n                        \"schema\": {\n                            \"type\": \"string\",\n                            \"format\": \"uuid\"\n                        }\n                    }\n                ],\n                \"responses\": {\n                    \"200\": {\n                        \"description\": \"Success\"\n                    }\n                }\n            }\n        },\n        \"/rcon/{gameServerId}/status\": {\n            \"get\": {\n                \"tags\": [\n                    \"Rcon\"\n                ],\n                \"parameters\": [\n                    {\n                        \"name\": \"gameServerId\",\n                        \"in\": \"path\",\n                        \"required\": true,\n                        \"schema\": {\n                            \"type\": \"string\",\n                            \"format\": \"uuid\"\n                        }\n                    }\n                ],\n                \"responses\": {\n                    \"200\": {\n                        \"description\": \"Success\"\n                    }\n                }\n            }\n        },\n        \"/\": {\n            \"get\": {\n                \"tags\": [\n                    \"servers-webapi\"\n                ],\n                \"responses\": {\n                    \"200\": {\n                        \"description\": \"Success\",\n                        \"content\": {\n                            \"text/plain\": {\n                                \"schema\": {\n                                    \"type\": \"string\"\n                                }\n                            }\n                        }\n                    }\n                }\n            }\n        }\n    },\n    \"components\": {}\n}"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service/backends",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('parApiManagementName'), parameters('parFrontDoorDns'))]",
+              "properties": {
+                "title": "[parameters('parFrontDoorDns')]",
+                "description": "[parameters('parFrontDoorDns')]",
+                "url": "[format('https://{0}.{1}/', parameters('parFrontDoorDns'), parameters('parParentDnsName'))]",
+                "protocol": "http",
+                "properties": {},
+                "tls": {
+                  "validateCertificateChain": true,
+                  "validateCertificateName": true
+                }
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/namedValues",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('parApiManagementName'), 'servers-api-active-backend')]",
+              "properties": {
+                "displayName": "servers-api-active-backend",
+                "value": "[parameters('parFrontDoorDns')]",
+                "secret": false
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/backends', parameters('parApiManagementName'), parameters('parFrontDoorDns'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/namedValues",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('parApiManagementName'), 'servers-api-audience')]",
+              "properties": {
+                "displayName": "servers-api-audience",
+                "value": "[format('api://portal-servers-api-{0}', parameters('parEnvironment'))]",
+                "secret": false
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('parApiManagementName'), 'servers-api')]",
+              "properties": {
+                "apiRevision": "1.0",
+                "apiType": "http",
+                "type": "http",
+                "description": "API for servers integration",
+                "displayName": "Servers API",
+                "path": "servers",
+                "protocols": [
+                  "https"
+                ],
+                "subscriptionRequired": true,
+                "subscriptionKeyParameterNames": {
+                  "header": "Ocp-Apim-Subscription-Key"
+                },
+                "format": "openapi+json",
+                "value": "[variables('$fxv#0')]"
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/policies",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}/{2}', parameters('parApiManagementName'), 'servers-api', 'policy')]",
+              "properties": {
+                "format": "xml",
+                "value": "<policies>\n  <inbound>\n      <base/>\n      <set-backend-service backend-id=\"{{servers-api-active-backend}}\" />\n      <cache-lookup vary-by-developer=\"false\" vary-by-developer-groups=\"false\" downstream-caching-type=\"none\" />\n      <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\" failed-validation-error-message=\"JWT validation was unsuccessful\" require-expiration-time=\"true\" require-scheme=\"Bearer\" require-signed-tokens=\"true\">\n          <openid-config url=\"{{tenant-login-url}}{{tenant-id}}/v2.0/.well-known/openid-configuration\" />\n          <audiences>\n              <audience>{{servers-api-audience}}</audience>\n          </audiences>\n          <issuers>\n              <issuer>https://sts.windows.net/{{tenant-id}}/</issuer>\n          </issuers>\n          <required-claims>\n              <claim name=\"roles\" match=\"any\">\n                <value>ServiceAccount</value>\n              </claim>\n          </required-claims>\n      </validate-jwt>\n  </inbound>\n  <backend>\n      <forward-request />\n  </backend>\n  <outbound>\n      <base/>\n      <cache-store duration=\"3600\" />\n  </outbound>\n  <on-error />\n</policies>"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('parApiManagementName'), 'servers-api')]",
+                "[resourceId('Microsoft.ApiManagement/service/namedValues', parameters('parApiManagementName'), 'servers-api-active-backend')]",
+                "[resourceId('Microsoft.ApiManagement/service/namedValues', parameters('parApiManagementName'), 'servers-api-audience')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/diagnostics",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}/{2}', parameters('parApiManagementName'), 'servers-api', 'applicationinsights')]",
+              "properties": {
+                "alwaysLog": "allErrors",
+                "httpCorrelationProtocol": "W3C",
+                "logClientIp": true,
+                "loggerId": "[resourceId('Microsoft.ApiManagement/service/loggers', parameters('parApiManagementName'), parameters('parAppInsightsName'))]",
+                "operationNameFormat": "Name",
+                "sampling": {
+                  "percentage": 100,
+                  "samplingType": "fixed"
+                },
+                "verbosity": "information"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('parApiManagementName'), 'servers-api')]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-frontDoorEndpoint', variables('varDeploymentPrefix'))]",
+      "subscriptionId": "[parameters('parConnectivitySubscriptionId')]",
+      "resourceGroup": "[parameters('parFrontDoorResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "parDeploymentPrefix": {
+            "value": "[variables('varDeploymentPrefix')]"
+          },
+          "parFrontDoorName": {
+            "value": "[parameters('parFrontDoorName')]"
+          },
+          "parParentDnsName": {
+            "value": "[parameters('parParentDnsName')]"
+          },
+          "parDnsResourceGroupName": {
+            "value": "[parameters('parDnsResourceGroupName')]"
+          },
+          "parWorkloadName": {
+            "value": "[variables('varWorkloadName')]"
+          },
+          "parOriginHostName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix'))), '2020-10-01').outputs.outWebAppDefaultHostName.value]"
+          },
+          "parDnsZoneHostnamePrefix": {
+            "value": "[variables('varWorkloadName')]"
+          },
+          "parCustomHostname": {
+            "value": "[format('{0}.{1}', variables('varWorkloadName'), parameters('parParentDnsName'))]"
+          },
+          "parTags": {
+            "value": "[parameters('parTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.9.1.41621",
+              "templateHash": "12912151810592466420"
+            }
+          },
+          "parameters": {
+            "parDeploymentPrefix": {
+              "type": "string"
+            },
+            "parFrontDoorName": {
+              "type": "string"
+            },
+            "parParentDnsName": {
+              "type": "string"
+            },
+            "parDnsResourceGroupName": {
+              "type": "string"
+            },
+            "parWorkloadName": {
+              "type": "string"
+            },
+            "parOriginHostName": {
+              "type": "string"
+            },
+            "parDnsZoneHostnamePrefix": {
+              "type": "string"
+            },
+            "parCustomHostname": {
+              "type": "string"
+            },
+            "parTags": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Cdn/profiles/afdEndpoints",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('parFrontDoorName'), parameters('parWorkloadName'))]",
+              "location": "Global",
+              "tags": "[parameters('parTags')]",
+              "properties": {
+                "enabledState": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.Cdn/profiles/originGroups",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('parFrontDoorName'), format('{0}-origin-group', parameters('parWorkloadName')))]",
+              "properties": {
+                "loadBalancingSettings": {
+                  "sampleSize": 4,
+                  "successfulSamplesRequired": 3,
+                  "additionalLatencyInMilliseconds": 50
+                },
+                "healthProbeSettings": {
+                  "probePath": "/",
+                  "probeRequestType": "HEAD",
+                  "probeProtocol": "Http",
+                  "probeIntervalInSeconds": 100
+                },
+                "sessionAffinityState": "Disabled"
+              }
+            },
+            {
+              "type": "Microsoft.Cdn/profiles/originGroups/origins",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}/{2}', parameters('parFrontDoorName'), format('{0}-origin-group', parameters('parWorkloadName')), format('{0}-origin', parameters('parWorkloadName')))]",
+              "properties": {
+                "hostName": "[parameters('parOriginHostName')]",
+                "httpPort": 80,
+                "httpsPort": 443,
+                "originHostHeader": "[parameters('parOriginHostName')]",
+                "priority": 1,
+                "weight": 1000,
+                "enabledState": "Enabled",
+                "enforceCertificateNameCheck": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Cdn/profiles/originGroups', parameters('parFrontDoorName'), format('{0}-origin-group', parameters('parWorkloadName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Cdn/profiles/customDomains",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('parFrontDoorName'), format('{0}-custom-domain', parameters('parWorkloadName')))]",
+              "properties": {
+                "hostName": "[parameters('parCustomHostname')]",
+                "tlsSettings": {
+                  "certificateType": "ManagedCertificate",
+                  "minimumTlsVersion": "TLS12"
+                },
+                "azureDnsZone": {
+                  "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('parDnsResourceGroupName')), 'Microsoft.Network/dnsZones', parameters('parParentDnsName'))]"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Cdn/profiles/afdEndpoints/routes",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}/{2}', parameters('parFrontDoorName'), parameters('parWorkloadName'), format('{0}-route', parameters('parWorkloadName')))]",
+              "properties": {
+                "customDomains": [
+                  {
+                    "id": "[resourceId('Microsoft.Cdn/profiles/customDomains', parameters('parFrontDoorName'), format('{0}-custom-domain', parameters('parWorkloadName')))]"
+                  }
+                ],
+                "originGroup": {
+                  "id": "[resourceId('Microsoft.Cdn/profiles/originGroups', parameters('parFrontDoorName'), format('{0}-origin-group', parameters('parWorkloadName')))]"
+                },
+                "ruleSets": [],
+                "supportedProtocols": [
+                  "Https"
+                ],
+                "patternsToMatch": [
+                  "/*"
+                ],
+                "forwardingProtocol": "HttpsOnly",
+                "linkToDefaultDomain": "Enabled",
+                "httpsRedirect": "Enabled",
+                "enabledState": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Cdn/profiles/customDomains', parameters('parFrontDoorName'), format('{0}-custom-domain', parameters('parWorkloadName')))]",
+                "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', parameters('parFrontDoorName'), parameters('parWorkloadName'))]",
+                "[resourceId('Microsoft.Cdn/profiles/originGroups', parameters('parFrontDoorName'), format('{0}-origin-group', parameters('parWorkloadName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-{1}-dnsCNAME', parameters('parDeploymentPrefix'), parameters('parWorkloadName'))]",
+              "resourceGroup": "[parameters('parDnsResourceGroupName')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "parDns": {
+                    "value": "[parameters('parDnsZoneHostnamePrefix')]"
+                  },
+                  "parParentDnsName": {
+                    "value": "[parameters('parParentDnsName')]"
+                  },
+                  "parCname": {
+                    "value": "[reference(resourceId('Microsoft.Cdn/profiles/afdEndpoints', parameters('parFrontDoorName'), parameters('parWorkloadName'))).hostName]"
+                  },
+                  "parCnameValidationToken": {
+                    "value": "[reference(resourceId('Microsoft.Cdn/profiles/customDomains', parameters('parFrontDoorName'), format('{0}-custom-domain', parameters('parWorkloadName')))).validationProperties.validationToken]"
+                  },
+                  "parTags": {
+                    "value": "[parameters('parTags')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.9.1.41621",
+                      "templateHash": "15231284788688290679"
+                    }
+                  },
+                  "parameters": {
+                    "parDns": {
+                      "type": "string"
+                    },
+                    "parParentDnsName": {
+                      "type": "string"
+                    },
+                    "parCname": {
+                      "type": "string"
+                    },
+                    "parCnameValidationToken": {
+                      "type": "secureString"
+                    },
+                    "parTags": {
+                      "type": "object"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Network/dnsZones/CNAME",
+                      "apiVersion": "2018-05-01",
+                      "name": "[format('{0}/{1}', parameters('parParentDnsName'), parameters('parDns'))]",
+                      "properties": {
+                        "TTL": 3600,
+                        "metadata": "[parameters('parTags')]",
+                        "CNAMERecord": {
+                          "cname": "[parameters('parCname')]"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Network/dnsZones/TXT",
+                      "apiVersion": "2018-05-01",
+                      "name": "[format('{0}/{1}', parameters('parParentDnsName'), format('_dnsauth.{0}', parameters('parDns')))]",
+                      "properties": {
+                        "TTL": 3600,
+                        "metadata": "[parameters('parTags')]",
+                        "TXTRecords": [
+                          {
+                            "value": [
+                              "[parameters('parCnameValidationToken')]"
+                            ]
+                          }
+                        ],
+                        "targetResource": {}
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Cdn/profiles/customDomains', parameters('parFrontDoorName'), format('{0}-custom-domain', parameters('parWorkloadName')))]",
+                "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', parameters('parFrontDoorName'), parameters('parWorkloadName'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('parStrategicServicesSubscriptionId'), parameters('parWebAppsResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-webApp', variables('varDeploymentPrefix')))]"
+      ]
+    }
+  ]
+}

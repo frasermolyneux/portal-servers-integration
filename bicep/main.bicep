@@ -20,7 +20,7 @@ param parApiManagementName string
 param parWebAppsResourceGroupName string
 param parAppServicePlanName string
 
-param parServersApiAppId string
+param parServersIntegrationApiAppId string
 
 param parTags object
 
@@ -96,7 +96,7 @@ module webApp 'modules/webApp.bicep' = {
     parKeyVaultName: keyVault.name
     parAppInsightsName: appInsights.name
 
-    parServersApiAppId: parServersApiAppId
+    parServersApiAppId: parServersIntegrationApiAppId
 
     parStrategicServicesSubscriptionId: parStrategicServicesSubscriptionId
     parApiManagementResourceGroupName: parApiManagementResourceGroupName

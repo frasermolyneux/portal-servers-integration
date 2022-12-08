@@ -105,7 +105,7 @@ jobs:
           --location 'uksouth' \
           --template-file bicep/main.bicep \
           --parameters @bicep/dev.params.json \
-            parServersApiAppId=00000000-0000-0000-0000-000000000000
+            parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
             
     - name: WhatIf Bicep
       run: |
@@ -114,7 +114,7 @@ jobs:
           --location 'uksouth' \
           --template-file bicep/main.bicep \
           --parameters @bicep/dev.params.json \
-            parServersApiAppId=00000000-0000-0000-0000-000000000000
+            parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
             
   deploy-bicep-dev:
     runs-on: ubuntu-latest
@@ -123,6 +123,11 @@ jobs:
 
     steps:
     - run : echo "Deploying to Development environment"
+
+    - name: Create App Registrations
+      shell: pwsh
+      run: |
+        scripts/create-app-registrations.ps1 "dev" "uksouth"
     
 #env:
 #  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App

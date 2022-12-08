@@ -40,29 +40,29 @@ resource apiBackend 'Microsoft.ApiManagement/service/backends@2021-08-01' = {
 }
 
 resource apiActiveBackendNamedValue 'Microsoft.ApiManagement/service/namedValues@2021-08-01' = {
-  name: 'servers-api-active-backend'
+  name: 'servers-integration-api-active-backend'
   parent: apiManagement
 
   properties: {
-    displayName: 'servers-api-active-backend'
+    displayName: 'servers-integration-api-active-backend'
     value: apiBackend.name
     secret: false
   }
 }
 
 resource apiAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2021-08-01' = {
-  name: 'servers-api-audience'
+  name: 'servers-integration-api-audience'
   parent: apiManagement
 
   properties: {
-    displayName: 'servers-api-audience'
-    value: 'api://portal-servers-api-${parEnvironment}'
+    displayName: 'servers-integration-api-audience'
+    value: 'api://portal-servers-integration-api-${parEnvironment}'
     secret: false
   }
 }
 
 resource api 'Microsoft.ApiManagement/service/apis@2021-08-01' = {
-  name: 'servers-api'
+  name: 'servers-integration-api'
   parent: apiManagement
 
   properties: {
@@ -97,12 +97,12 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' = 
 <policies>
   <inbound>
       <base/>
-      <set-backend-service backend-id="{{servers-api-active-backend}}" />
+      <set-backend-service backend-id="{{servers-integration-api-active-backend}}" />
       <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
       <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
           <openid-config url="{{tenant-login-url}}{{tenant-id}}/v2.0/.well-known/openid-configuration" />
           <audiences>
-              <audience>{{servers-api-audience}}</audience>
+              <audience>{{servers-integration-api-audience}}</audience>
           </audiences>
           <issuers>
               <issuer>https://sts.windows.net/{{tenant-id}}/</issuer>

@@ -71,8 +71,8 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
       ftpsState: 'Disabled'
 
       alwaysOn: true
-      linuxFxVersion: 'DOTNETCORE|6.0'
-      netFrameworkVersion: 'v6.0'
+      linuxFxVersion: 'DOTNETCORE|7.0'
+      netFrameworkVersion: 'v7.0'
       minTlsVersion: '1.2'
 
       ipSecurityRestrictions: [
@@ -136,11 +136,11 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-api-${parEnvironment}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-api-${parEnvironment}-clientsecret)'
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-api-${parEnvironment}'
+          value: 'api://portal-servers-integration-api-${parEnvironment}'
         }
         {
           name: 'apim_base_url'
@@ -184,8 +184,8 @@ resource webAppStagingSlot 'Microsoft.Web/sites/slots@2020-06-01' = if (parEnvir
       ftpsState: 'Disabled'
 
       alwaysOn: true
-      linuxFxVersion: 'DOTNETCORE|6.0'
-      netFrameworkVersion: 'v6.0'
+      linuxFxVersion: 'DOTNETCORE|7.0'
+      netFrameworkVersion: 'v7.0'
       minTlsVersion: '1.2'
 
       ipSecurityRestrictions: [
@@ -249,11 +249,11 @@ resource webAppStagingSlot 'Microsoft.Web/sites/slots@2020-06-01' = if (parEnvir
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-api-${parEnvironment}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-api-${parEnvironment}-clientsecret)'
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-api-${parEnvironment}'
+          value: 'api://portal-servers-integration-api-${parEnvironment}'
         }
         {
           name: 'apim_base_url'

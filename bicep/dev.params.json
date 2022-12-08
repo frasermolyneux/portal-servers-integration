@@ -6,7 +6,7 @@
             "value": "uksouth"
         },
         "parEnvironment": {
-            "value": "prd"
+            "value": "dev"
         },
         "parLoggingSubscriptionId": {
             "value": "7760848c-794d-4a19-8cb2-52f71a21ac2b"
@@ -33,23 +33,23 @@
             "value": "xtremeidiots.dev"
         },
         "parStrategicServicesSubscriptionId": {
-            "value": "903b6685-c12a-4703-ac54-7ec1ff15ca43"
+            "value": "1b5b28ed-1365-4a48-b285-80f80a6aaa1b"
         },
         "parApiManagementResourceGroupName": {
-            "value": "rg-platform-apim-prd-uksouth"
+            "value": "rg-platform-apim-dev-uksouth"
         },
         "parApiManagementName": {
-            "value": "apim-mx-platform-prd-uksouth"
+            "value": "apim-mx-platform-dev-uksouth"
         },
         "parWebAppsResourceGroupName": {
-            "value": "rg-platform-webapps-prd-uksouth"
+            "value": "rg-platform-webapps-dev-uksouth"
         },
         "parAppServicePlanName": {
-            "value": "plan-platform-prd-uksouth"
+            "value": "plan-platform-dev-uksouth"
         },
         "parTags": {
             "value": {
-                "Environment": "prd",
+                "Environment": "dev",
                 "DeployedBy": "GitHub-Bicep",
                 "Git": "https://github.com/frasermolyneux/portal-servers-integration"
             }

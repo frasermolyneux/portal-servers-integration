@@ -6,7 +6,7 @@ XtremeIdiots Portal Servers Integration API.
 
 ## Codespaces Workaround
 
-When a new codespace is spun up there is a permissions issue when building .NET. Error is: 
+When a new codespace is spun up there is a permissions issue when building .NET. Error is:
 
 ```text
 System.UnauthorizedAccessException: Access to the path '/home/codespace/.dotnet/7.0.100.toolpath.sentinel' is denied.

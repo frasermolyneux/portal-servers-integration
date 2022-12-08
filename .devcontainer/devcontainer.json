@@ -7,6 +7,7 @@
     "ghcr.io/devcontainers/features/dotnet:1": {
       "version": "7",
       "installUsingApt": true
-    }
+    },
+    "ghcr.io/devcontainers/features/powershell:1": {}
   }
 }

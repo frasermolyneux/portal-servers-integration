@@ -127,7 +127,7 @@ jobs:
     - name: Create App Registrations
       shell: pwsh
       run: |
-        scripts/create-app-registrations.ps1 "dev" "uksouth"
+        . scripts/create-app-registrations.ps1 "dev" "uksouth"
     
 #env:
 #  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App

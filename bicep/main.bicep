@@ -1,12 +1,12 @@
-targetScope = 'resourceGroup'
+targetScope = 'subscription'
 
 // Parameters
 param parLocation string
 param parEnvironment string
-param parKeyVaultName string
-param parAppInsightsName string
 
-param parServersApiAppId string
+param parLoggingSubscriptionId string
+param parLoggingResourceGroupName string
+param parLoggingWorkspaceName string
 
 param parConnectivitySubscriptionId string
 param parFrontDoorResourceGroupName string
@@ -20,14 +20,56 @@ param parApiManagementName string
 param parWebAppsResourceGroupName string
 param parAppServicePlanName string
 
+param parServersApiAppId string
+
 param parTags object
 
 // Variables
-var varDeploymentPrefix = 'serversApi' //Prevent deployment naming conflicts
-var varServersWebAppName = 'webapi-servers-portal-${parEnvironment}-${parLocation}'
-var varWorkloadName = 'webapi-servers-portal-${parEnvironment}'
+var deploymentUniqueId = uniqueString('portal-servers-integration')
+var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
+var varDeploymentPrefix = 'portal-servers-integration-${deploymentUniqueId}' //Prevent deployment naming conflicts
+
+var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
+var varWorkloadName = 'webapi-${deploymentUniqueId}-${parEnvironment}'
+var varWebAppName = 'webapi-${deploymentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-${deploymentUniqueId}-${parEnvironment}-${parLocation}'
+var varKeyVaultName = 'kv-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 
 // Module Resources
+resource defaultResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: varResourceGroupName
+  location: parLocation
+  tags: parTags
+
+  properties: {}
+}
+
+module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:latest' = {
+  name: '${varDeploymentPrefix}-keyVault'
+  scope: resourceGroup(defaultResourceGroup.name)
+
+  params: {
+    parKeyVaultName: varKeyVaultName
+    parLocation: parLocation
+    parTags: parTags
+  }
+}
+
+module appInsights 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/appinsights:latest' = {
+  name: '${varDeploymentPrefix}-appInsights'
+  scope: resourceGroup(defaultResourceGroup.name)
+
+  params: {
+    parAppInsightsName: varAppInsightsName
+    parKeyVaultName: keyVault.outputs.outKeyVaultName
+    parLocation: parLocation
+    parLoggingSubscriptionId: parLoggingSubscriptionId
+    parLoggingResourceGroupName: parLoggingResourceGroupName
+    parLoggingWorkspaceName: parLoggingWorkspaceName
+    parTags: parTags
+  }
+}
+
 module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
   name: '${varDeploymentPrefix}-serversIntegrationApiManagementSubscription'
   scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
@@ -36,9 +78,9 @@ module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.a
     parDeploymentPrefix: varDeploymentPrefix
     parApiManagementName: parApiManagementName
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-    parWorkloadName: varServersWebAppName
-    parKeyVaultName: parKeyVaultName
+    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parWorkloadName: varWebAppName
+    parKeyVaultName: keyVault.name
     parSubscriptionScopeIdentifier: 'portal-repository'
     parSubscriptionScope: '/apis/repository-api'
     parTags: parTags
@@ -52,8 +94,8 @@ module webApp 'modules/webApp.bicep' = {
   params: {
     parLocation: parLocation
     parEnvironment: parEnvironment
-    parKeyVaultName: parKeyVaultName
-    parAppInsightsName: parAppInsightsName
+    parKeyVaultName: keyVault.name
+    parAppInsightsName: appInsights.name
 
     parServersApiAppId: parServersApiAppId
 
@@ -67,7 +109,7 @@ module webApp 'modules/webApp.bicep' = {
     parFrontDoorName: parFrontDoorName
 
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
+    parWorkloadResourceGroupName: defaultResourceGroup.name
 
     parTags: parTags
   }
@@ -75,18 +117,20 @@ module webApp 'modules/webApp.bicep' = {
 
 module keyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = {
   name: '${varDeploymentPrefix}-keyVaultAccessPolicy'
+  scope: defaultResourceGroup
 
   params: {
-    parKeyVaultName: parKeyVaultName
+    parKeyVaultName: keyVault.name
     parPrincipalId: webApp.outputs.outWebAppIdentityPrincipalId
   }
 }
 
 module slotKeyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = if (parEnvironment == 'prd') {
   name: '${varDeploymentPrefix}-slotKeyVaultAccessPolicy'
+  scope: defaultResourceGroup
 
   params: {
-    parKeyVaultName: parKeyVaultName
+    parKeyVaultName: keyVault.name
     parPrincipalId: webApp.outputs.outWebAppStagingIdentityPrincipalId
   }
 }
@@ -101,8 +145,8 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
     parParentDnsName: parParentDnsName
     parEnvironment: parEnvironment
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-    parAppInsightsName: parAppInsightsName
+    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parAppInsightsName: appInsights.name
   }
 }
 

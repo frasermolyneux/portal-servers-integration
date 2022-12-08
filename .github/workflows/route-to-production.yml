@@ -100,18 +100,22 @@ jobs:
 
     - name: Validate Bicep
       run: |
-        if $(az group exists --name 'rg-portal-servers-integration-dev-uksouth')
-        then 
-          az deployment group validate \
-            --name 'portal-servers-integration-dev' \
-            --resource-group 'rg-portal-servers-integration-dev-uksouth' \
-            --template-file bicep/main.bicep \
-            --parameters @bicep/dev.params.json \
-              parServersApiAppId=00000000-0000-0000-0000-000000000000
-        else
-          echo "Resource group doesn't exist - skipping validation"
-        fi
-
+        az deployment sub validate \
+          --name 'portal-servers-integration-dev' \
+          --location 'uksouth' \
+          --template-file bicep/main.bicep \
+          --parameters @bicep/dev.params.json \
+            parServersApiAppId=00000000-0000-0000-0000-000000000000
+            
+    - name: WhatIf Bicep
+      run: |
+        az deployment sub what-if \
+          --name 'portal-servers-integration-dev' \
+          --location 'uksouth' \
+          --template-file bicep/main.bicep \
+          --parameters @bicep/dev.params.json \
+            parServersApiAppId=00000000-0000-0000-0000-000000000000
+            
   deploy-bicep-dev:
     runs-on: ubuntu-latest
     environment: Development

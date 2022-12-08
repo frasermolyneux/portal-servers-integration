@@ -1,8 +1,10 @@
-name: Bicep Validation
+name: CI Bicep Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "*" ]
+    paths:
+      - bicep/**
   pull_request:
     branches: [ "main" ]
 

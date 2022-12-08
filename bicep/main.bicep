@@ -25,14 +25,13 @@ param parServersApiAppId string
 param parTags object
 
 // Variables
-var deploymentUniqueId = uniqueString('portal-servers-integration')
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
-var varDeploymentPrefix = 'portal-servers-integration-${deploymentUniqueId}' //Prevent deployment naming conflicts
+var varDeploymentPrefix = 'portal-servers-integration-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
-var varWorkloadName = 'webapi-${deploymentUniqueId}-${parEnvironment}'
-var varWebAppName = 'webapi-${deploymentUniqueId}-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-${deploymentUniqueId}-${parEnvironment}-${parLocation}'
+var varWorkloadName = 'webapi-${environmentUniqueId}-${parEnvironment}'
+var varWebAppName = 'webapi-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 
 // Module Resources

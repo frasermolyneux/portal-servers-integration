@@ -69,16 +69,19 @@ jobs:
       run: dotnet restore
       
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build --no-restore
 
-    - name: dotnet publish
-      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/portal-servers-integration
+    - name: Test
+      run: dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests
 
-    - name: Upload artifact for deployment job
+    - name: dotnet publish servers-integration-webapi
+      run: dotnet publish servers-integration-webapi/servers-integration-webapi.csproj --configuration Release --output ${{env.DOTNET_ROOT}}/servers-integration-webapi/servers-integration-webapi.zip
+
+    - name: Upload artifact servers-integration-webapi
       uses: actions/upload-artifact@v3
       with:
-        name: .net-app
-        path: ${{env.DOTNET_ROOT}}/portal-servers-integration
+        name: servers-integration-webapi
+        path: ${{env.DOTNET_ROOT}}/servers-integration-webapi
 
 
 #env:

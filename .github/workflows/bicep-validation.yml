@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   build:
+    environment: ACR
 
     runs-on: ubuntu-latest
 

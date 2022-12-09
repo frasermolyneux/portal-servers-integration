@@ -1,10 +1,11 @@
 param (
     $environment,
-    $location
+    $location,
+    $keyVaultName
 )
 
 . "scripts/functions/CreateAppRegistrationCredential.ps1" `
-    -keyVaultName "kv-portal-$environment-$location" `
-    -applicationName "portal-servers-api-$environment" `
-    -secretPrefix "portal-servers-api-$environment" `
-    -secretDisplayName "webportalsvrs"
+    -keyVaultName $keyVaultName `
+    -applicationName "portal-servers-integration-api-$environment" `
+    -secretPrefix "portal-servers-integration-api-$environment" `
+    -secretDisplayName "portalserversintegrationwebapi"

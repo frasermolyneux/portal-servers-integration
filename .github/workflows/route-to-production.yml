@@ -155,6 +155,15 @@ jobs:
       shell: pwsh
       run: |
         . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
+
+    - name: Deploy Platform Bicep
+      shell: pwsh
+      run: |
+        az deployment sub create `
+          --name 'portal-servers-integration-platform-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/dev.platform.params.json
     
 #env:
 #  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App

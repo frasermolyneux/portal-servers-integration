@@ -13,7 +13,7 @@ param parKeyVaultCreateMode string = 'recover'
 param parTags object
 
 // Variables
-var environmentUniqueId = substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12)
+var environmentUniqueId = toLower(substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12))
 var varDeploymentPrefix = 'portal-servers-integration-platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'

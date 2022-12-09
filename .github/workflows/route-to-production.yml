@@ -99,22 +99,40 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Validate Bicep
+      shell: pwsh
       run: |
-        az deployment sub validate \
-          --name 'portal-servers-integration-dev' \
-          --location 'uksouth' \
-          --template-file bicep/main.bicep \
-          --parameters @bicep/dev.params.json \
-            parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        az deployment sub validate `
+          --name 'portal-servers-integration-platform-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/dev.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
+          az deployment group validate `
+            --name 'portal-servers-integration-workload-dev' `
+            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/dev.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
             
     - name: WhatIf Bicep
+      shell: pwsh
       run: |
-        az deployment sub what-if \
-          --name 'portal-servers-integration-dev' \
-          --location 'uksouth' \
-          --template-file bicep/main.bicep \
-          --parameters @bicep/dev.params.json \
-            parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        az deployment sub what-if `
+          --name 'portal-servers-integration-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/dev.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
+          az deployment group what-if `
+            --name 'portal-servers-integration-workload-dev' `
+            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/dev.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
             
   deploy-bicep-dev:
     runs-on: ubuntu-latest

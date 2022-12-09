@@ -8,15 +8,6 @@
         "parEnvironment": {
             "value": "dev"
         },
-        "parLoggingSubscriptionId": {
-            "value": "7760848c-794d-4a19-8cb2-52f71a21ac2b"
-        },
-        "parLoggingResourceGroupName": {
-            "value": "rg-platform-logging-prd-uksouth"
-        },
-        "parLoggingWorkspaceName": {
-            "value": "log-platform-prd-uksouth"
-        },
         "parConnectivitySubscriptionId": {
             "value": "db34f572-8b71-40d6-8f99-f29a27612144"
         },

@@ -29,4 +29,6 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     
     - name: Build Bicep
-      run: az bicep build --file bicep/main.bicep --stdout
+      run: |
+        az bicep build --file bicep/platform.bicep --stdout
+        az bicep build --file bicep/workload.bicep --stdout

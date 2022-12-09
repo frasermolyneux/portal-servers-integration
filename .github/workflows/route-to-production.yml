@@ -151,11 +151,6 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Create App Registrations
-      shell: pwsh
-      run: |
-        . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
-
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
@@ -164,6 +159,14 @@ jobs:
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
           --parameters @bicep/dev.platform.params.json
+
+    - name: Create App Registrations
+      shell: pwsh
+      run: |
+        . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
+#. scripts/CreateAppRegistrationsCredentials.ps1' "dev" "uksouth"
+
+
     
 #env:
 #  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App

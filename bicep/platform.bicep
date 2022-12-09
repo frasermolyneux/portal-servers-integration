@@ -12,11 +12,11 @@ param parTags object
 
 // Variables
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
-var varDeploymentPrefix = 'portal-servers-integration-platform-${environmentUniqueId}' //Prevent deployment naming conflicts
+var varDeploymentPrefix = 'portal-servers-integration-platform-${parEnvironment}-${parLocation}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
 var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varKeyVaultName = 'kv-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Module Resources
 resource defaultResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {

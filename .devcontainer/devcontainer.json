@@ -9,5 +9,6 @@
       "installUsingApt": true
     },
     "ghcr.io/devcontainers/features/powershell:1": {}
-  }
+  },
+  "postCreateCommand": "cd /home/codespace/ && sudo chown codespace .dotnet"
 }

@@ -164,11 +164,12 @@ jobs:
           --parameters @bicep/dev.platform.params.json `
           parKeyVaultCreateMode=$keyVaultCreateMode `
 
-    - name: App Registrations
+    - name: AAD Scripts
       shell: pwsh
       run: |
         $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-dev"))).Substring(0, 12).ToLower()
 
+        . scripts/SetDeployPrincipalPermissions.ps1 "kv-$($environmentUniqueId)-uksouth"
         . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "kv-$($environmentUniqueId)-uksouth"
 

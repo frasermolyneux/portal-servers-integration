@@ -1,5 +1,6 @@
 param (
-    $keyVaultName
+    $keyVaultName,
+    $spnId
 )
 
-az keyvault set-policy --name $keyVaultName --spn (az ad signed-in-user show --query id --output tsv) --secret-permissions get set | Out-Null
+az keyvault set-policy --name $keyVaultName --spn $spnId --secret-permissions get set | Out-Null

@@ -26,6 +26,8 @@ var varDeploymentPrefix = 'portal-servers-integration-workload-${environmentUniq
 
 var varWorkloadName = 'webapi-${environmentUniqueId}-${parEnvironment}'
 var varWebAppName = 'webapi-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varKeyVaultName = 'kv-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 
 // Module Resources
 module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
@@ -36,9 +38,9 @@ module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.a
     parDeploymentPrefix: varDeploymentPrefix
     parApiManagementName: parApiManagementName
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parWorkloadResourceGroupName: resourceGroup().name
     parWorkloadName: varWebAppName
-    parKeyVaultName: keyVault.name
+    parKeyVaultName: varKeyVaultName
     parSubscriptionScopeIdentifier: 'portal-repository'
     parSubscriptionScope: '/apis/repository-api'
     parTags: parTags
@@ -52,8 +54,8 @@ module webApp 'modules/webApp.bicep' = {
   params: {
     parLocation: parLocation
     parEnvironment: parEnvironment
-    parKeyVaultName: keyVault.name
-    parAppInsightsName: appInsights.name
+    parKeyVaultName: varKeyVaultName
+    parAppInsightsName: varAppInsightsName
 
     parServersApiAppId: parServersIntegrationApiAppId
 
@@ -67,7 +69,7 @@ module webApp 'modules/webApp.bicep' = {
     parFrontDoorName: parFrontDoorName
 
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parWorkloadResourceGroupName: resourceGroup().name
 
     parTags: parTags
   }
@@ -75,20 +77,18 @@ module webApp 'modules/webApp.bicep' = {
 
 module keyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = {
   name: '${varDeploymentPrefix}-keyVaultAccessPolicy'
-  scope: defaultResourceGroup
 
   params: {
-    parKeyVaultName: keyVault.name
+    parKeyVaultName: varKeyVaultName
     parPrincipalId: webApp.outputs.outWebAppIdentityPrincipalId
   }
 }
 
 module slotKeyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = if (parEnvironment == 'prd') {
   name: '${varDeploymentPrefix}-slotKeyVaultAccessPolicy'
-  scope: defaultResourceGroup
 
   params: {
-    parKeyVaultName: keyVault.name
+    parKeyVaultName: varKeyVaultName
     parPrincipalId: webApp.outputs.outWebAppStagingIdentityPrincipalId
   }
 }
@@ -103,8 +103,8 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
     parParentDnsName: parParentDnsName
     parEnvironment: parEnvironment
     parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: defaultResourceGroup.name
-    parAppInsightsName: appInsights.name
+    parWorkloadResourceGroupName: resourceGroup().name
+    parAppInsightsName: varAppInsightsName
   }
 }
 

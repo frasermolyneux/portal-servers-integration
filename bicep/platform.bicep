@@ -8,11 +8,13 @@ param parLoggingSubscriptionId string
 param parLoggingResourceGroupName string
 param parLoggingWorkspaceName string
 
+param parKeyVaultCreateMode string = 'recover'
+
 param parTags object
 
 // Variables
-var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
-var varDeploymentPrefix = 'portal-servers-integration-platform-${parEnvironment}-${parLocation}' //Prevent deployment naming conflicts
+var environmentUniqueId = substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12)
+var varDeploymentPrefix = 'portal-servers-integration-platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
 var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
@@ -34,6 +36,9 @@ module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:la
   params: {
     parKeyVaultName: varKeyVaultName
     parLocation: parLocation
+
+    parKeyVaultCreateMode: parKeyVaultCreateMode
+
     parTags: parTags
   }
 }

@@ -21,8 +21,8 @@ param parServersIntegrationApiAppId string
 param parTags object
 
 // Variables
-var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
-var varDeploymentPrefix = 'portal-servers-integration-workload-${parEnvironment}-${parLocation}' //Prevent deployment naming conflicts
+var environmentUniqueId = substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12)
+var varDeploymentPrefix = 'portal-servers-integration-workload-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varWorkloadName = 'webapi-${environmentUniqueId}-${parEnvironment}'
 var varWebAppName = 'webapi-${environmentUniqueId}-${parEnvironment}-${parLocation}'

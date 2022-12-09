@@ -154,11 +154,15 @@ jobs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
+        $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("portal-servers-integration-dev"))).Substring(0, 12)
+        if ($null -eq (az keyvault show --name 'kv-$environmentUniqueId-uksouth')) { $keyVaultCreateMode = 'default' } else { $keyVaultCreateMode = 'recover' }
+
         az deployment sub create `
           --name 'portal-servers-integration-platform-dev' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/dev.platform.params.json
+          --parameters @bicep/dev.platform.params.json `
+          parKeyVaultCreateMode=$keyVaultCreateMode `
 
     - name: Create App Registrations
       shell: pwsh

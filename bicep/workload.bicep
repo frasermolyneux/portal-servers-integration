@@ -31,7 +31,7 @@ var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocat
 
 // Module Resources
 module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-serversIntegrationApiManagementSubscription'
+  name: '${varDeploymentPrefix}-serversIntegrationApiManagementSub'
   scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
 
   params: {
@@ -54,6 +54,7 @@ module webApp 'modules/webApp.bicep' = {
   params: {
     parLocation: parLocation
     parEnvironment: parEnvironment
+    parWebAppName: varWebAppName
     parKeyVaultName: varKeyVaultName
     parAppInsightsName: varAppInsightsName
 

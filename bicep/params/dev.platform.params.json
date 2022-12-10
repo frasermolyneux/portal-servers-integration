@@ -17,6 +17,15 @@
         "parLoggingWorkspaceName": {
             "value": "log-platform-prd-uksouth"
         },
+        "parStrategicServicesSubscriptionId": {
+            "value": "1b5b28ed-1365-4a48-b285-80f80a6aaa1b"
+        },
+        "parApiManagementResourceGroupName": {
+            "value": "rg-platform-apim-dev-uksouth"
+        },
+        "parApiManagementName": {
+            "value": "apim-mx-platform-dev-uksouth"
+        },
         "parTags": {
             "value": {
                 "Environment": "dev",

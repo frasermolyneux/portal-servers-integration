@@ -3,6 +3,7 @@ targetScope = 'resourceGroup'
 // Parameters
 param parLocation string
 param parEnvironment string
+param parWebAppName string
 param parKeyVaultName string
 param parAppInsightsName string
 
@@ -21,9 +22,6 @@ param parWorkloadSubscriptionId string
 param parWorkloadResourceGroupName string
 
 param parTags object
-
-// Variables
-var varWebAppName = 'webapi-servers-portal-${parEnvironment}-${parLocation}'
 
 // Existing In-Scope Resources
 resource appServicePlan 'Microsoft.Web/serverfarms@2020-10-01' existing = {
@@ -53,7 +51,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
 
 // Module Resources
 resource webApp 'Microsoft.Web/sites@2020-06-01' = {
-  name: varWebAppName
+  name: parWebAppName
   location: parLocation
   kind: 'app'
   tags: parTags
@@ -148,7 +146,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'portal_repository_apim_subscription_key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${varWebAppName}-portal-repository-subscription-apikey)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${parWebAppName}-portal-repository-subscription-apikey)'
         }
         {
           name: 'repository_api_application_audience'
@@ -261,7 +259,7 @@ resource webAppStagingSlot 'Microsoft.Web/sites/slots@2020-06-01' = if (parEnvir
         }
         {
           name: 'portal_repository_apim_subscription_key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${varWebAppName}-portal-repository-subscription-apikey)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${parWebAppName}-portal-repository-subscription-apikey)'
         }
         {
           name: 'repository_api_application_audience'

@@ -107,14 +107,14 @@ jobs:
           --name 'portal-servers-integration-platform-dev' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/dev.platform.params.json
+          --parameters @bicep/params/dev.platform.params.json
 
         if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
           az deployment group validate `
             --name 'portal-servers-integration-workload-dev' `
             --resource-group 'rg-portal-servers-integration-dev-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/dev.workload.params.json `
+            --parameters @bicep/params/dev.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
             
@@ -125,14 +125,14 @@ jobs:
           --name 'portal-servers-integration-dev' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/dev.platform.params.json
+          --parameters @bicep/params/dev.platform.params.json
 
         if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
           az deployment group what-if `
             --name 'portal-servers-integration-workload-dev' `
             --resource-group 'rg-portal-servers-integration-dev-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/dev.workload.params.json `
+            --parameters @bicep/params/dev.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
             
@@ -161,7 +161,7 @@ jobs:
           --name 'portal-servers-integration-platform-dev' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/dev.platform.params.json `
+          --parameters @bicep/params/dev.platform.params.json `
           parKeyVaultCreateMode=$keyVaultCreateMode `
 
     - name: AAD Scripts
@@ -181,7 +181,7 @@ jobs:
         az deployment group create --resource-group "rg-portal-servers-integration-dev-uksouth" `
           --name 'portal-servers-integration-workload-dev' `
           --template-file bicep/workload.bicep `
-          --parameters @bicep/dev.workload.params.json `
+          --parameters @bicep/params/dev.workload.params.json `
           parServersIntegrationApiAppId=$serversIntegrationApiAppId 
 
   deploy-bicep-production:
@@ -209,7 +209,7 @@ jobs:
           --name 'portal-servers-integration-platform-prd' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/prd.platform.params.json `
+          --parameters @bicep/params/prd.platform.params.json `
           parKeyVaultCreateMode=$keyVaultCreateMode `
 
     - name: AAD Scripts
@@ -229,7 +229,7 @@ jobs:
         az deployment group create --resource-group "rg-portal-servers-integration-prd-uksouth" `
           --name 'portal-servers-integration-workload-prd' `
           --template-file bicep/workload.bicep `
-          --parameters @bicep/prd.workload.params.json `
+          --parameters @bicep/params/prd.workload.params.json `
           parServersIntegrationApiAppId=$serversIntegrationApiAppId 
 
     

@@ -173,6 +173,16 @@ jobs:
         . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "kv-$($environmentUniqueId)-uksouth"
 
+    - name: Deploy Workload Bicep
+      shell: pwsh
+      run: |
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-dev'" --query '[].appId') | ConvertFrom-Json
+
+        az deployment group create --resource-group "rg-portal-servers-integration-dev-uksouth" `
+          --name 'portal-servers-integration-workload-dev' `
+          --template-file bicep/workload.bicep `
+          --parameters @bicep/dev.workload.params.json `
+          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
 
   deploy-bicep-production:
     runs-on: ubuntu-latest
@@ -211,7 +221,16 @@ jobs:
         . scripts/CreateAppRegistrations.ps1 "prd" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "prd" "uksouth" "kv-$($environmentUniqueId)-uksouth"
 
+    - name: Deploy Workload Bicep
+      shell: pwsh
+      run: |
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-prd'" --query '[].appId') | ConvertFrom-Json
 
+        az deployment group create --resource-group "rg-portal-servers-integration-prd-uksouth" `
+          --name 'portal-servers-integration-workload-prd' `
+          --template-file bicep/workload.bicep `
+          --parameters @bicep/prd.workload.params.json `
+          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
 
     
 #env:

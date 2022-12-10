@@ -26,8 +26,8 @@ var varDeploymentPrefix = 'workload-${environmentUniqueId}' //Prevent deployment
 
 var varWorkloadName = 'webapi-${environmentUniqueId}-${parEnvironment}'
 var varWebAppName = 'webapi-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varKeyVaultName = 'kv-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Module Resources
 module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {

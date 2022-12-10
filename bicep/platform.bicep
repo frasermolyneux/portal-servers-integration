@@ -24,6 +24,12 @@ var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${pa
 var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
+// Existing Out-Of-Scope Resources
+resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
+  name: parApiManagementName
+  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+}
+
 // Module Resources
 resource defaultResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: varResourceGroupName
@@ -44,6 +50,17 @@ module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:la
     parKeyVaultCreateMode: parKeyVaultCreateMode
 
     parTags: parTags
+  }
+}
+
+module keyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = {
+  name: '${varDeploymentPrefix}-keyVaultAccessPolicy'
+  scope: resourceGroup(defaultResourceGroup.name)
+
+  params: {
+    parKeyVaultName: keyVault.outputs.outKeyVaultName
+    parPrincipalId: apiManagement.identity.principalId
+    parSecretsPermissions: [ 'get' ]
   }
 }
 

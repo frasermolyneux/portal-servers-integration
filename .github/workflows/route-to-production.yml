@@ -203,7 +203,6 @@ jobs:
         $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-dev"))).Substring(0, 12).ToLower()
 
         . scripts/SetDeployPrincipalPermissions.ps1 "kv-$($environmentUniqueId)-uksouth" "${{ secrets.AZURE_CLIENT_ID }}"
-        . scripts/SetApimKeyVaultPermissions.ps1 "dev" "kv-$($environmentUniqueId)-uksouth" 
         . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "kv-$($environmentUniqueId)-uksouth"
 
@@ -252,7 +251,6 @@ jobs:
         $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-prd"))).Substring(0, 12).ToLower()
 
         . scripts/SetDeployPrincipalPermissions.ps1 "kv-$($environmentUniqueId)-uksouth" "${{ secrets.AZURE_CLIENT_ID }}"
-        . scripts/SetApimKeyVaultPermissions.ps1 "dev" "kv-$($environmentUniqueId)-uksouth" 
         . scripts/CreateAppRegistrations.ps1 "prd" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "prd" "uksouth" "kv-$($environmentUniqueId)-uksouth"
 

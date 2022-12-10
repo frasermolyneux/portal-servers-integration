@@ -30,22 +30,22 @@ var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocat
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Module Resources
-module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-serversIntegrationApiManagementSub'
-  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
-
-  params: {
-    parDeploymentPrefix: varDeploymentPrefix
-    parApiManagementName: parApiManagementName
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-    parWorkloadName: varWebAppName
-    parKeyVaultName: varKeyVaultName
-    parSubscriptionScopeIdentifier: 'portal-repository'
-    parSubscriptionScope: '/apis/repository-api'
-    parTags: parTags
-  }
-}
+//module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+//  name: '${varDeploymentPrefix}-serversIntegrationApiManagementSub'
+//  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+//
+//  params: {
+//    parDeploymentPrefix: varDeploymentPrefix
+//    parApiManagementName: parApiManagementName
+//    parWorkloadSubscriptionId: subscription().subscriptionId
+//    parWorkloadResourceGroupName: resourceGroup().name
+//    parWorkloadName: varWebAppName
+//    parKeyVaultName: varKeyVaultName
+//    parSubscriptionScopeIdentifier: 'portal-repository'
+//    parSubscriptionScope: '/apis/repository-api'
+//    parTags: parTags
+//  }
+//}
 
 module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'

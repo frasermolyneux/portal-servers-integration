@@ -8,6 +8,10 @@ param parLoggingSubscriptionId string
 param parLoggingResourceGroupName string
 param parLoggingWorkspaceName string
 
+param parStrategicServicesSubscriptionId string
+param parApiManagementResourceGroupName string
+param parApiManagementName string
+
 param parKeyVaultCreateMode string = 'recover'
 
 param parTags object
@@ -55,5 +59,18 @@ module appInsights 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/appinsig
     parLoggingResourceGroupName: parLoggingResourceGroupName
     parLoggingWorkspaceName: parLoggingWorkspaceName
     parTags: parTags
+  }
+}
+
+module apiManagementLogger 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
+  name: '${varDeploymentPrefix}-apiManagementLogger'
+  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+
+  params: {
+    parApiManagementName: parApiManagementName
+    parWorkloadSubscriptionId: subscription().subscriptionId
+    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parAppInsightsName: appInsights.outputs.outAppInsightsName
+    parKeyVaultName: keyVault.outputs.outKeyVaultName
   }
 }

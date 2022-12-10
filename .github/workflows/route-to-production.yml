@@ -135,11 +135,63 @@ jobs:
             --parameters @bicep/params/dev.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
+
+  validate-bicep-production:
+    runs-on: ubuntu-latest
+    environment: Production
+    needs: ["build-bicep"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Validate Bicep
+      shell: pwsh
+      run: |
+        az deployment sub validate `
+          --name 'portal-servers-integration-platform-prd' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/prd.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-prd-uksouth') -eq $true) {
+          az deployment group validate `
+            --name 'portal-servers-integration-workload-prd' `
+            --resource-group 'rg-portal-servers-integration-prd-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/prd.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+            
+    - name: WhatIf Bicep
+      shell: pwsh
+      run: |
+        az deployment sub what-if `
+          --name 'portal-servers-integration-prd' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/prd.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-prd-uksouth') -eq $true) {
+          az deployment group what-if `
+            --name 'portal-servers-integration-workload-prd' `
+            --resource-group 'rg-portal-servers-integration-prd-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/prd.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+
             
   deploy-bicep-dev:
     runs-on: ubuntu-latest
     environment: Development
-    needs: ["validate-bicep-dev", "build-dotnet"]
+    needs: ["validate-bicep-dev", "validate-bicep-production", "build-dotnet"]
 
     steps:
     - uses: actions/checkout@v3

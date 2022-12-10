@@ -14,7 +14,7 @@ param parTags object
 
 // Variables
 var environmentUniqueId = toLower(substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12))
-var varDeploymentPrefix = 'portal-servers-integration-platform-${environmentUniqueId}' //Prevent deployment naming conflicts
+var varDeploymentPrefix = 'platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
 var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'

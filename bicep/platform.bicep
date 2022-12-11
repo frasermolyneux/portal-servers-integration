@@ -45,6 +45,7 @@ module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:la
     parKeyVaultName: varKeyVaultName
     parLocation: parLocation
 
+    parEnabledForRbacAuthorization: true
     parKeyVaultCreateMode: 'default'
 
     parTags: parTags

@@ -18,8 +18,8 @@ param parTags object
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
 var varDeploymentPrefix = 'platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
-var varResourceGroupName = 'rg-webapi-portal-svr-int-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-webapi-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Existing Out-Of-Scope Resources

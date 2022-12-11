@@ -92,7 +92,7 @@ module keyVaultSecretUserRoleAssignment 'br:acrmxplatformprduksouth.azurecr.io/b
   }
 }
 
-module keyVaultSecretUserRoleAssignmentSlot 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
+module keyVaultSecretUserRoleAssignmentSlot 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = if (parEnvironment == 'prd') {
   name: '${varDeploymentPrefix}-keyVaultSecretUserRoleAssignmentSlot'
 
   params: {

@@ -86,6 +86,7 @@ module appInsights 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/appinsig
 module apiManagementLogger 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
   name: '${varDeploymentPrefix}-apiManagementLogger'
   scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+  dependsOn: [ keyVaultSecretUserRoleAssignment ]
 
   params: {
     parApiManagementName: parApiManagementName

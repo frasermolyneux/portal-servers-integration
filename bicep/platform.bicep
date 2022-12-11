@@ -19,7 +19,7 @@ var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironm
 var varDeploymentPrefix = 'platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-portal-servers-integration-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Existing Out-Of-Scope Resources

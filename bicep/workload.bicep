@@ -4,10 +4,12 @@ targetScope = 'resourceGroup'
 param parLocation string
 param parEnvironment string
 
-param parConnectivitySubscriptionId string
+param parFrontDoorSubscriptionId string
 param parFrontDoorResourceGroupName string
-param parDnsResourceGroupName string
 param parFrontDoorName string
+
+param parDnsSubscriptionId string
+param parDnsResourceGroupName string
 param parParentDnsName string
 
 param parStrategicServicesSubscriptionId string
@@ -24,9 +26,9 @@ param parTags object
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
 var varDeploymentPrefix = 'workload-${environmentUniqueId}' //Prevent deployment naming conflicts
 
-var varWorkloadName = 'webapi-${environmentUniqueId}-${parEnvironment}'
-var varWebAppName = 'webapi-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varWorkloadName = 'webapi-portal-servers-integration-${environmentUniqueId}-${parEnvironment}'
+var varWebAppName = 'webapi-portal-servers-integration-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-portal-servers-integration-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Module Resources
@@ -65,7 +67,7 @@ module webApp 'modules/webApp.bicep' = {
     parApiManagementName: parApiManagementName
     parAppServicePlanName: parAppServicePlanName
 
-    parConnectivitySubscriptionId: parConnectivitySubscriptionId
+    parFrontDoorSubscriptionId: parFrontDoorSubscriptionId
     parFrontDoorResourceGroupName: parFrontDoorResourceGroupName
     parFrontDoorName: parFrontDoorName
 
@@ -119,11 +121,12 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
 
 module frontDoorEndpoint 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
   name: '${varDeploymentPrefix}-frontDoorEndpoint'
-  scope: resourceGroup(parConnectivitySubscriptionId, parFrontDoorResourceGroupName)
+  scope: resourceGroup(parFrontDoorSubscriptionId, parFrontDoorResourceGroupName)
 
   params: {
     parDeploymentPrefix: varDeploymentPrefix
     parFrontDoorName: parFrontDoorName
+    parDnsSubscriptionId: parDnsSubscriptionId
     parParentDnsName: parParentDnsName
     parDnsResourceGroupName: parDnsResourceGroupName
     parWorkloadName: varWorkloadName

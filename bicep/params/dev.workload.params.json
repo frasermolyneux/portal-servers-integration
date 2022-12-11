@@ -8,17 +8,20 @@
         "parEnvironment": {
             "value": "dev"
         },
-        "parConnectivitySubscriptionId": {
-            "value": "db34f572-8b71-40d6-8f99-f29a27612144"
+        "parFrontDoorSubscriptionId": {
+            "value": "1b5b28ed-1365-4a48-b285-80f80a6aaa1b"
         },
         "parFrontDoorResourceGroupName": {
-            "value": "rg-platform-frontdoor-prd-uksouth"
+            "value": "rg-platform-frontdoor-dev-uksouth"
+        },
+        "parFrontDoorName": {
+            "value": "fd-mx-platform-dev"
+        },
+        "parDnsSubscriptionId": {
+            "value": "db34f572-8b71-40d6-8f99-f29a27612144"
         },
         "parDnsResourceGroupName": {
             "value": "rg-platform-dns-prd-uksouth"
-        },
-        "parFrontDoorName": {
-            "value": "fd-mx-platform-prd"
         },
         "parParentDnsName": {
             "value": "xtremeidiots.dev"

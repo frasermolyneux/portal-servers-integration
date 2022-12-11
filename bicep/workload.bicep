@@ -136,3 +136,6 @@ module frontDoorEndpoint 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/fr
     parTags: parTags
   }
 }
+
+// Outputs
+output webAppName string = webApp.outputs.outWebAppName

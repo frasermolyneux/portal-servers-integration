@@ -61,6 +61,7 @@ jobs:
           
       - name: Install SonarCloud scanners
         run: |
+          cd src
           dotnet tool install --global dotnet-sonarscanner
           
       - name: Build and analyze
@@ -68,6 +69,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          cd src
           dotnet-sonarscanner begin /k:"frasermolyneux_portal-servers-integration" /o:"frasermolyneux" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           dotnet build
           dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"

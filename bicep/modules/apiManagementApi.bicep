@@ -71,7 +71,7 @@ resource api 'Microsoft.ApiManagement/service/apis@2021-08-01' = {
     type: 'http'
 
     description: 'API for servers integration'
-    displayName: 'Servers API'
+    displayName: 'Servers Integration API'
     path: 'servers-integration'
 
     protocols: [

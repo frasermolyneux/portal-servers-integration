@@ -26,9 +26,9 @@ param parTags object
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
 var varDeploymentPrefix = 'workload-${environmentUniqueId}' //Prevent deployment naming conflicts
 
-var varWorkloadName = 'webapi-portal-servers-integration-${environmentUniqueId}-${parEnvironment}'
-var varWebAppName = 'webapi-portal-servers-integration-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-portal-servers-integration-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varWorkloadName = 'webapi-portal-svr-int-${environmentUniqueId}-${parEnvironment}'
+var varWebAppName = 'webapi-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
+var varAppInsightsName = 'ai-webapi-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
 var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
 
 // Module Resources

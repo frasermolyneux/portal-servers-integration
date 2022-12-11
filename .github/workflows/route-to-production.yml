@@ -49,16 +49,24 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: |
+        cd src
+        dotnet restore
       
     - name: Build
-      run: dotnet build --no-restore
+      run: |
+        cd src
+        dotnet build --no-restore
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests
+      run: |
+        cd src
+        dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests
 
     - name: dotnet publish servers-integration-webapi
-      run: dotnet publish servers-integration-webapi/servers-integration-webapi.csproj --configuration Release --output ${{env.DOTNET_ROOT}}/servers-integration-webapi/servers-integration-webapi.zip
+      run: |
+        cd src
+        dotnet publish servers-integration-webapi/servers-integration-webapi.csproj --configuration Release --output ${{env.DOTNET_ROOT}}/servers-integration-webapi/servers-integration-webapi.zip
 
     - name: Upload artifact servers-integration-webapi
       uses: actions/upload-artifact@v3

@@ -31,10 +31,16 @@ jobs:
           ${{ runner.os }}-nuget-
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: |
+        cd src
+        dotnet restore
       
     - name: Build
-      run: dotnet build --no-restore
+      run: |
+        cd src
+        dotnet build --no-restore
       
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests
+      run: |
+        cd src
+        dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests

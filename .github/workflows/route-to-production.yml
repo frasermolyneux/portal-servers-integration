@@ -237,7 +237,7 @@ jobs:
     - name: DestroyDevResources
       shell: pwsh
       run: |
-        $webAppName = az deployment sub show --name portal-servers-integration-platform-dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.webAppName.value
+        $webAppName = az deployment group show --name portal-servers-integration-workload-dev --resource-group rg-portal-servers-integration-dev-uksouth --output tsv --query properties.outputs.webAppName.value
         az webapp delete --name $webAppName --resource-group rg-platform-webapps-dev-uksouth --keep-empty-plan
 
   deploy-bicep-production:

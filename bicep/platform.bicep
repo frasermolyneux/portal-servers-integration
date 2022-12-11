@@ -12,12 +12,10 @@ param parStrategicServicesSubscriptionId string
 param parApiManagementResourceGroupName string
 param parApiManagementName string
 
-param parKeyVaultCreateMode string = 'recover'
-
 param parTags object
 
 // Variables
-var environmentUniqueId = toLower(substring(base64('portal-servers-integration-${parEnvironment}'), 0, 12))
+var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
 var varDeploymentPrefix = 'platform-${environmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}'
@@ -47,20 +45,26 @@ module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:la
     parKeyVaultName: varKeyVaultName
     parLocation: parLocation
 
-    parKeyVaultCreateMode: parKeyVaultCreateMode
+    parKeyVaultCreateMode: 'default'
 
     parTags: parTags
   }
 }
 
-module keyVaultAccessPolicy 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultaccesspolicy:latest' = {
-  name: '${varDeploymentPrefix}-keyVaultAccessPolicy'
+@description('https://learn.microsoft.com/en-gb/azure/role-based-access-control/built-in-roles#key-vault-secrets-user')
+resource keyVaultSecretUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  scope: subscription()
+  name: '4633458b-17de-408a-b874-0445c86b69e6'
+}
+
+module keyVaultSecretUserRoleAssignment 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
+  name: '${varDeploymentPrefix}-keyVaultSecretUserRoleAssignment'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
     parKeyVaultName: keyVault.outputs.outKeyVaultName
+    parRoleDefinitionId: keyVaultSecretUserRoleDefinition.id
     parPrincipalId: apiManagement.identity.principalId
-    parSecretsPermissions: [ 'get' ]
   }
 }
 
@@ -91,3 +95,6 @@ module apiManagementLogger 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/
     parKeyVaultName: keyVault.outputs.outKeyVaultName
   }
 }
+
+// Outputs
+output keyVaultName string = keyVault.outputs.outKeyVaultName

@@ -187,24 +187,20 @@ jobs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
-        $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-dev"))).Substring(0, 12).ToLower()
-        if ($null -eq (az keyvault show --name "kv-$environmentUniqueId-uksouth")) { $keyVaultCreateMode = 'default' } else { $keyVaultCreateMode = 'recover' }
-
         az deployment sub create `
           --name 'portal-servers-integration-platform-dev' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/dev.platform.params.json `
-          parKeyVaultCreateMode=$keyVaultCreateMode `
+          --parameters @bicep/params/dev.platform.params.json
 
     - name: AAD Scripts
       shell: pwsh
       run: |
-        $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-dev"))).Substring(0, 12).ToLower()
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
-        . scripts/SetDeployPrincipalPermissions.ps1 "kv-$($environmentUniqueId)-uksouth" "${{ secrets.AZURE_CLIENT_ID }}"
+        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
         . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
-        . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "kv-$($environmentUniqueId)-uksouth"
+        . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "$keyVaultName"
 
     - name: Deploy Workload Bicep
       shell: pwsh
@@ -235,24 +231,20 @@ jobs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
-        $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-prd"))).Substring(0, 12).ToLower()
-        if ($null -eq (az keyvault show --name "kv-$environmentUniqueId-uksouth")) { $keyVaultCreateMode = 'default' } else { $keyVaultCreateMode = 'recover' }
-
         az deployment sub create `
           --name 'portal-servers-integration-platform-prd' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/prd.platform.params.json `
-          parKeyVaultCreateMode=$keyVaultCreateMode `
+          --parameters @bicep/params/prd.platform.params.json
 
     - name: AAD Scripts
       shell: pwsh
       run: |
-        $environmentUniqueId = ([Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("portal-servers-integration-prd"))).Substring(0, 12).ToLower()
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-prd --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
-        . scripts/SetDeployPrincipalPermissions.ps1 "kv-$($environmentUniqueId)-uksouth" "${{ secrets.AZURE_CLIENT_ID }}"
+        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
         . scripts/CreateAppRegistrations.ps1 "prd" "uksouth"
-        . scripts/CreateAppRegistrationsCredentials.ps1 "prd" "uksouth" "kv-$($environmentUniqueId)-uksouth"
+        . scripts/CreateAppRegistrationsCredentials.ps1 "prd" "uksouth" "$keyVaultName"
 
     - name: Deploy Workload Bicep
       shell: pwsh

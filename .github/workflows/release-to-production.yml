@@ -72,6 +72,7 @@ jobs:
             --template-file bicep/workload.bicep `
             --parameters @bicep/params/dev.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
 
     - name: WhatIf Bicep
       shell: pwsh

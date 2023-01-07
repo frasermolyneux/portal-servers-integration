@@ -1,10 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>servers_integration_webapi_client</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+	<TargetFramework>net7.0</TargetFramework>
+	<RootNamespace>XtremeIdiots.Portal.ServersApiClient</RootNamespace>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageId>XtremeIdiots.Portal.ServersApiClient</PackageId>
+	<Authors>Fraser Molyneux</Authors>
+	<Company>XtremeIdiots</Company>
+	<Product>XtremeIdiots Portal</Product>
+	<Title>XtremeIdiots Portal Servers API Client</Title>
+	<Description>Client for the XtremeIdiots Portal Servers API.</Description>
+	<PackageProjectUrl>https://github.com/frasermolyneux/portal-servers-integration</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/frasermolyneux/portal-servers-integration</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\servers-integration-webapi-abstractions\servers-integration-webapi-abstractions.csproj" />
+  </ItemGroup>
 
 </Project>

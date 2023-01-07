@@ -40,17 +40,17 @@ runs:
       shell: pwsh
       run: |
         az deployment sub validate `
-          --name 'portal-servers-integration-platform-{{ inputs.environment }}' `
+          --name 'portal-servers-integration-platform-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/{{ inputs.environment }}.platform.params.json
+          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
 
-        if ((az group exists --name 'rg-portal-servers-integration-{{ inputs.environment }}-uksouth') -eq $true) {
+        if ((az group exists --name 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth') -eq $true) {
           az deployment group validate `
-            --name 'portal-servers-integration-workload-{{ inputs.environment }}' `
-            --resource-group 'rg-portal-servers-integration-{{ inputs.environment }}-uksouth' `
+            --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
+            --resource-group 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/params/{{ inputs.environment }}.workload.params.json `
+            --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
 
@@ -58,17 +58,17 @@ runs:
       shell: pwsh
       run: |
         az deployment sub what-if `
-          --name 'portal-servers-integration-{{ inputs.environment }}' `
+          --name 'portal-servers-integration-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/{{ inputs.environment }}.platform.params.json
+          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
 
-        if ((az group exists --name 'rg-portal-servers-integration-{{ inputs.environment }}-uksouth') -eq $true) {
+        if ((az group exists --name 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth') -eq $true) {
           az deployment group what-if `
-            --name 'portal-servers-integration-workload-{{ inputs.environment }}' `
-            --resource-group 'rg-portal-servers-integration-{{ inputs.environment }}-uksouth' `
+            --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
+            --resource-group 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/params/{{ inputs.environment }}.workload.params.json `
+            --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
 
@@ -76,27 +76,27 @@ runs:
       shell: pwsh
       run: |
         az deployment sub create `
-          --name 'portal-servers-integration-platform-{{ inputs.environment }}' `
+          --name 'portal-servers-integration-platform-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/{{ inputs.environment }}.platform.params.json
+          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
 
     - name: AAD Scripts
       shell: pwsh
       run: |
-        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-{{ inputs.environment }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-${{ inputs.environment }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
         . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ inputs.AZURE_CLIENT_ID }}"
-        . scripts/CreateAppRegistrations.ps1 "{{ inputs.environment }}" "uksouth"
-        . scripts/CreateAppRegistrationsCredentials.ps1 "{{ inputs.environment }}" "uksouth" "$keyVaultName"
+        . scripts/CreateAppRegistrations.ps1 "${{ inputs.environment }}" "uksouth"
+        . scripts/CreateAppRegistrationsCredentials.ps1 "${{ inputs.environment }}" "uksouth" "$keyVaultName"
 
     - name: Deploy Workload Bicep
       shell: pwsh
       run: |
-        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-{{ inputs.environment }}'" --query '[].appId') | ConvertFrom-Json
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-${{ inputs.environment }}'" --query '[].appId') | ConvertFrom-Json
 
-        az deployment group create --resource-group "rg-portal-servers-integration-{{ inputs.environment }}-uksouth" `
-          --name 'portal-servers-integration-workload-{{ inputs.environment }}' `
+        az deployment group create --resource-group "rg-portal-servers-integration-${{ inputs.environment }}-uksouth" `
+          --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
           --template-file bicep/workload.bicep `
-          --parameters @bicep/params/{{ inputs.environment }}.workload.params.json `
+          --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
           parServersIntegrationApiAppId=$serversIntegrationApiAppId 

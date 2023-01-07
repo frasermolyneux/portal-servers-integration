@@ -44,87 +44,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: 'Az CLI Login'
-      uses: azure/login@v1
+    - uses: ./.github/actions/bicep-build-and-apply.yml
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    
-    - name: Build Bicep
-      run: |
-        az bicep build --file bicep/platform.bicep --stdout
-        az bicep build --file bicep/workload.bicep --stdout
-
-    - name: Validate Bicep
-      shell: pwsh
-      run: |
-        az deployment sub validate `
-          --name 'portal-servers-integration-platform-dev' `
-          --location 'uksouth' `
-          --template-file bicep/platform.bicep `
-          --parameters @bicep/params/dev.platform.params.json
-
-        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
-          az deployment group validate `
-            --name 'portal-servers-integration-workload-dev' `
-            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
-            --template-file bicep/workload.bicep `
-            --parameters @bicep/params/dev.workload.params.json `
-              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
-        }
-
-    - name: WhatIf Bicep
-      shell: pwsh
-      run: |
-        az deployment sub what-if `
-          --name 'portal-servers-integration-dev' `
-          --location 'uksouth' `
-          --template-file bicep/platform.bicep `
-          --parameters @bicep/params/dev.platform.params.json
-
-        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
-          az deployment group what-if `
-            --name 'portal-servers-integration-workload-dev' `
-            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
-            --template-file bicep/workload.bicep `
-            --parameters @bicep/params/dev.workload.params.json `
-              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
-        }
-
-    - name: Deploy Platform Bicep
-      shell: pwsh
-      run: |
-        az deployment sub create `
-          --name 'portal-servers-integration-platform-dev' `
-          --location 'uksouth' `
-          --template-file bicep/platform.bicep `
-          --parameters @bicep/params/dev.platform.params.json
-
-    - name: AAD Scripts
-      shell: pwsh
-      run: |
-        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
-
-        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
-        . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
-        . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "$keyVaultName"
-
-    - name: Deploy Workload Bicep
-      shell: pwsh
-      run: |
-        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-dev'" --query '[].appId') | ConvertFrom-Json
-
-        az deployment group create --resource-group "rg-portal-servers-integration-dev-uksouth" `
-          --name 'portal-servers-integration-workload-dev' `
-          --template-file bicep/workload.bicep `
-          --parameters @bicep/params/dev.workload.params.json `
-          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
-
-
-
-
-
+        environment: dev
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 
 #

@@ -44,7 +44,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - uses: ./.github/actions/bicep-build-and-apply.yml
+    - uses: ./.github/actions/bicep-build-and-apply
       with:
         environment: dev
         AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}

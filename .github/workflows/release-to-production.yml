@@ -1,0 +1,362 @@
+# This workflow is used once a feature has been merged into main, it will perform lightweight CI and deploy through all the environments to production.
+
+name: Release to Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  build-bicep:
+    environment: ACR
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Build Bicep
+      run: |
+        az bicep build --file bicep/platform.bicep --stdout
+        az bicep build --file bicep/workload.bicep --stdout
+
+  build-dotnet:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+
+    - name: Set up dependency caching for faster builds
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: |
+        cd src
+        dotnet restore
+      
+    - name: Build
+      run: |
+        cd src
+        dotnet build --no-restore
+
+    - name: Test
+      run: |
+        cd src
+        dotnet test --no-build --verbosity normal --filter FullyQualifiedName!~IntegrationTests
+
+    - name: dotnet publish servers-integration-webapi
+      run: |
+        cd src
+        dotnet publish servers-integration-webapi/servers-integration-webapi.csproj --configuration Release --output ${{env.DOTNET_ROOT}}/servers-integration-webapi/servers-integration-webapi.zip
+
+    - name: Upload artifact servers-integration-webapi
+      uses: actions/upload-artifact@v3
+      with:
+        name: servers-integration-webapi
+        path: ${{env.DOTNET_ROOT}}/servers-integration-webapi
+
+  validate-bicep-dev:
+    runs-on: ubuntu-latest
+    environment: Development
+    needs: ["build-bicep"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Validate Bicep
+      shell: pwsh
+      run: |
+        az deployment sub validate `
+          --name 'portal-servers-integration-platform-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/dev.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
+          az deployment group validate `
+            --name 'portal-servers-integration-workload-dev' `
+            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/dev.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+            
+    - name: WhatIf Bicep
+      shell: pwsh
+      run: |
+        az deployment sub what-if `
+          --name 'portal-servers-integration-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/dev.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-dev-uksouth') -eq $true) {
+          az deployment group what-if `
+            --name 'portal-servers-integration-workload-dev' `
+            --resource-group 'rg-portal-servers-integration-dev-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/dev.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+
+  validate-bicep-production:
+    runs-on: ubuntu-latest
+    environment: Production
+    needs: ["build-bicep"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Validate Bicep
+      shell: pwsh
+      run: |
+        az deployment sub validate `
+          --name 'portal-servers-integration-platform-prd' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/prd.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-prd-uksouth') -eq $true) {
+          az deployment group validate `
+            --name 'portal-servers-integration-workload-prd' `
+            --resource-group 'rg-portal-servers-integration-prd-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/prd.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+            
+    - name: WhatIf Bicep
+      shell: pwsh
+      run: |
+        az deployment sub what-if `
+          --name 'portal-servers-integration-prd' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/prd.platform.params.json
+
+        if ((az group exists --name 'rg-portal-servers-integration-prd-uksouth') -eq $true) {
+          az deployment group what-if `
+            --name 'portal-servers-integration-workload-prd' `
+            --resource-group 'rg-portal-servers-integration-prd-uksouth' `
+            --template-file bicep/workload.bicep `
+            --parameters @bicep/params/prd.workload.params.json `
+              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
+        }
+
+            
+  deploy-bicep-dev:
+    runs-on: ubuntu-latest
+    environment: Development
+    needs: ["validate-bicep-dev", "validate-bicep-production", "build-dotnet"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Deploy Platform Bicep
+      shell: pwsh
+      run: |
+        az deployment sub create `
+          --name 'portal-servers-integration-platform-dev' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/dev.platform.params.json
+
+    - name: AAD Scripts
+      shell: pwsh
+      run: |
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+
+        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
+        . scripts/CreateAppRegistrations.ps1 "dev" "uksouth"
+        . scripts/CreateAppRegistrationsCredentials.ps1 "dev" "uksouth" "$keyVaultName"
+
+    - name: Deploy Workload Bicep
+      shell: pwsh
+      run: |
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-dev'" --query '[].appId') | ConvertFrom-Json
+
+        az deployment group create --resource-group "rg-portal-servers-integration-dev-uksouth" `
+          --name 'portal-servers-integration-workload-dev' `
+          --template-file bicep/workload.bicep `
+          --parameters @bicep/params/dev.workload.params.json `
+          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
+
+  destroy-dev-resources:
+    runs-on: ubuntu-latest
+    environment: Development
+    needs: ["deploy-bicep-dev"]
+
+    steps:
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: DestroyDevResources
+      shell: pwsh
+      run: |
+        $webAppName = az deployment group show --name portal-servers-integration-workload-dev --resource-group rg-portal-servers-integration-dev-uksouth --output tsv --query properties.outputs.webAppName.value
+        az webapp delete --name $webAppName --resource-group rg-platform-webapps-dev-uksouth --keep-empty-plan
+
+  deploy-bicep-production:
+    runs-on: ubuntu-latest
+    environment: Production
+    needs: ["deploy-bicep-dev"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Deploy Platform Bicep
+      shell: pwsh
+      run: |
+        az deployment sub create `
+          --name 'portal-servers-integration-platform-prd' `
+          --location 'uksouth' `
+          --template-file bicep/platform.bicep `
+          --parameters @bicep/params/prd.platform.params.json
+
+    - name: AAD Scripts
+      shell: pwsh
+      run: |
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-prd --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+
+        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
+        . scripts/CreateAppRegistrations.ps1 "prd" "uksouth"
+        . scripts/CreateAppRegistrationsCredentials.ps1 "prd" "uksouth" "$keyVaultName"
+
+    - name: Deploy Workload Bicep
+      shell: pwsh
+      run: |
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-prd'" --query '[].appId') | ConvertFrom-Json
+
+        az deployment group create --resource-group "rg-portal-servers-integration-prd-uksouth" `
+          --name 'portal-servers-integration-workload-prd' `
+          --template-file bicep/workload.bicep `
+          --parameters @bicep/params/prd.workload.params.json `
+          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
+
+
+
+
+
+
+
+    
+#env:
+#  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App
+#  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+#  DOTNET_VERSION: '5'                 # set this to the .NET Core version to use
+#
+#on:
+#  push:
+#    branches: [ "main" ]
+#  workflow_dispatch:
+#
+#permissions:
+#  contents: read
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Set up .NET Core
+#        uses: actions/setup-dotnet@v2
+#        with:
+#          dotnet-version: ${{ env.DOTNET_VERSION }}
+#
+#      - name: Set up dependency caching for faster builds
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.nuget/packages
+#          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+#          restore-keys: |
+#            ${{ runner.os }}-nuget-
+#      - name: Build with dotnet
+#        run: dotnet build --configuration Release
+#
+#      - name: dotnet publish
+#        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+#
+#      - name: Upload artifact for deployment job
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: .net-app
+#          path: ${{env.DOTNET_ROOT}}/myapp
+#
+#  deploy:
+#    permissions:
+#      contents: none
+#    runs-on: ubuntu-latest
+#    needs: build
+#    environment:
+#      name: 'Development'
+#      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+#
+#    steps:
+#      - name: Download artifact from build job
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: .net-app
+#
+#      - name: Deploy to Azure Web App
+#        id: deploy-to-webapp
+#        uses: azure/webapps-deploy@v2
+#        with:
+#          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+#          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+#          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

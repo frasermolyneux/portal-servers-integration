@@ -44,7 +44,7 @@ module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.a
     parWorkloadName: varWebAppName
     parKeyVaultName: varKeyVaultName
     parSubscriptionScopeIdentifier: 'portal-repository'
-    parSubscriptionScope: '/apis/repository-v2'
+    parSubscriptionScope: '/apis/repository-api-v2'
     parTags: parTags
   }
 }

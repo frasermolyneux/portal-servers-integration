@@ -31,6 +31,7 @@ runs:
         subscription-id: ${{ inputs.AZURE_SUBSCRIPTION_ID }}
     
     - name: Build Bicep
+      shell: bash
       run: |
         az bicep build --file bicep/platform.bicep --stdout
         az bicep build --file bicep/workload.bicep --stdout
@@ -83,9 +84,9 @@ runs:
     - name: AAD Scripts
       shell: pwsh
       run: |
-        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-{{ inputs.environment }} --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-{{ inputs.environment }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
-        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ secrets.AZURE_CLIENT_ID }}"
+        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ inputs.AZURE_CLIENT_ID }}"
         . scripts/CreateAppRegistrations.ps1 "{{ inputs.environment }}" "uksouth"
         . scripts/CreateAppRegistrationsCredentials.ps1 "{{ inputs.environment }}" "uksouth" "$keyVaultName"
 

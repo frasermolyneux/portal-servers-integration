@@ -81,7 +81,7 @@ runs:
           --template-file bicep/platform.bicep `
           --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
 
-    - name: AAD Scripts
+    - name: Platform AAD Scripts
       shell: pwsh
       run: |
         $keyVaultName = az deployment sub show --name portal-servers-integration-platform-${{ inputs.environment }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
@@ -100,3 +100,10 @@ runs:
           --template-file bicep/workload.bicep `
           --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
           parServersIntegrationApiAppId=$serversIntegrationApiAppId 
+
+    - name: Workload AAD Scripts
+      shell: pwsh
+      run: |
+        $web_app_name = az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth --output tsv --query properties.outputs.webAppName.value
+
+        . scripts/SetServersWebApiPermissions.ps1 "${{ inputs.environment }}" $web_app_name

@@ -106,7 +106,7 @@ runs:
       run: |
         $deploymentOutput = az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth
         
-        $repositoryApiName = "portal-repository-$environment"
+        $repositoryApiName = "portal-repository-${{ inputs.environment }}"
         $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json
         $resourceId = (az ad sp list --filter "appId eq '$repositoryApiId'" --query '[0].id') | ConvertFrom-Json
         $repositoryApiSpn = (az rest -m GET -u https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId) | ConvertFrom-Json

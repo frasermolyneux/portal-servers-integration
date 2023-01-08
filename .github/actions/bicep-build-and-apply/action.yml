@@ -104,6 +104,18 @@ runs:
     - name: Workload AAD Scripts
       shell: pwsh
       run: |
-        $web_app_name = az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth --output tsv --query properties.outputs.webAppName.value
+        $deploymentOutput = az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth
+        
+        $repositoryApiName = "portal-repository-$environment"
+        $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json
+        $resourceId = (az ad sp list --filter "appId eq '$repositoryApiId'" --query '[0].id') | ConvertFrom-Json
+        $repositoryApiSpn = (az rest -m GET -u https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId) | ConvertFrom-Json
+        $appRoleId = ($repositoryApiSpn.appRoles | Where-Object { $_.displayName -eq "ServiceAccount" }).id
 
-        . scripts/SetServersWebApiPermissions.ps1 "${{ inputs.environment }}" $web_app_name
+        $principalId = $deploymentOutput.properties.outputs.principalId.value
+        . "scripts/functions/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
+
+        if ("${{ inputs.environment }}" -eq "prd") {
+          $stagingPrincipalId = $deploymentOutput.properties.outputs.stagingPrincipalId.value
+          . "scripts/functions/GrantPrincipalAppRole.ps1" -principalId $stagingPrincipalId -resourceId $resourceId -appRoleId $appRoleId
+        }

@@ -139,3 +139,6 @@ module frontDoorEndpoint 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/fr
 
 // Outputs
 output webAppName string = webApp.outputs.outWebAppName
+
+output principalId string = webApp.outputs.outWebAppIdentityPrincipalId
+output stagingrincipalId string = (parEnvironment == 'prd') ? webApp.outputs.outWebAppStagingIdentityPrincipalId : ''

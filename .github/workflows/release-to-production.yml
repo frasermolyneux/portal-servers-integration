@@ -51,6 +51,15 @@ jobs:
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    - id: bicep-output
+      shell: pwsh
+      run: |
+        $web_app_name = az deployment group show --name portal-servers-integration-workload-dev --resource-group rg-portal-servers-integration-dev-uksouth --output tsv --query properties.outputs.webAppName.value
+        echo "web_app_name=$web_app_name" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+    outputs:
+      web_app_name: ${{ steps.bicep-output.outputs.web_app_name }}
+
   app-service-deploy-dev:
     environment: DevelopmentWebApps
     runs-on: ubuntu-latest
@@ -59,22 +68,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: 'Az CLI Login'
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - shell: pwsh
-        run: |
-          $webAppName = az deployment group show --name portal-servers-integration-workload-dev --resource-group rg-portal-servers-integration-dev-uksouth --output tsv --query properties.outputs.webAppName.value
-          echo "webAppName=$webAppName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-
       - uses: frasermolyneux/actions/deploy-app-service@main
         with:
           web-artifact-name: "servers-integration-webapi"
-          web-app-name: ${{ env.webAppName }}
+          web-app-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_name }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -94,6 +91,15 @@ jobs:
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    - id: bicep-output
+      shell: pwsh
+      run: |
+        $web_app_name = az deployment group show --name portal-servers-integration-workload-prd --resource-group rg-portal-servers-integration-prd-uksouth --output tsv --query properties.outputs.webAppName.value
+        echo "web_app_name=$web_app_name" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+    outputs:
+      web_app_name: ${{ steps.bicep-output.outputs.web_app_name }}
+
   app-service-deploy-prd:
     environment: ProductionWebApps
     runs-on: ubuntu-latest
@@ -102,22 +108,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: 'Az CLI Login'
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - shell: pwsh
-        run: |
-          $webAppName = az deployment group show --name portal-servers-integration-workload-prd --resource-group rg-portal-servers-integration-prd-uksouth --output tsv --query properties.outputs.webAppName.value
-          echo "webAppName=$webAppName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-
       - uses: frasermolyneux/actions/deploy-app-service@main
         with:
           web-artifact-name: "servers-integration-webapi"
-          web-app-name: ${{ env.webAppName }}
+          web-app-name: ${{ needs.bicep-build-and-apply-prd.outputs.web_app_name }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

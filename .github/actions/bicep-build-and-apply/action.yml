@@ -104,7 +104,7 @@ runs:
     - name: Workload AAD Scripts
       shell: pwsh
       run: |
-        $deploymentOutput = az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth
+        $deploymentOutput = (az deployment group show --name portal-servers-integration-workload-${{ inputs.environment }} --resource-group rg-portal-servers-integration-${{ inputs.environment }}-uksouth) | ConvertFrom-Json
         
         $repositoryApiName = "portal-repository-${{ inputs.environment }}"
         $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json

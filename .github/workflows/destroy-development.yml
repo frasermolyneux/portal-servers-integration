@@ -29,4 +29,4 @@ jobs:
       #TODO: This step should delete all of the resources for the development environment
       - shell: pwsh
         run: |
-          az group delete --name rg-portal-servers-integration-dev-uksouth
+          az group delete --name rg-portal-servers-integration-dev-uksouth --yes

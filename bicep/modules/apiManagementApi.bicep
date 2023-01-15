@@ -56,7 +56,7 @@ resource apiAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2021
 
   properties: {
     displayName: 'servers-integration-api-audience'
-    value: 'api://portal-servers-integration-api-${parEnvironment}'
+    value: 'api://portal-servers-integration-${parEnvironment}'
     secret: false
   }
 }

@@ -93,7 +93,7 @@ runs:
     - name: Deploy Workload Bicep
       shell: pwsh
       run: |
-        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-api-${{ inputs.environment }}'" --query '[].appId') | ConvertFrom-Json
+        $serversIntegrationApiAppId = (az ad app list --filter "displayName eq 'portal-servers-integration-${{ inputs.environment }}'" --query '[].appId') | ConvertFrom-Json
 
         az deployment group create --resource-group "rg-portal-servers-integration-${{ inputs.environment }}-uksouth" `
           --name 'portal-servers-integration-workload-${{ inputs.environment }}' `

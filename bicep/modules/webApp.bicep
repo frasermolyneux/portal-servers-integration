@@ -134,11 +134,11 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-api-${parEnvironment}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-clientsecret)'
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-integration-api-${parEnvironment}'
+          value: 'api://portal-servers-integration-${parEnvironment}'
         }
         {
           name: 'apim_base_url'
@@ -247,11 +247,11 @@ resource webAppStagingSlot 'Microsoft.Web/sites/slots@2020-06-01' = if (parEnvir
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-api-${parEnvironment}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-clientsecret)'
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-integration-api-${parEnvironment}'
+          value: 'api://portal-servers-integration-${parEnvironment}'
         }
         {
           name: 'apim_base_url'

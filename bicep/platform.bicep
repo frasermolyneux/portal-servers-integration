@@ -14,6 +14,9 @@ param parApiManagementName string
 
 param parTags object
 
+// Allow the key vault create mode to be overridden to allow recreation of environments.
+param parKeyVaultCreateMode string = 'default'
+
 // Variables
 var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
 var varDeploymentPrefix = 'platform-${environmentUniqueId}' //Prevent deployment naming conflicts
@@ -46,7 +49,7 @@ module keyVault 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvault:la
     parLocation: parLocation
 
     parEnabledForRbacAuthorization: true
-    parKeyVaultCreateMode: 'default'
+    parKeyVaultCreateMode: parKeyVaultCreateMode
 
     parTags: parTags
   }

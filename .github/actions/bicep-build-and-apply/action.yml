@@ -75,11 +75,21 @@ runs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
+        $deletedKeyVaults = az keyvault list-deleted --query '[].properties.vaultId' | ConvertFrom-Json
+        $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-repository-func-${{ inputs.environment }}-uksouth"}
+
+        $keyVaultCreateMode = "default"
+        if ($isDeleted -ne $null) {
+          # To allow the development environment to be torn-down and re-created, the Key Vault Create Mode must be set to 'recover'.
+          $keyVaultCreateMode = "recover"
+        }
+
         az deployment sub create `
           --name 'portal-servers-integration-platform-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
+          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json `
+          parKeyVaultCreateMode=$keyVaultCreateMode
 
     - name: Platform AAD Scripts
       shell: pwsh

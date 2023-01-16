@@ -94,16 +94,6 @@ module keyVaultSecretUserRoleAssignment 'br:acrmxplatformprduksouth.azurecr.io/b
   }
 }
 
-module keyVaultSecretUserRoleAssignmentSlot 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = if (parEnvironment == 'prd') {
-  name: '${varDeploymentPrefix}-keyVaultSecretUserRoleAssignmentSlot'
-
-  params: {
-    parKeyVaultName: varKeyVaultName
-    parRoleDefinitionId: keyVaultSecretUserRoleDefinition.id
-    parPrincipalId: webApp.outputs.outWebAppStagingIdentityPrincipalId
-  }
-}
-
 module apiManagementApi 'modules/apiManagementApi.bicep' = {
   name: '${varDeploymentPrefix}-apiManagementApi'
   scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)

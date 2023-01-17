@@ -150,7 +150,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'repository_api_application_audience'
-          value: 'api://portal-repository-api-${parEnvironment}'
+          value: 'api://portal-repository-${parEnvironment}'
         }
         {
           name: 'xtremeidiots_ftp_certificate_thumbprint'

@@ -8,7 +8,6 @@ param parEnvironment string
 param parWorkloadSubscriptionId string
 param parWorkloadResourceGroupName string
 param parAppInsightsName string
-param parServersIntegrationApiAppId string
 
 // Existing In-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
@@ -62,17 +61,6 @@ resource apiAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2021
   }
 }
 
-resource apiAudienceAppIdNamedValue 'Microsoft.ApiManagement/service/namedValues@2021-08-01' = {
-  name: 'servers-integration-api-audience-app-id'
-  parent: apiManagement
-
-  properties: {
-    displayName: 'servers-integration-api-audience-app-id'
-    value: parServersIntegrationApiAppId
-    secret: false
-  }
-}
-
 resource api 'Microsoft.ApiManagement/service/apis@2021-08-01' = {
   name: 'servers-integration-api'
   parent: apiManagement
@@ -115,7 +103,6 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' = 
           <openid-config url="{{tenant-login-url}}{{tenant-id}}/v2.0/.well-known/openid-configuration" />
           <audiences>
               <audience>{{servers-integration-api-audience}}</audience>
-              <audience>{{servers-integration-api-audience-app-id}}</audience>
           </audiences>
           <issuers>
               <issuer>https://sts.windows.net/{{tenant-id}}/</issuer>

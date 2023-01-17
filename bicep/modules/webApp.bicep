@@ -156,6 +156,10 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
           name: 'xtremeidiots_ftp_certificate_thumbprint'
           value: '65173167144EA988088DA20915ABB83DB27645FA'
         }
+        {
+          name: 'repository_api_path_prefix'
+          value: 'repository-v2'
+        }
       ]
     }
   }

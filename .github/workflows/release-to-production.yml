@@ -61,7 +61,7 @@ jobs:
       web_app_name: ${{ steps.bicep-output.outputs.web_app_name }}
 
   app-service-deploy-dev:
-    environment: DevelopmentWebApps
+    environment: Development
     runs-on: ubuntu-latest
     needs: [dotnet-web-ci, bicep-build-and-apply-dev]
 

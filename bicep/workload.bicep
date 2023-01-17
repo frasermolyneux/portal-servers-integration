@@ -106,6 +106,7 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: resourceGroup().name
     parAppInsightsName: varAppInsightsName
+    parServersIntegrationApiAppId: parServersIntegrationApiAppId
   }
 }
 

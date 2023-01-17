@@ -33,7 +33,7 @@ public class ServersApiTokenProvider : IServersApiTokenProvider
                 return accessToken.Token;
         }
 
-        var tokenCredential = new ChainedTokenCredential(new ManagedIdentityCredential(), new AzureCliCredential(), new EnvironmentCredential());
+        var tokenCredential = new DefaultAzureCredential();
 
         try
         {

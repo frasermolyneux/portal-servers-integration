@@ -125,7 +125,3 @@ runs:
         $principalId = $deploymentOutput.properties.outputs.principalId.value
         . "scripts/functions/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
 
-        if ("${{ inputs.environment }}" -eq "prd") {
-          $stagingPrincipalId = $deploymentOutput.properties.outputs.stagingPrincipalId.value
-          . "scripts/functions/GrantPrincipalAppRole.ps1" -principalId $stagingPrincipalId -resourceId $resourceId -appRoleId $appRoleId
-        }

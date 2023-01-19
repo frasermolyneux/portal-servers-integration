@@ -76,7 +76,7 @@ runs:
       shell: pwsh
       run: |
         $deletedKeyVaults = az keyvault list-deleted --query '[].properties.vaultId' | ConvertFrom-Json
-        $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-repository-func-${{ inputs.environment }}-uksouth"}
+        $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-servers-integration-${{ inputs.environment }}-uksouth"}
 
         $keyVaultCreateMode = "default"
         if ($isDeleted -ne $null) {

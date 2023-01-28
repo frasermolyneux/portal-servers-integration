@@ -132,7 +132,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-${parInstance}-clientsecret)'
         }
         {
           name: 'AzureAd__Audience'

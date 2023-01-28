@@ -104,9 +104,13 @@ runs:
 
         $keyVaultName = az deployment sub show --name portal-servers-integration-platform-${{ inputs.environmentName }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
-        . scripts/SetDeployPrincipalPermissions.ps1 "$keyVaultName" "${{ inputs.AZURE_CLIENT_ID }}"
-        . scripts/CreateAppRegistrations.ps1 "$($config.parameters.parEnvironment.value)" $config.parameters.parLocation.value
-        . scripts/CreateAppRegistrationsCredentials.ps1 "$($config.parameters.parEnvironment.value)" $config.parameters.parLocation.value "$keyVaultName"
+        . scripts/CreateAppRegistration.ps1 -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          -appRoles "portal-servers-integration-approles.json"
+        
+        . scripts/CreateAppRegistrationCredential.ps1 -keyVaultName $keyVaultName `
+          -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          -secretPrefix "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          -secretDisplayName "portalserversintegration"
 
     - name: Deploy Workload Bicep
       shell: pwsh
@@ -136,5 +140,5 @@ runs:
         $appRoleId = ($repositoryApiSpn.appRoles | Where-Object { $_.displayName -eq "ServiceAccount" }).id
 
         $principalId = $deploymentOutput.properties.outputs.principalId.value
-        . "scripts/functions/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
+        . "scripts/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
 

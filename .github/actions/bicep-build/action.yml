@@ -39,7 +39,7 @@ runs:
     - name: Validate Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
@@ -59,7 +59,7 @@ runs:
     - name: WhatIf Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
           --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `

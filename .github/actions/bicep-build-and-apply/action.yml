@@ -39,7 +39,7 @@ runs:
     - name: Validate Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
@@ -59,7 +59,7 @@ runs:
     - name: WhatIf Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
           --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
@@ -79,7 +79,7 @@ runs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $deletedKeyVaults = az keyvault list-deleted --query '[].properties.vaultId' | ConvertFrom-Json
         $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"}
@@ -100,7 +100,7 @@ runs:
     - name: Platform AAD Scripts
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $keyVaultName = az deployment sub show --name portal-servers-integration-platform-${{ inputs.environmentName }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
@@ -111,7 +111,7 @@ runs:
     - name: Deploy Workload Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $serversIntegrationApiName = "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)"
         $serversIntegrationApiAppId = (az ad app list --filter "displayName eq '$serversIntegrationApiName'" --query '[].appId') | ConvertFrom-Json
@@ -125,7 +125,7 @@ runs:
     - name: Workload AAD Scripts
       shell: pwsh
       run: |
-        $config = (Get-Content ./params/workload.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/workload.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $deploymentOutput = (az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") | ConvertFrom-Json
         

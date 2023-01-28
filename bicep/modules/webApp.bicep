@@ -1,37 +1,35 @@
 targetScope = 'resourceGroup'
 
 // Parameters
-param parLocation string
 param parEnvironment string
+param parLocation string
+param parInstance string
+
 param parWebAppName string
 param parKeyVaultName string
 param parAppInsightsName string
 
+param parStrategicServices object
+param parFrontDoor object
+
+param parRepositoryApi object
+
+param parTags object
+
 param parServersApiAppId string
-
-param parStrategicServicesSubscriptionId string
-param parApiManagementResourceGroupName string
-param parApiManagementName string
-param parAppServicePlanName string
-
-param parFrontDoorSubscriptionId string
-param parFrontDoorResourceGroupName string
-param parFrontDoorName string
 
 param parWorkloadSubscriptionId string
 param parWorkloadResourceGroupName string
 
-param parTags object
-
 // Existing In-Scope Resources
 resource appServicePlan 'Microsoft.Web/serverfarms@2020-10-01' existing = {
-  name: parAppServicePlanName
+  name: parStrategicServices.AppServicePlanName
 }
 
 // Existing Out-Of-Scope Resources
 resource frontDoor 'Microsoft.Cdn/profiles@2021-06-01' existing = {
-  name: parFrontDoorName
-  scope: resourceGroup(parFrontDoorSubscriptionId, parFrontDoorResourceGroupName)
+  name: parFrontDoor.FrontDoorName
+  scope: resourceGroup(parFrontDoor.SubscriptionId, parFrontDoor.FrontDoorResourceGroupName)
 }
 
 resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
@@ -40,8 +38,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
 }
 
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: parApiManagementName
-  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+  name: parStrategicServices.ApiManagementName
+  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
@@ -138,7 +136,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-integration-${parEnvironment}'
+          value: 'api://portal-servers-integration-${parEnvironment}-${parInstance}'
         }
         {
           name: 'apim_base_url'
@@ -150,7 +148,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'repository_api_application_audience'
-          value: 'api://portal-repository-${parEnvironment}'
+          value: parRepositoryApi.ApplicationAudience
         }
         {
           name: 'xtremeidiots_ftp_certificate_thumbprint'
@@ -158,7 +156,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'repository_api_path_prefix'
-          value: 'repository-v2'
+          value: parRepositoryApi.ApiPath
         }
       ]
     }

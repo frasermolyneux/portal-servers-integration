@@ -1,0 +1,37 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "parEnvironment": {
+            "value": "prd"
+        },
+        "parLocation": {
+            "value": "uksouth"
+        },
+        "parInstance": {
+            "value": "01"
+        },
+        "parLogging": {
+            "value": {
+                "SubscriptionId": "d68448b0-9947-46d7-8771-baa331a3063a",
+                "WorkspaceResourceGroupName": "rg-platform-logging-prd-uksouth-01",
+                "WorkspaceName": "log-platform-prd-uksouth-01"
+            }
+        },
+        "parStrategicServices": {
+            "value": {
+                "SubscriptionId": "903b6685-c12a-4703-ac54-7ec1ff15ca43",
+                "ApiManagementResourceGroupName": "rg-platform-apim-prd-uksouth-01",
+                "ApiManagementName": "apim-platform-prd-uksouth-ty7og2i6qpv3s"
+            }
+        },
+        "parTags": {
+            "value": {
+                "Environment": "prd",
+                "Workload": "portal-servers-integration",
+                "DeployedBy": "GitHub-Bicep",
+                "Git": "https://github.com/frasermolyneux/portal-servers-integration"
+            }
+        }
+    }
+}

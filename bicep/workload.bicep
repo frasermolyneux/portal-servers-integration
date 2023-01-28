@@ -3,73 +3,65 @@ targetScope = 'resourceGroup'
 // Parameters
 param parLocation string
 param parEnvironment string
+param parInstance string
 
-param parFrontDoorSubscriptionId string
-param parFrontDoorResourceGroupName string
-param parFrontDoorName string
+param parFrontDoor object
+param parDns object
+param parStrategicServices object
 
-param parDnsSubscriptionId string
-param parDnsResourceGroupName string
-param parParentDnsName string
-
-param parStrategicServicesSubscriptionId string
-param parApiManagementResourceGroupName string
-param parApiManagementName string
-param parWebAppsResourceGroupName string
-param parAppServicePlanName string
-
-param parServersIntegrationApiAppId string
+param parRepositoryApi object
 
 param parTags object
 
-// Variables
-var environmentUniqueId = uniqueString('portal-servers-integration', parEnvironment)
-var varDeploymentPrefix = 'workload-${environmentUniqueId}' //Prevent deployment naming conflicts
+// Dynamic params from pipeline invocation
+param parServersIntegrationApiAppId string
 
-var varWorkloadName = 'portal-svr-int-${environmentUniqueId}-${parEnvironment}'
-var varWebAppName = 'webapi-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varAppInsightsName = 'ai-portal-svr-int-${environmentUniqueId}-${parEnvironment}-${parLocation}'
-var varKeyVaultName = 'kv-${environmentUniqueId}-${parLocation}'
+// Variables
+var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvironment, parInstance)
+var varDeploymentPrefix = 'workload-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
+
+var varWorkloadName = 'portal-servers-integration-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
+var varWebAppName = 'app-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varAppInsightsName = 'ai-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
 
 // Module Resources
-module serversIntegrationApiManagementSubscription 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
   name: '${varDeploymentPrefix}-serversIntegrationApiManagementSub'
-  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
 
   params: {
     parDeploymentPrefix: varDeploymentPrefix
-    parApiManagementName: parApiManagementName
+    parApiManagementName: parStrategicServices.ApiManagementName
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: resourceGroup().name
     parWorkloadName: varWebAppName
     parKeyVaultName: varKeyVaultName
     parSubscriptionScopeIdentifier: 'portal-repository'
-    parSubscriptionScope: '/apis/repository-api-v2'
+    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
     parTags: parTags
   }
 }
 
 module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'
-  scope: resourceGroup(parStrategicServicesSubscriptionId, parWebAppsResourceGroupName)
+  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.WebAppsResourceGroupName)
 
   params: {
-    parLocation: parLocation
     parEnvironment: parEnvironment
+    parLocation: parLocation
+    parInstance: parInstance
+
     parWebAppName: varWebAppName
     parKeyVaultName: varKeyVaultName
     parAppInsightsName: varAppInsightsName
 
+    parStrategicServices: parStrategicServices
+    parFrontDoor: parFrontDoor
+
+    parRepositoryApi: parRepositoryApi
+
     parServersApiAppId: parServersIntegrationApiAppId
-
-    parStrategicServicesSubscriptionId: parStrategicServicesSubscriptionId
-    parApiManagementResourceGroupName: parApiManagementResourceGroupName
-    parApiManagementName: parApiManagementName
-    parAppServicePlanName: parAppServicePlanName
-
-    parFrontDoorSubscriptionId: parFrontDoorSubscriptionId
-    parFrontDoorResourceGroupName: parFrontDoorResourceGroupName
-    parFrontDoorName: parFrontDoorName
 
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: resourceGroup().name
@@ -84,7 +76,7 @@ resource keyVaultSecretUserRoleDefinition 'Microsoft.Authorization/roleDefinitio
   name: '4633458b-17de-408a-b874-0445c86b69e6'
 }
 
-module keyVaultSecretUserRoleAssignment 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
+module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
   name: '${varDeploymentPrefix}-keyVaultSecretUserRoleAssignment'
 
   params: {
@@ -96,12 +88,12 @@ module keyVaultSecretUserRoleAssignment 'br:acrmxplatformprduksouth.azurecr.io/b
 
 module apiManagementApi 'modules/apiManagementApi.bicep' = {
   name: '${varDeploymentPrefix}-apiManagementApi'
-  scope: resourceGroup(parStrategicServicesSubscriptionId, parApiManagementResourceGroupName)
+  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
 
   params: {
-    parApiManagementName: parApiManagementName
+    parApiManagementName: parStrategicServices.ApiManagementName
     parFrontDoorDns: varWorkloadName
-    parParentDnsName: parParentDnsName
+    parParentDnsName: parDns.ParentDnsName
     parEnvironment: parEnvironment
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: resourceGroup().name
@@ -109,20 +101,20 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
   }
 }
 
-module frontDoorEndpoint 'br:acrmxplatformprduksouth.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
+module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
   name: '${varDeploymentPrefix}-frontDoorEndpoint'
-  scope: resourceGroup(parFrontDoorSubscriptionId, parFrontDoorResourceGroupName)
+  scope: resourceGroup(parFrontDoor.SubscriptionId, parFrontDoor.FrontDoorResourceGroupName)
 
   params: {
     parDeploymentPrefix: varDeploymentPrefix
-    parFrontDoorName: parFrontDoorName
-    parDnsSubscriptionId: parDnsSubscriptionId
-    parParentDnsName: parParentDnsName
-    parDnsResourceGroupName: parDnsResourceGroupName
+    parFrontDoorName: parFrontDoor.FrontDoorName
+    parDnsSubscriptionId: parDns.SubscriptionId
+    parParentDnsName: parDns.ParentDnsName
+    parDnsResourceGroupName: parDns.DnsResourceGroupName
     parWorkloadName: varWorkloadName
     parOriginHostName: webApp.outputs.outWebAppDefaultHostName
     parDnsZoneHostnamePrefix: varWorkloadName
-    parCustomHostname: '${varWorkloadName}.${parParentDnsName}'
+    parCustomHostname: '${varWorkloadName}.${parDns.ParentDnsName}'
     parTags: parTags
   }
 }

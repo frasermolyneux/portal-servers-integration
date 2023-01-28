@@ -43,14 +43,14 @@ runs:
           --name 'portal-servers-integration-platform-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
+          --parameters @params/platform.${{ inputs.environment }}.params.json
 
         if ((az group exists --name 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth') -eq $true) {
           az deployment group validate `
             --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
             --resource-group 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
+            --parameters @params/workload.${{ inputs.environment }}.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
 
@@ -61,14 +61,14 @@ runs:
           --name 'portal-servers-integration-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json
+          --parameters @params/platform.${{ inputs.environment }}.params.json
 
         if ((az group exists --name 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth') -eq $true) {
           az deployment group what-if `
             --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
             --resource-group 'rg-portal-servers-integration-${{ inputs.environment }}-uksouth' `
             --template-file bicep/workload.bicep `
-            --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
+            --parameters @params/workload.${{ inputs.environment }}.params.json `
               parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
         }
 
@@ -88,7 +88,7 @@ runs:
           --name 'portal-servers-integration-platform-${{ inputs.environment }}' `
           --location 'uksouth' `
           --template-file bicep/platform.bicep `
-          --parameters @bicep/params/${{ inputs.environment }}.platform.params.json `
+          --parameters @params/platform.${{ inputs.environment }}.params.json `
           parKeyVaultCreateMode=$keyVaultCreateMode
 
     - name: Platform AAD Scripts
@@ -108,7 +108,7 @@ runs:
         az deployment group create --resource-group "rg-portal-servers-integration-${{ inputs.environment }}-uksouth" `
           --name 'portal-servers-integration-workload-${{ inputs.environment }}' `
           --template-file bicep/workload.bicep `
-          --parameters @bicep/params/${{ inputs.environment }}.workload.params.json `
+          --parameters @params/workload.${{ inputs.environment }}.params.json `
           parServersIntegrationApiAppId=$serversIntegrationApiAppId 
 
     - name: Workload AAD Scripts

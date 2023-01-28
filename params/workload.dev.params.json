@@ -1,0 +1,56 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "parEnvironment": {
+            "value": "dev"
+        },
+        "parLocation": {
+            "value": "uksouth"
+        },
+        "parInstance": {
+            "value": "01"
+        },
+        "parFrontDoor": {
+            "value": {
+                "SubscriptionId": "d68448b0-9947-46d7-8771-baa331a3063a",
+                "FrontDoorResourceGroupName": "rg-platform-frontdoor-dev-uksouth-01",
+                "FrontDoorName": "fd-platform-dev-pa2u36baumsfc"
+            }
+        },
+        "parDns": {
+            "value": {
+                "SubscriptionId": "db34f572-8b71-40d6-8f99-f29a27612144",
+                "DnsResourceGroupName": "rg-platform-dns-prd-uksouth-01",
+                "PublicWebAppDnsPrefix": "dev",
+                "ParentDnsName": "geo-location.net"
+            }
+        },
+        "parStrategicServices": {
+            "value": {
+                "SubscriptionId": "d68448b0-9947-46d7-8771-baa331a3063a",
+                "ApiManagementResourceGroupName": "rg-platform-apim-dev-uksouth-01",
+                "ApiManagementName": "apim-platform-dev-uksouth-amjx44uuirhb6",
+                "WebAppsResourceGroupName": "rg-platform-plans-dev-uksouth-01",
+                "AppServicePlanName": "plan-platform-dev-uksouth-01"
+            }
+        },
+        "parRepositoryApi": {
+            "value": {
+                "ApplicationName": "portal-repository-dev-01",
+                "ApplicationAudience": "api://portal-repository-dev-01",
+                "ApimApiName": "repository-api",
+                "ApiPath": "repository",
+                "Revision": "1"
+            }
+        },
+        "parTags": {
+            "value": {
+                "Environment": "dev",
+                "Workload": "portal-servers-integration",
+                "DeployedBy": "GitHub-Bicep",
+                "Git": "https://github.com/frasermolyneux/portal-servers-integration"
+            }
+        }
+    }
+}

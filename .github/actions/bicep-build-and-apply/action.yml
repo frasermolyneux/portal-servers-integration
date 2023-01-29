@@ -62,7 +62,7 @@ runs:
         $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
           --template-file bicep/platform.bicep `
           --parameters @params/platform.$($config.parameters.parEnvironment.value).json
@@ -102,7 +102,7 @@ runs:
       run: |
         $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
-        $keyVaultName = az deployment sub show --name portal-servers-integration-platform-${{ inputs.environmentName }} --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+        $keyVaultName = az deployment sub show --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
 
         . scripts/CreateAppRegistration.ps1 -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           -appRoles "portal-servers-integration-approles.json"

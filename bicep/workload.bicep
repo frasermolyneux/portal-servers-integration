@@ -21,7 +21,7 @@ var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvir
 var varDeploymentPrefix = 'workload-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
 
 var varWorkloadName = 'app-portal-servers-intg-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
-var varWebAppName = 'app-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varWebAppName = 'app-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
 var varAppInsightsName = 'ai-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
 

@@ -91,10 +91,12 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
   scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
 
   params: {
+    parEnvironment: parEnvironment
+    parInstance: parInstance
+
     parApiManagementName: parStrategicServices.ApiManagementName
     parFrontDoorDns: varWorkloadName
     parParentDnsName: parDns.ParentDnsName
-    parEnvironment: parEnvironment
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: resourceGroup().name
     parAppInsightsName: varAppInsightsName

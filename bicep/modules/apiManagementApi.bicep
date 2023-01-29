@@ -1,10 +1,12 @@
 targetScope = 'resourceGroup'
 
 // Parameters
+param parEnvironment string
+param parInstance string
+
 param parApiManagementName string
 param parFrontDoorDns string
 param parParentDnsName string
-param parEnvironment string
 param parWorkloadSubscriptionId string
 param parWorkloadResourceGroupName string
 param parAppInsightsName string
@@ -56,7 +58,7 @@ resource apiAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2021
 
   properties: {
     displayName: 'servers-integration-api-audience'
-    value: 'api://portal-servers-integration-${parEnvironment}'
+    value: 'api://portal-servers-integration-${parEnvironment}-${parInstance}'
     secret: false
   }
 }

@@ -47,7 +47,7 @@
         "parTags": {
             "value": {
                 "Environment": "dev",
-                "Workload": "portal-servers-integration",
+                "Workload": "portal",
                 "DeployedBy": "GitHub-Bicep",
                 "Git": "https://github.com/frasermolyneux/portal-servers-integration"
             }

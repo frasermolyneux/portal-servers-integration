@@ -37,7 +37,7 @@ module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.
     parWorkloadResourceGroupName: resourceGroup().name
     parWorkloadName: varWebAppName
     parKeyVaultName: varKeyVaultName
-    parSubscriptionScopeIdentifier: 'portal-repository'
+    parSubscriptionScopeIdentifier: 'repository'
     parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
     parTags: parTags
   }

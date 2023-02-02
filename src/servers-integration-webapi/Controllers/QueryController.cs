@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
 using MxIO.ApiClient.Abstractions;
+using MxIO.ApiClient.WebExtensions;
 
 using XtremeIdiots.Portal.RepositoryApiClient;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models;
-using XtremeIdiots.Portal.ServersWebApi.Extensions;
 using XtremeIdiots.Portal.ServersWebApi.Interfaces;
 
 namespace XtremeIdiots.Portal.ServersWebApi.Controllers

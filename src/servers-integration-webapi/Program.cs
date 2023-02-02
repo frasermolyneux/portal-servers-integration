@@ -33,12 +33,12 @@ builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceO
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
 
-builder.Services.AddRepositoryApiClient(options =>
-{
-    options.BaseUrl = builder.Configuration["apim_base_url"] ?? builder.Configuration["repository_base_url"];
-    options.ApiKey = builder.Configuration["portal_repository_apim_subscription_key"];
-    options.ApiPathPrefix = builder.Configuration["repository_api_path_prefix"] ?? "repository";
-});
+builder.Services.AddRepositoryApiClient(options => new RepositoryApiClientOptions(
+    builder.Configuration["apim_base_url"] ?? builder.Configuration["repository_base_url"] ?? throw new ArgumentNullException("apim_base_url"),
+    builder.Configuration["portal_repository_apim_subscription_key"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key"),
+    builder.Configuration["repository_api_application_audience"] ?? throw new ArgumentNullException("repository_api_application_audience"),
+    builder.Configuration["repository_api_path_prefix"] ?? "repository")
+);
 
 // Add services to the container.
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);

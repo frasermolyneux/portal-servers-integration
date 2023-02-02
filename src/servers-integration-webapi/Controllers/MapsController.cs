@@ -9,11 +9,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using MxIO.ApiClient.Abstractions;
+using MxIO.ApiClient.WebExtensions;
 
 using XtremeIdiots.Portal.RepositoryApiClient;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps;
-using XtremeIdiots.Portal.ServersWebApi.Extensions;
 
 namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 {

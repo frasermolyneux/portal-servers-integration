@@ -14,7 +14,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 {
     public class RconApi : BaseApi, IRconApi
     {
-        public RconApi(ILogger<RconApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ServersApiClientOptions> options) : base(logger, apiTokenProvider, options)
+        public RconApi(ILogger<RconApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ServersApiClientOptions> options, IRestClientSingleton restClientSingleton) : base(logger, apiTokenProvider, options, restClientSingleton)
         {
         }
 

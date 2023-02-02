@@ -12,7 +12,7 @@ namespace XtremeIdiots.Portal.ServersApiClient
         public static void AddServersApiClient(this IServiceCollection serviceCollection,
             Action<ServersApiClientOptions> configure)
         {
-            serviceCollection.AddApiClientTokenProvider();
+            serviceCollection.AddApiClient();
 
             serviceCollection.Configure(configure);
 

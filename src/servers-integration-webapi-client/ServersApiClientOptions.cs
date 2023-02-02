@@ -2,23 +2,16 @@
 
 namespace XtremeIdiots.Portal.ServersApiClient
 {
-    public class ServersApiClientOptions : IApiClientOptions
+    public class ServersApiClientOptions : ApiClientOptions
     {
-        public string BaseUrl { get; }
-        public string ApiKey { get; }
-        public string ApiAudience { get; }
-        public string? ApiPathPrefix { get; }
-
-        public ServersApiClientOptions(string baseUrl, string apiKey, string apiAudience)
+        public ServersApiClientOptions(string baseUrl, string apiKey, string apiAudience) : base(baseUrl, apiKey, apiAudience)
         {
-            BaseUrl = baseUrl;
-            ApiKey = apiKey;
-            ApiAudience = apiAudience;
+
         }
 
-        public ServersApiClientOptions(string baseUrl, string apiKey, string apiAudience, string apiPathPrefix) : this(baseUrl, apiKey, apiAudience)
+        public ServersApiClientOptions(string baseUrl, string apiKey, string apiAudience, string apiPathPrefix) : base(baseUrl, apiKey, apiAudience, apiPathPrefix)
         {
-            ApiPathPrefix = apiPathPrefix;
+
         }
     }
 }

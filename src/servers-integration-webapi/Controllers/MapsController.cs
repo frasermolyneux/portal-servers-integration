@@ -8,8 +8,9 @@ using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using MxIO.ApiClient.Abstractions;
+
 using XtremeIdiots.Portal.RepositoryApiClient;
-using XtremeIdiots.Portal.ServersApi.Abstractions;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps;
 using XtremeIdiots.Portal.ServersWebApi.Extensions;

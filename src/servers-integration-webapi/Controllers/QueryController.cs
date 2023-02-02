@@ -1,18 +1,24 @@
-﻿using Microsoft.ApplicationInsights;
+﻿using System.Net;
+
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
+using MxIO.ApiClient.Abstractions;
+
 using XtremeIdiots.Portal.RepositoryApiClient;
+using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models;
+using XtremeIdiots.Portal.ServersWebApi.Extensions;
 using XtremeIdiots.Portal.ServersWebApi.Interfaces;
 
 namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 {
     [ApiController]
     [Authorize(Roles = "ServiceAccount")]
-    public class QueryController : Controller
+    public class QueryController : Controller, IQueryApi
     {
         private readonly IRepositoryApiClient repositoryApiClient;
         private readonly IQueryClientFactory queryClientFactory;
@@ -35,10 +41,20 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
         [Route("query/{gameServerId}/status")]
         public async Task<IActionResult> GetServerStatus(Guid gameServerId)
         {
+            var response = await ((IQueryApi)this).GetServerStatus(gameServerId);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResponseDto<ServerQueryStatusResponseDto>> IQueryApi.GetServerStatus(Guid gameServerId)
+        {
             var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
 
+            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
+                return new ApiResponseDto<ServerQueryStatusResponseDto>(HttpStatusCode.InternalServerError);
+
             if (gameServerApiResponse.IsNotFound)
-                return NotFound();
+                return new ApiResponseDto<ServerQueryStatusResponseDto>(HttpStatusCode.NotFound);
 
             var queryClient = queryClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort);
 
@@ -48,7 +64,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
             try
             {
-                if (!memoryCache.TryGetValue($"{gameServerApiResponse.Result.GameServerId}-query-status", out IQueryResponse statusResult))
+                if (!memoryCache.TryGetValue($"{gameServerApiResponse.Result.GameServerId}-query-status", out IQueryResponse? statusResult))
                 {
                     statusResult = await queryClient.GetServerStatus();
 
@@ -75,11 +91,11 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                         }).ToList()
                     };
 
-                    return new OkObjectResult(dto);
+                    return new ApiResponseDto<ServerQueryStatusResponseDto>(HttpStatusCode.OK, dto);
                 }
                 else
                 {
-                    return new NoContentResult();
+                    return new ApiResponseDto<ServerQueryStatusResponseDto>(HttpStatusCode.OK, new ServerQueryStatusResponseDto());
                 }
             }
             catch (Exception ex)

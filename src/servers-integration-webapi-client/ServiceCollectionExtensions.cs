@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
+using MxIO.ApiClient.Extensions;
+
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApiClient.Api;
 
@@ -10,9 +12,9 @@ namespace XtremeIdiots.Portal.ServersApiClient
         public static void AddServersApiClient(this IServiceCollection serviceCollection,
             Action<ServersApiClientOptions> configure)
         {
-            serviceCollection.Configure(configure);
+            serviceCollection.AddApiClientTokenProvider();
 
-            serviceCollection.AddSingleton<IServersApiTokenProvider, ServersApiTokenProvider>();
+            serviceCollection.Configure(configure);
 
             serviceCollection.AddSingleton<IQueryApi, QueryApi>();
             serviceCollection.AddSingleton<IRconApi, RconApi>();

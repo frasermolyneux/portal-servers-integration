@@ -1,4 +1,6 @@
-﻿using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps;
+﻿using MxIO.ApiClient.Abstractions;
+
+using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps;
 
 namespace XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces
 {

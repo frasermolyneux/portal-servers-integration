@@ -1,11 +1,10 @@
-# This workflow is used during the pull request process to main, it will perform a heavyweight CI and deploy to the development environment and run additional pre-flight validation against production.
-
 name: Pull Request Validation
 
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -14,6 +13,16 @@ permissions:
   security-events: write # Required by CodeQL
   
 jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+        
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v2
+
   dotnet-web-ci:
     runs-on: ubuntu-latest
 
@@ -50,7 +59,7 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         cd src
-        dotnet-sonarscanner begin /k:"frasermolyneux_portal-repository" /o:"frasermolyneux" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+        dotnet-sonarscanner begin /k:"frasermolyneux_portal-servers-integration" /o:"frasermolyneux" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
 
     - uses: frasermolyneux/actions/dotnet-web-ci@main
       with:

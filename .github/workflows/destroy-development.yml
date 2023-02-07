@@ -1,5 +1,3 @@
-# This workflow is run on a nightly schedule and will destroy the development environment to performance / cost saving.
-
 name: Destroy Development
 
 on:

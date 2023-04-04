@@ -29,7 +29,7 @@
 	<PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
 	<PackageReference Include="MxIO.ApiClient" Version="1.0.20232.8211" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	<PackageReference Include="RestSharp" Version="109.0.1" />
+	<PackageReference Include="RestSharp" Version="110.0.0" />
   </ItemGroup>
 
 </Project>

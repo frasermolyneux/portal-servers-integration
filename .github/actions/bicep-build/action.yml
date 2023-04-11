@@ -1,22 +1,22 @@
 name: "bicep-build"
-  
+
 inputs:
   environmentName:
     description: "The name of the environment e.g. dev, prd"
     required: true
-  AZURE_CLIENT_ID: 
+  AZURE_CLIENT_ID:
     description: "The azure client/application ID configured for federated access"
     required: true
     type: string
-  AZURE_TENANT_ID: 
+  AZURE_TENANT_ID:
     description: "The target Azure tenant"
     required: true
     type: string
-  AZURE_SUBSCRIPTION_ID: 
+  AZURE_SUBSCRIPTION_ID:
     description: "The target Azure subscription"
     required: true
     type: string
-  
+
 runs:
   using: "composite"
 
@@ -29,7 +29,7 @@ runs:
         client-id: ${{ inputs.AZURE_CLIENT_ID }}
         tenant-id: ${{ inputs.AZURE_TENANT_ID }}
         subscription-id: ${{ inputs.AZURE_SUBSCRIPTION_ID }}
-    
+
     - name: Build Bicep
       shell: bash
       run: |

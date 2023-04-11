@@ -1,22 +1,22 @@
 name: "bicep-build-and-apply"
-  
+
 inputs:
   environmentName:
     description: "The name of the environment e.g. dev, prd"
     required: true
-  AZURE_CLIENT_ID: 
+  AZURE_CLIENT_ID:
     description: "The azure client/application ID configured for federated access"
     required: true
     type: string
-  AZURE_TENANT_ID: 
+  AZURE_TENANT_ID:
     description: "The target Azure tenant"
     required: true
     type: string
-  AZURE_SUBSCRIPTION_ID: 
+  AZURE_SUBSCRIPTION_ID:
     description: "The target Azure subscription"
     required: true
     type: string
-  
+
 runs:
   using: "composite"
 
@@ -29,7 +29,7 @@ runs:
         client-id: ${{ inputs.AZURE_CLIENT_ID }}
         tenant-id: ${{ inputs.AZURE_TENANT_ID }}
         subscription-id: ${{ inputs.AZURE_SUBSCRIPTION_ID }}
-    
+
     - name: Build Bicep
       shell: bash
       run: |
@@ -107,7 +107,7 @@ runs:
 
         . scripts/CreateAppRegistration.ps1 -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           -appRoles "portal-servers-integration-approles.json"
-        
+
         . scripts/CreateAppRegistrationCredential.ps1 -keyVaultName $keyVaultName `
           -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           -secretPrefix "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
@@ -125,7 +125,7 @@ runs:
           --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --template-file bicep/workload.bicep `
           --parameters @params/workload.$($config.parameters.parEnvironment.value).json `
-          parServersIntegrationApiAppId=$serversIntegrationApiAppId 
+          parServersIntegrationApiAppId=$serversIntegrationApiAppId
 
     - name: Workload AAD Scripts
       shell: pwsh
@@ -133,7 +133,7 @@ runs:
         $config = (Get-Content params/workload.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $deploymentOutput = (az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") | ConvertFrom-Json
-        
+
         $repositoryApiName = $config.parameters.parRepositoryApi.value.ApplicationName
         $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json
         $resourceId = (az ad sp list --filter "appId eq '$repositoryApiId'" --query '[0].id') | ConvertFrom-Json
@@ -142,4 +142,3 @@ runs:
 
         $principalId = $deploymentOutput.properties.outputs.principalId.value
         . "scripts/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
-

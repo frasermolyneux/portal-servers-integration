@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.10" />
     <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.0.20234.3221" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-	<PackageReference Include="FluentFTP" Version="46.0.2" />
+	<PackageReference Include="FluentFTP" Version="47.1.0" />
 	<PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
 	<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0" />
 	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />

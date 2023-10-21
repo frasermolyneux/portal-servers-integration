@@ -56,6 +56,7 @@ jobs:
           dotnet-project: "servers-integration-webapi"
           dotnet-version: 7.0.x
           src-folder: "src"
+          majorMinorVersion: "1.1"
 
       - name: End SonarScanner
         shell: bash

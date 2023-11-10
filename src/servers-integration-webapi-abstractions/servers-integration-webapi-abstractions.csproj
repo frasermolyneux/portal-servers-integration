@@ -26,7 +26,7 @@
 
   <ItemGroup>
 	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="7.0.0" />
-	<PackageReference Include="MxIO.ApiClient.Abstractions" Version="1.1.35.1" />
+	<PackageReference Include="MxIO.ApiClient.Abstractions" Version="1.1.39.1" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 	

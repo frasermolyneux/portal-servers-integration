@@ -7,105 +7,57 @@ on:
       - main
 
 permissions:
-  id-token: write # This is required for requesting the JWT
+  id-token: write # This is required for Az CLI Login
   contents: read # This is required for actions/checkout
-  actions: read # Required by CodeQL
-  security-events: write # Required by CodeQL
 
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
 
     steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@v3
+    - name: "Checkout Repository"
+      uses: actions/checkout@v3
 
-      - name: "Dependency Review"
-        uses: actions/dependency-review-action@v2
+    - name: "Dependency Review"
+      uses: actions/dependency-review-action@v2
 
   dotnet-web-ci:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v1
-        with:
-          path: ~\sonar\cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Install SonarCloud scanners
-        shell: bash
-        run: |
-          cd src
-          dotnet tool install --global dotnet-sonarscanner
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: "csharp"
-
-      - name: Begin SonarScanner
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd src
-          dotnet-sonarscanner begin /k:"frasermolyneux_portal-servers-integration" /o:"frasermolyneux" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-
-      - uses: frasermolyneux/actions/dotnet-web-ci@main
-        with:
-          dotnet-project: "servers-integration-webapi"
-          dotnet-version: 7.0.x
-          src-folder: "src"
-          majorMinorVersion: "1.1"
-
-      - name: End SonarScanner
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd src
-          dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:'csharp'"
+    - uses: frasermolyneux/actions/dotnet-web-ci@main
+      with:
+        dotnet-project: "servers-integration-webapi"
+        dotnet-version: 7.0.x
+        src-folder: "src"
+        majorMinorVersion: "1.1"
 
   bicep-build-and-apply-dev:
     environment: Development
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/bicep-build-and-apply
-        with:
-          environmentName: dev
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: ./.github/actions/bicep-build-and-apply
+      with:
+        environmentName: dev
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - id: bicep-output
-        shell: pwsh
-        run: |
-          $config = (Get-Content params/workload.dev.json | ConvertFrom-Json)
+    - id: bicep-output
+      shell: pwsh
+      run: |
+        $config = (Get-Content params/workload.dev.json | ConvertFrom-Json)
 
-          $deployment = az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-            --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" | ConvertFrom-Json
+        $deployment = az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" | ConvertFrom-Json
 
-          echo "web_app_name=$($deployment.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-          echo "web_app_resource_group_name=$($config.parStrategicServices.value.WebAppsResourceGroupName)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "web_app_name=$($deployment.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "web_app_resource_group_name=$($config.parStrategicServices.value.WebAppsResourceGroupName)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     outputs:
       web_app_name: ${{ steps.bicep-output.outputs.web_app_name }}
@@ -117,16 +69,16 @@ jobs:
     needs: [dotnet-web-ci, bicep-build-and-apply-dev]
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - uses: frasermolyneux/actions/deploy-app-service@main
-        with:
-          web-artifact-name: "servers-integration-webapi"
-          web-app-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_name }}
-          resource-group-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_resource_group_name }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: frasermolyneux/actions/deploy-app-service@main
+      with:
+        web-artifact-name: "servers-integration-webapi"
+        web-app-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_name }}
+        resource-group-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_resource_group_name }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   bicep-build-prd:
     if: github.actor != 'dependabot[bot]' # dependabot context has no permissions to prod so skip this check
@@ -135,11 +87,11 @@ jobs:
     needs: [bicep-build-and-apply-dev]
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/bicep-build
-        with:
-          environmentName: prd
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - uses: ./.github/actions/bicep-build
+      with:
+        environmentName: prd
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: frasermolyneux/actions/dotnet-web-ci@main
       with:
@@ -35,7 +35,7 @@ jobs:
     needs: [dotnet-web-ci]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: frasermolyneux/actions/publish-nuget-packages@main
       with:
@@ -50,7 +50,7 @@ jobs:
       group: ${{ github.repository }}-dev
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: ./.github/actions/bicep-build-and-apply
       with:
@@ -83,7 +83,7 @@ jobs:
       group: ${{ github.repository }}-dev
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: frasermolyneux/actions/deploy-app-service@main
       with:
@@ -103,7 +103,7 @@ jobs:
       group: ${{ github.repository }}-prd
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: ./.github/actions/bicep-build-and-apply
       with:
@@ -136,7 +136,7 @@ jobs:
       group: ${{ github.repository }}-prd
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: frasermolyneux/actions/deploy-app-service@main
       with:

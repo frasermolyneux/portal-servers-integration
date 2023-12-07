@@ -7,13 +7,13 @@ permissions:
   id-token: write # This is required for Az CLI Login
   contents: read # This is required for actions/checkout
 
-concurrency: # This is required to prevent multiple runs of the same workflow from running at the same time.
-  group: ${{ github.workflow }}
-
 jobs:
   terraform-destroy-dev:
     environment: Development
     runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.repository }}-dev
 
     steps:
     - uses: actions/checkout@v3

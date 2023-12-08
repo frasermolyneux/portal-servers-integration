@@ -51,7 +51,6 @@ module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.
 
 module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'
-  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.WebAppsResourceGroupName)
 
   params: {
     parEnvironment: parEnvironment

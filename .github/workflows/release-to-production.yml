@@ -25,7 +25,7 @@ jobs:
     - uses: frasermolyneux/actions/dotnet-web-ci@main
       with:
         dotnet-project: "servers-integration-webapi"
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
         src-folder: "src"
         majorMinorVersion: "1.1"
 

@@ -18,8 +18,14 @@ var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvir
 var varDeploymentPrefix = 'platform-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
-var varAppInsightsName = 'ai-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
+
+// External Resource References
+var varAppInsightsRef = {
+  Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
 
 // Existing Out-Of-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
@@ -68,21 +74,6 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
   }
 }
 
-module appInsights 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/appinsights:latest' = {
-  name: '${varDeploymentPrefix}-appInsights'
-  scope: resourceGroup(defaultResourceGroup.name)
-
-  params: {
-    parAppInsightsName: varAppInsightsName
-    parKeyVaultName: keyVault.outputs.outKeyVaultName
-    parLocation: parLocation
-    parLoggingSubscriptionId: parLogging.SubscriptionId
-    parLoggingResourceGroupName: parLogging.WorkspaceResourceGroupName
-    parLoggingWorkspaceName: parLogging.WorkspaceName
-    parTags: parTags
-  }
-}
-
 module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
   name: '${varDeploymentPrefix}-apiManagementLogger'
   scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
@@ -92,7 +83,7 @@ module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimana
     parApiManagementName: parStrategicServices.ApiManagementName
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: defaultResourceGroup.name
-    parAppInsightsName: appInsights.outputs.outAppInsightsName
+    parAppInsightsName: varAppInsightsRef.Name
     parKeyVaultName: keyVault.outputs.outKeyVaultName
   }
 }

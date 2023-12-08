@@ -7,12 +7,14 @@ param parInstance string
 
 param parWebAppName string
 param parKeyVaultName string
-param parAppInsightsName string
 
 param parStrategicServices object
 param parFrontDoor object
 
 param parRepositoryApi object
+
+@description('The app insights reference')
+param parAppInsightsRef object
 
 param parTags object
 
@@ -43,8 +45,8 @@ resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' exis
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: parAppInsightsName
-  scope: resourceGroup(parWorkloadSubscriptionId, parWorkloadResourceGroupName)
+  name: parAppInsightsRef.Name
+  scope: resourceGroup(parAppInsightsRef.SubscriptionId, parAppInsightsRef.ResourceGroupName)
 }
 
 // Module Resources

@@ -22,8 +22,14 @@ var varDeploymentPrefix = 'workload-${varEnvironmentUniqueId}' //Prevent deploym
 
 var varWorkloadName = 'app-portal-servers-int-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
 var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
-var varAppInsightsName = 'ai-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
+
+// External Resource References
+var varAppInsightsRef = {
+  Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
 
 // Module Resources
 module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
@@ -54,12 +60,13 @@ module webApp 'modules/webApp.bicep' = {
 
     parWebAppName: varWebAppName
     parKeyVaultName: varKeyVaultName
-    parAppInsightsName: varAppInsightsName
 
     parStrategicServices: parStrategicServices
     parFrontDoor: parFrontDoor
 
     parRepositoryApi: parRepositoryApi
+
+    parAppInsightsRef: varAppInsightsRef
 
     parServersApiAppId: parServersIntegrationApiAppId
 
@@ -97,9 +104,8 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
     parApiManagementName: parStrategicServices.ApiManagementName
     parFrontDoorDns: varWorkloadName
     parParentDnsName: parDns.ParentDnsName
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-    parAppInsightsName: varAppInsightsName
+
+    parAppInsightsRef: varAppInsightsRef
   }
 }
 

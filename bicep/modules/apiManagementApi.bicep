@@ -7,9 +7,9 @@ param parInstance string
 param parApiManagementName string
 param parFrontDoorDns string
 param parParentDnsName string
-param parWorkloadSubscriptionId string
-param parWorkloadResourceGroupName string
-param parAppInsightsName string
+
+@description('The app insights reference')
+param parAppInsightsRef object
 
 // Existing In-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
@@ -18,8 +18,8 @@ resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' exis
 
 // Existing Out-Of-Scope Resources
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: parAppInsightsName
-  scope: resourceGroup(parWorkloadSubscriptionId, parWorkloadResourceGroupName)
+  name: parAppInsightsRef.Name
+  scope: resourceGroup(parAppInsightsRef.SubscriptionId, parAppInsightsRef.ResourceGroupName)
 }
 
 // Module Resources

@@ -5,7 +5,6 @@ param parLocation string
 param parEnvironment string
 param parInstance string
 
-param parLogging object
 param parStrategicServices object
 
 param parTags object

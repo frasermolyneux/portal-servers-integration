@@ -1,16 +1,28 @@
 targetScope = 'resourceGroup'
 
 // Parameters
+@description('The location of the resource group.')
 param parLocation string
+
+@description('The environment name (e.g. dev, tst, prd).')
 param parEnvironment string
+
+@description('The instance of the environment.')
 param parInstance string
 
-param parFrontDoor object
+@description('The front door configuration.')
+param parFrontDoorRef object
+
+@description('The DNS configuration.')
 param parDns object
+
+@description('The strategic services configuration.')
 param parStrategicServices object
 
+@description('The repository API configuration.')
 param parRepositoryApi object
 
+@description('The tags to apply to the resources.')
 param parTags object
 
 // Dynamic params from pipeline invocation
@@ -29,6 +41,24 @@ var varAppInsightsRef = {
   Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
   SubscriptionId: subscription().subscriptionId
   ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
+
+var varKeyVaultRef = {
+  Name: 'kv-${varEnvironmentUniqueId}-${parLocation}'
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: resourceGroup().name
+}
+
+var varAppServicePlanRef = {
+  Name: 'asp-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
+
+var varApiManagementRef = {
+  Name: parStrategicServices.ApiManagementName
+  SubscriptionId: parStrategicServices.SubscriptionId
+  ResourceGroupName: parStrategicServices.ApiManagementResourceGroupName
 }
 
 // Module Resources
@@ -53,26 +83,22 @@ module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'
 
   params: {
-    parEnvironment: parEnvironment
-    parLocation: parLocation
-    parInstance: parInstance
-
     parWebAppName: varWebAppName
-    parKeyVaultName: varKeyVaultName
+    parEnvironment: parEnvironment
+    parInstance: parInstance
+    parLocation: parLocation
 
-    parStrategicServices: parStrategicServices
-    parFrontDoor: parFrontDoor
+    parKeyVaultRef: varKeyVaultRef
+    parAppInsightsRef: varAppInsightsRef
+    parAppServicePlanRef: varAppServicePlanRef
+    parApiManagementRef: varApiManagementRef
+    parFrontDoorRef: parFrontDoorRef
 
     parRepositoryApi: parRepositoryApi
 
-    parAppInsightsRef: varAppInsightsRef
-
-    parServersApiAppId: parServersIntegrationApiAppId
-
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-
     parTags: parTags
+
+    parServersIntegrationApiAppId: parServersIntegrationApiAppId
   }
 }
 
@@ -110,11 +136,11 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
 
 module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
   name: '${varDeploymentPrefix}-frontDoorEndpoint'
-  scope: resourceGroup(parFrontDoor.SubscriptionId, parFrontDoor.FrontDoorResourceGroupName)
+  scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
 
   params: {
     parDeploymentPrefix: varDeploymentPrefix
-    parFrontDoorName: parFrontDoor.FrontDoorName
+    parFrontDoorName: parFrontDoorRef.Name
     parDnsSubscriptionId: parDns.SubscriptionId
     parParentDnsName: parDns.ParentDnsName
     parDnsResourceGroupName: parDns.DnsResourceGroupName

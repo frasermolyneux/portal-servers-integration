@@ -1,47 +1,65 @@
 targetScope = 'resourceGroup'
 
 // Parameters
+@description('The name of the web app.')
+param parWebAppName string
+
+@description('The environment name (e.g. dev, tst, prd).')
 param parEnvironment string
-param parLocation string
+
+@description('The instance of the environment.')
 param parInstance string
 
-param parWebAppName string
-param parKeyVaultName string
+@description('The location of the resource group.')
+param parLocation string
 
-param parStrategicServices object
-param parFrontDoor object
-
-param parRepositoryApi object
+// -- References
+@description('The key vault reference')
+param parKeyVaultRef object
 
 @description('The app insights reference')
 param parAppInsightsRef object
 
+@description('The app service plan reference')
+param parAppServicePlanRef object
+
+@description('The api management reference')
+param parApiManagementRef object
+
+@description('The front door reference')
+param parFrontDoorRef object
+
+// -- Apis
+
+@description('The repository api object.')
+param parRepositoryApi object
+
+// -- Common
+@description('The tags to apply to the resources.')
 param parTags object
 
-param parServersApiAppId string
-
-param parWorkloadSubscriptionId string
-param parWorkloadResourceGroupName string
-
-// Existing In-Scope Resources
-resource appServicePlan 'Microsoft.Web/serverfarms@2020-10-01' existing = {
-  name: parStrategicServices.AppServicePlanName
-}
+// Dynamic params from pipeline invocation
+param parServersIntegrationApiAppId string
 
 // Existing Out-Of-Scope Resources
-resource frontDoor 'Microsoft.Cdn/profiles@2021-06-01' existing = {
-  name: parFrontDoor.FrontDoorName
-  scope: resourceGroup(parFrontDoor.SubscriptionId, parFrontDoor.FrontDoorResourceGroupName)
+resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
+  name: parKeyVaultRef.Name
+  scope: resourceGroup(parKeyVaultRef.SubscriptionId, parKeyVaultRef.ResourceGroupName)
 }
 
-resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
-  name: parKeyVaultName
-  scope: resourceGroup(parWorkloadSubscriptionId, parWorkloadResourceGroupName)
+resource frontDoor 'Microsoft.Cdn/profiles@2021-06-01' existing = {
+  name: parFrontDoorRef.Name
+  scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
 }
 
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: parStrategicServices.ApiManagementName
-  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
+  name: parApiManagementRef.Name
+  scope: resourceGroup(parApiManagementRef.SubscriptionId, parApiManagementRef.ResourceGroupName)
+}
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2020-10-01' existing = {
+  name: parAppServicePlanRef.Name
+  scope: resourceGroup(parAppServicePlanRef.SubscriptionId, parAppServicePlanRef.ResourceGroupName)
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
@@ -69,8 +87,8 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
       ftpsState: 'Disabled'
 
       alwaysOn: true
-      linuxFxVersion: 'DOTNETCORE|7.0'
-      netFrameworkVersion: 'v7.0'
+      linuxFxVersion: 'DOTNETCORE|8.0'
+      netFrameworkVersion: 'v8.0'
       minTlsVersion: '1.2'
 
       ipSecurityRestrictions: [
@@ -130,7 +148,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientId'
-          value: parServersApiAppId
+          value: parServersIntegrationApiAppId
         }
         {
           name: 'AzureAd__ClientSecret'

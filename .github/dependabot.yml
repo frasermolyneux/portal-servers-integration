@@ -14,3 +14,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "npm"
+    assignees: ["frasermolyneux"]
+    directory: "/"
+    schedule:
+      interval: "daily"

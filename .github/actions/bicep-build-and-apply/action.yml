@@ -142,3 +142,18 @@ runs:
 
         $principalId = $deploymentOutput.properties.outputs.principalId.value
         . "scripts/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId
+
+    - name: Integration Tests AAD Scripts
+      shell: pwsh
+      run: |
+        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+
+        $keyVaultName = az deployment sub show --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
+
+        . scripts/CreateAppRegistration.ps1 -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests"
+
+        . scripts/CreateAppRegistrationCredential.ps1 -keyVaultName $keyVaultName `
+          -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests" `
+          -secretPrefix "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests" `
+          -secretDisplayName "portalserversintegrationtests"

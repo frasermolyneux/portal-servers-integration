@@ -146,7 +146,7 @@ runs:
     - name: Integration Tests AAD Scripts
       shell: pwsh
       run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/workload.${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $keyVaultName = az deployment sub show --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
@@ -157,3 +157,15 @@ runs:
           -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests" `
           -secretPrefix "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests" `
           -secretDisplayName "portalserversintegrationtests"
+
+        $repositoryApiName = $config.parameters.parRepositoryApi.value.ApplicationName
+        $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json
+        $resourceId = (az ad sp list --filter "appId eq '$repositoryApiId'" --query '[0].id') | ConvertFrom-Json
+        $repositoryApiSpn = (az rest -m GET -u https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId) | ConvertFrom-Json
+        $appRoleId = ($repositoryApiSpn.appRoles | Where-Object { $_.displayName -eq "ServiceAccount" }).id
+
+        $testAppIdentifier = "api://portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)-integration-tests"
+        $testApp = az ad sp show --id $testAppIdentifier | ConvertFrom-Json
+        $principalId = $testApp.id
+
+        . "scripts/GrantPrincipalAppRole.ps1" -principalId $principalId -resourceId $resourceId -appRoleId $appRoleId

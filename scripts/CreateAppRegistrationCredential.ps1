@@ -13,6 +13,19 @@ if ($null -eq (az keyvault secret show --vault-name "$keyVaultName" --name "$sec
     az keyvault secret set --name "$secretPrefix-client-id" --vault-name "$keyVaultName" --value "$applicationId" --description 'text/plain' | Out-Null
 }
 
+$secrets = az keyvault secret list --vault-name $keyVaultName | ConvertFrom-Json 
+if (($secrets | Where-Object { $_.name -match "$secretPrefix-client-secret" } | Measure-Object).Count -eq 0) {
+    if ($credentials.Count -ne 0) {
+        Write-Host "No credentials in Key Vault with name '$secretPrefix-client-secret' in '$keyVaultName' but app has credentials - assuming reset"
+
+        $credentials | ForEach-Object {
+            az ad app credential delete --id "$applicationId" --key-id $_.keyId
+        }
+
+        $credentials = (az ad app credential list --id "$applicationId") | ConvertFrom-Json
+    }
+}
+
 if ($credentials.Count -eq 0) {
     Write-Host "No credentials: Creating credential and storing in Key Vault with name '$secretPrefix-client-secret' in '$keyVaultName'"
     $credential = (az ad app credential reset --id "$applicationId"  --append --years 2 --display-name "$secretDisplayName") | ConvertFrom-Json

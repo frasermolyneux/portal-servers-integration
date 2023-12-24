@@ -79,8 +79,8 @@ module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.
   }
 }
 
-module serversIntegrationTestsApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-serversIntegrationTestsApiManagementSub'
+module integrationTestsApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+  name: '${varDeploymentPrefix}-integrationTestsApiManagementSub'
   scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
 
   params: {

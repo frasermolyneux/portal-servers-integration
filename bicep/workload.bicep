@@ -79,6 +79,23 @@ module serversIntegrationApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.
   }
 }
 
+module serversIntegrationTestsApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+  name: '${varDeploymentPrefix}-serversIntegrationTestsApiManagementSub'
+  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
+
+  params: {
+    parDeploymentPrefix: varDeploymentPrefix
+    parApiManagementName: parStrategicServices.ApiManagementName
+    parWorkloadSubscriptionId: subscription().subscriptionId
+    parWorkloadResourceGroupName: resourceGroup().name
+    parWorkloadName: '${varWebAppName}-tests'
+    parKeyVaultName: varKeyVaultName
+    parSubscriptionScopeIdentifier: 'repository'
+    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
+    parTags: parTags
+  }
+}
+
 module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'
 

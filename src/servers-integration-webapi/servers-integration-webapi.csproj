@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.52.1" />
+    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.53.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 	  <PackageReference Include="FluentFTP" Version="48.0.3" />
 	  <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
@@ -16,7 +16,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
 	  <PackageReference Include="Microsoft.Identity.Web" Version="2.16.0" />
 	  <PackageReference Include="Polly" Version="8.2.0" />
-	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.120.1" />
+	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.122.1" />
   </ItemGroup>
 
   <ItemGroup>

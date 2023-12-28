@@ -14,10 +14,10 @@ param parLocation string
 resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'externalScriptCLI'
   location: parLocation
-  kind: 'AzurePowerShell'
+  kind: 'AzureCLI'
   properties: {
-    azPowerShellVersion: '10.0'
-    primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.ps1'
+    azCliVersion: '2.52.0'
+    primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.sh'
     arguments: '-applicationName \\"portal-servers-integration-${parEnvironment}-${parInstance}\\" -appRoles \\"${loadJsonContent('./../../app-registration-manifests/portal-servers-integration-approles.json')}\\"'
     retentionInterval: 'P1D'
   }

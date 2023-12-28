@@ -84,5 +84,17 @@ module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimana
   }
 }
 
+module platformScripts 'modules/platformScripts.bicep' = {
+  name: '${varDeploymentPrefix}-platformScripts'
+  scope: resourceGroup(defaultResourceGroup.name)
+  dependsOn: [ keyVaultSecretUserRoleAssignment ]
+
+  params: {
+    parEnvironment: parEnvironment
+    parLocation: parLocation
+    parInstance: parInstance
+  }
+}
+
 // Outputs
 output keyVaultName string = keyVault.outputs.outKeyVaultName

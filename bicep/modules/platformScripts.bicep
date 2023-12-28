@@ -18,7 +18,7 @@ resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   properties: {
     azPowerShellVersion: '10.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.ps1'
-    arguments: '-applicationName "portal-servers-integration-${parEnvironment}-${parInstance}" -appRoles "${loadJsonContent('./../../app-registration-manifests/portal-servers-integration-approles.json')}"'
+    arguments: '-applicationName \\"portal-servers-integration-${parEnvironment}-${parInstance}\\" -appRoles \\"${loadJsonContent('./../../app-registration-manifests/portal-servers-integration-approles.json')}\\"'
     retentionInterval: 'P1D'
   }
 }

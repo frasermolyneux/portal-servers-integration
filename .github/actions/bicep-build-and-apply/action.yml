@@ -8,6 +8,10 @@ inputs:
     description: "The azure client/application ID configured for federated access"
     required: true
     type: string
+  AZURE_LEGACY_SECRET:
+    description: "The azure client/application legacy secret"
+    required: true
+    type: string
   AZURE_TENANT_ID:
     description: "The target Azure tenant"
     required: true
@@ -95,7 +99,9 @@ runs:
           --location $config.parameters.parLocation.value `
           --template-file bicep/platform.bicep `
           --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
-          parKeyVaultCreateMode=$keyVaultCreateMode
+          parKeyVaultCreateMode=$keyVaultCreateMode `
+          parClientId=${{ inputs.AZURE_CLIENT_ID }} `
+          parClientSecret=${{ inputs.AZURE_LEGACY_SECRET }}
 
     - name: Platform AAD Scripts
       shell: pwsh

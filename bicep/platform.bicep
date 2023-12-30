@@ -12,6 +12,14 @@ param parTags object
 // Dynamic params from pipeline invocation
 param parKeyVaultCreateMode string = 'default'
 
+@secure()
+@description('The client id of the service principal to use for deployment scripts.')
+param parClientId string
+
+@secure()
+@description('The client secret of the service principal to use for deployment scripts.')
+param parClientSecret string
+
 // Variables
 var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvironment, parInstance)
 var varDeploymentPrefix = 'platform-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
@@ -90,6 +98,8 @@ module platformScripts 'modules/platformScripts.bicep' = {
   dependsOn: [ keyVaultSecretUserRoleAssignment ]
 
   params: {
+    parClientId: parClientId
+    parClientSecret: parClientSecret
     parEnvironment: parEnvironment
     parLocation: parLocation
     parInstance: parInstance

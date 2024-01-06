@@ -1,7 +1,9 @@
 name: Destroy Development
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  
+  schedule:
+    - cron: "0 23 * * *"
 
 permissions:
   id-token: write # This is required for Az CLI Login
@@ -25,7 +27,14 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    #TODO: This step should delete all of the resources for the development environment
     - shell: pwsh
       run: |
-        az group delete --name rg-portal-servers-integration-dev-uksouth --yes
+        $config = (Get-Content params/workload.dev.json | ConvertFrom-Json)
+
+        $deployment = az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" | ConvertFrom-Json
+
+        $webAppName = $deployment.properties.outputs.webAppName.value
+        $resourceGroupName = "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"
+
+        az webapp delete --name $webAppName --resource-group $resourceGroupName

@@ -37,4 +37,4 @@ jobs:
         $webAppName = $deployment.properties.outputs.webAppName.value
         $resourceGroupName = "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"
 
-        az webapp delete --name $webAppName --resource-group $resourceGroupName
+        az webapp delete --name $webAppName --resource-group $resourceGroupName --keep-empty-plan

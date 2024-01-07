@@ -50,8 +50,8 @@ var varApiManagementRef = {
 
 // Existing Out-Of-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: parStrategicServices.ApiManagementName
-  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
+  name: varApiManagementRef.Name
+  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 }
 
 // Module Resources
@@ -97,11 +97,11 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
 
 module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
   name: '${varDeploymentPrefix}-apiManagementLogger'
-  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
+  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
   dependsOn: [ keyVaultSecretUserRoleAssignment ]
 
   params: {
-    parApiManagementName: parStrategicServices.ApiManagementName
+    parApiManagementName: varApiManagementRef.Name
     parAppInsightsRef: varAppInsightsRef
   }
 }

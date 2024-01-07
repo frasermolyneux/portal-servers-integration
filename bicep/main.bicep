@@ -130,8 +130,8 @@ module platformScripts 'modules/platformScripts.bicep' = {
 }
 
 // API Management subscription for the repository API that will be used by the webapp
-module repositoryApimSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-repositoryApimSubscription'
+module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+  name: '${varDeploymentPrefix}-repositoryApimSubscriptionForWebApp'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
@@ -140,6 +140,24 @@ module repositoryApimSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: defaultResourceGroup.name
     parWorkloadName: varWebAppName
+    parKeyVaultName: varKeyVaultName
+    parSubscriptionScopeIdentifier: 'repository'
+    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
+    parTags: parTags
+  }
+}
+
+// API Management subscription for the repository API that will be used by the integration tests
+module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+  name: '${varDeploymentPrefix}-repositoryApimSubscriptionForTests'
+  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+
+  params: {
+    parDeploymentPrefix: varDeploymentPrefix
+    parApiManagementName: varApiManagementRef.Name
+    parWorkloadSubscriptionId: subscription().subscriptionId
+    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parWorkloadName: '${varWebAppName}-tests'
     parKeyVaultName: varKeyVaultName
     parSubscriptionScopeIdentifier: 'repository'
     parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'

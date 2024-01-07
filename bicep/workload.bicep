@@ -62,23 +62,6 @@ var varApiManagementRef = {
 }
 
 // Module Resources
-module integrationTestsApiManagementSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-integrationTestsApiManagementSub'
-  scope: resourceGroup(parStrategicServices.SubscriptionId, parStrategicServices.ApiManagementResourceGroupName)
-
-  params: {
-    parDeploymentPrefix: varDeploymentPrefix
-    parApiManagementName: parStrategicServices.ApiManagementName
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: resourceGroup().name
-    parWorkloadName: '${varWebAppName}-tests'
-    parKeyVaultName: varKeyVaultName
-    parSubscriptionScopeIdentifier: 'repository'
-    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
-    parTags: parTags
-  }
-}
-
 module webApp 'modules/webApp.bicep' = {
   name: '${varDeploymentPrefix}-webApp'
 

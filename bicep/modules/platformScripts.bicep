@@ -15,7 +15,7 @@ param parScriptIdentity string
 
 // Module Resources
 resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'externalScriptCLI'
+  name: 'script-app-registration-${parEnvironment}-${parInstance}'
   location: parLocation
   kind: 'AzureCLI'
   identity: {

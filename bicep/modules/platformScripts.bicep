@@ -13,6 +13,10 @@ param parLocation string
 @description('The user assigned identity to use to execute the script')
 param parScriptIdentity string
 
+// Variables
+@description('Script is idempotent; execute each deployment to prevent drift')
+param updateTag string = newGuid()
+
 // Module Resources
 resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'script-app-registration-${parEnvironment}-${parInstance}'
@@ -35,5 +39,6 @@ resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.sh'
     arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}"'
     retentionInterval: 'P1D'
+    forceUpdateTag: updateTag
   }
 }

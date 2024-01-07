@@ -97,6 +97,12 @@ module platformScripts 'modules/platformScripts.bicep' = {
     parLocation: parLocation
     parInstance: parInstance
     parScriptIdentity: parScriptIdentity
+
+    parKeyVaultRef: {
+      name: keyVault.outputs.outKeyVaultName
+      subscriptionId: subscription().subscriptionId
+      resourceGroupName: defaultResourceGroup.name
+    }
   }
 }
 

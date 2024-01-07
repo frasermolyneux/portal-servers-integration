@@ -71,3 +71,6 @@ resource appRegistrationCredentials 'Microsoft.Resources/deploymentScripts@2023-
     forceUpdateTag: updateTag
   }
 }
+
+// Outputs
+output outServersIntegrationApiAppId string = appRegistration.properties.outputs.applicationId

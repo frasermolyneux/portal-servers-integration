@@ -29,9 +29,9 @@ jobs:
 
     - shell: pwsh
       run: |
-        $config = (Get-Content params/workload.dev.json | ConvertFrom-Json)
+        $config = (Get-Content params/dev.json | ConvertFrom-Json)
 
-        $deployment = az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+        $deployment = az deployment group show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" | ConvertFrom-Json
 
         $webAppName = $deployment.properties.outputs.webAppName.value

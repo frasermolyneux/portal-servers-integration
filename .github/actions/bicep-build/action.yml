@@ -38,7 +38,6 @@ runs:
       shell: bash
       run: |
         az bicep build --file bicep/main.bicep --stdout
-        az bicep build --file bicep/workload.bicep --stdout
 
     - name: Validate Bicep
       shell: pwsh
@@ -46,20 +45,11 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
-          --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
           --template-file bicep/main.bicep `
           --parameters @params/$($config.parameters.parEnvironment.value).json `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
-
-        if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
-          az deployment group validate `
-            --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-            --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" `
-            --template-file bicep/workload.bicep `
-            --parameters @params/workload.$($config.parameters.parEnvironment.value).json `
-              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
-        }
 
     - name: WhatIf Bicep
       shell: pwsh
@@ -72,12 +62,3 @@ runs:
           --template-file bicep/main.bicep `
           --parameters @params/$($config.parameters.parEnvironment.value).json `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
-
-        if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
-          az deployment group what-if `
-            --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-            --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" `
-            --template-file bicep/workload.bicep `
-            --parameters @params/workload.$($config.parameters.parEnvironment.value).json `
-              parServersIntegrationApiAppId=00000000-0000-0000-0000-000000000000
-        }

@@ -10,6 +10,12 @@ param parEnvironment string
 @description('The instance of the environment.')
 param parInstance string
 
+@description('The front door configuration.')
+param parFrontDoorRef object
+
+@description('The DNS configuration.')
+param parDns object
+
 @description('The strategic services configuration.')
 param parStrategicServices object
 
@@ -27,9 +33,9 @@ param parScriptIdentity string
 
 // Variables
 var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvironment, parInstance)
-var varDeploymentPrefix = 'platform-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varWorkloadName = 'app-portal-servers-int-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
 var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
 
@@ -68,7 +74,7 @@ resource defaultResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = 
 }
 
 module keyVault 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvault:latest' = {
-  name: '${varDeploymentPrefix}-keyVault'
+  name: '${varEnvironmentUniqueId}-keyVault'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
@@ -89,7 +95,7 @@ resource keyVaultSecretUserRoleDefinition 'Microsoft.Authorization/roleDefinitio
 }
 
 module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
-  name: '${varDeploymentPrefix}-keyVaultSecretUserRoleAssignment'
+  name: '${varEnvironmentUniqueId}-keyVaultSecretUserRoleAssignment'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
@@ -100,7 +106,7 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
 }
 
 module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
-  name: '${varDeploymentPrefix}-apiManagementLogger'
+  name: '${varEnvironmentUniqueId}-apiManagementLogger'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
   dependsOn: [ keyVaultSecretUserRoleAssignment ]
 
@@ -111,7 +117,7 @@ module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimana
 }
 
 module platformScripts 'modules/platformScripts.bicep' = {
-  name: '${varDeploymentPrefix}-platformScripts'
+  name: '${varEnvironmentUniqueId}-platformScripts'
   scope: resourceGroup(defaultResourceGroup.name)
   dependsOn: [ keyVaultSecretUserRoleAssignment ]
 
@@ -131,11 +137,11 @@ module platformScripts 'modules/platformScripts.bicep' = {
 
 // API Management subscription for the repository API that will be used by the webapp
 module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-repositoryApimSubscriptionForWebApp'
+  name: '${varEnvironmentUniqueId}-repositoryApimSubscriptionForWebApp'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
-    parDeploymentPrefix: varDeploymentPrefix
+    parDeploymentPrefix: varEnvironmentUniqueId
     parApiManagementName: varApiManagementRef.Name
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: defaultResourceGroup.name
@@ -149,11 +155,11 @@ module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep
 
 // API Management subscription for the repository API that will be used by the integration tests
 module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varDeploymentPrefix}-repositoryApimSubscriptionForTests'
+  name: '${varEnvironmentUniqueId}-repositoryApimSubscriptionForTests'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
-    parDeploymentPrefix: varDeploymentPrefix
+    parDeploymentPrefix: varEnvironmentUniqueId
     parApiManagementName: varApiManagementRef.Name
     parWorkloadSubscriptionId: subscription().subscriptionId
     parWorkloadResourceGroupName: defaultResourceGroup.name
@@ -165,5 +171,83 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
   }
 }
 
+// Main web app resource for the workload
+module webApp 'modules/webApp.bicep' = {
+  name: '${varEnvironmentUniqueId}-webApp'
+  scope: resourceGroup(defaultResourceGroup.name)
+
+  params: {
+    parWebAppName: varWebAppName
+    parEnvironment: parEnvironment
+    parInstance: parInstance
+    parLocation: parLocation
+
+    parKeyVaultRef: {
+      name: keyVault.outputs.outKeyVaultName
+      subscriptionId: subscription().subscriptionId
+      resourceGroupName: defaultResourceGroup.name
+    }
+
+    parAppInsightsRef: varAppInsightsRef
+    parAppServicePlanRef: varAppServicePlanRef
+    parApiManagementRef: varApiManagementRef
+    parFrontDoorRef: parFrontDoorRef
+
+    parRepositoryApi: parRepositoryApi
+
+    parTags: parTags
+
+    parServersIntegrationApiAppId: platformScripts.outputs.outServersIntegrationApiAppId
+  }
+}
+
+module webAppKeyVaultRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
+  name: '${varEnvironmentUniqueId}-webAppKeyVaultRoleAssignment'
+  scope: resourceGroup(defaultResourceGroup.name)
+
+  params: {
+    parKeyVaultName: varKeyVaultName
+    parRoleDefinitionId: keyVaultSecretUserRoleDefinition.id
+    parPrincipalId: webApp.outputs.outWebAppIdentityPrincipalId
+  }
+}
+
+module apiManagementApi 'modules/apiManagementApi.bicep' = {
+  name: '${varEnvironmentUniqueId}-apiManagementApi'
+  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+
+  params: {
+    parEnvironment: parEnvironment
+    parInstance: parInstance
+
+    parApiManagementName: varApiManagementRef.Name
+    parFrontDoorDns: varWorkloadName
+    parParentDnsName: parDns.ParentDnsName
+
+    parAppInsightsRef: varAppInsightsRef
+  }
+}
+
+module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
+  name: '${varEnvironmentUniqueId}-frontDoorEndpoint'
+  scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
+
+  params: {
+    parDeploymentPrefix: varEnvironmentUniqueId
+    parFrontDoorName: parFrontDoorRef.Name
+    parDnsSubscriptionId: parDns.SubscriptionId
+    parParentDnsName: parDns.ParentDnsName
+    parDnsResourceGroupName: parDns.DnsResourceGroupName
+    parWorkloadName: varWorkloadName
+    parOriginHostName: webApp.outputs.outWebAppDefaultHostName
+    parDnsZoneHostnamePrefix: varWorkloadName
+    parCustomHostname: '${varWorkloadName}.${parDns.ParentDnsName}'
+    parTags: parTags
+  }
+}
+
 // Outputs
 output keyVaultName string = keyVault.outputs.outKeyVaultName
+output webAppName string = webApp.outputs.outWebAppName
+
+output principalId string = webApp.outputs.outWebAppIdentityPrincipalId

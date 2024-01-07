@@ -11,6 +11,21 @@
         "parInstance": {
             "value": "01"
         },
+        "parFrontDoorRef": {
+            "value": {
+                "SubscriptionId": "db34f572-8b71-40d6-8f99-f29a27612144",
+                "ResourceGroupName": "rg-platform-frontdoor-prd-uksouth-01",
+                "Name": "fd-platform-prd-et7nxqc67pqjy"
+            }
+        },
+        "parDns": {
+            "value": {
+                "SubscriptionId": "db34f572-8b71-40d6-8f99-f29a27612144",
+                "DnsResourceGroupName": "rg-platform-dns-prd-uksouth-01",
+                "PublicWebAppDnsPrefix": "www",
+                "ParentDnsName": "geo-location.net"
+            }
+        },
         "parStrategicServices": {
             "value": {
                 "SubscriptionId": "903b6685-c12a-4703-ac54-7ec1ff15ca43",

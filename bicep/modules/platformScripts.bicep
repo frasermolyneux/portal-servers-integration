@@ -27,7 +27,7 @@ resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   properties: {
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.sh'
-    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}" "${loadJsonContent('./../../app-registration-manifests/portal-servers-integration-approles.json')}"'
+    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}" "${loadTextContent('./../../app-registration-manifests/portal-servers-integration-approles.json')}"'
     retentionInterval: 'P1D'
   }
 }

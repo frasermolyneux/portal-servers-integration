@@ -37,19 +37,19 @@ runs:
     - name: Build Bicep
       shell: bash
       run: |
-        az bicep build --file bicep/platform.bicep --stdout
+        az bicep build --file bicep/main.bicep --stdout
         az bicep build --file bicep/workload.bicep --stdout
 
     - name: Validate Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
-          --template-file bicep/platform.bicep `
-          --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
+          --template-file bicep/main.bicep `
+          --parameters @params/$($config.parameters.parEnvironment.value).json `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
         if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
@@ -64,13 +64,13 @@ runs:
     - name: WhatIf Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
-          --template-file bicep/platform.bicep `
-          --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
+          --template-file bicep/main.bicep `
+          --parameters @params/$($config.parameters.parEnvironment.value).json `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
         if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
@@ -85,7 +85,7 @@ runs:
     - name: Deploy Platform Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $deletedKeyVaults = az keyvault list-deleted --query '[].properties.vaultId' | ConvertFrom-Json
         $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"}
@@ -99,15 +99,15 @@ runs:
         az deployment sub create `
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
-          --template-file bicep/platform.bicep `
-          --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
+          --template-file bicep/main.bicep `
+          --parameters @params/$($config.parameters.parEnvironment.value).json `
           parKeyVaultCreateMode=$keyVaultCreateMode `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
     - name: Deploy Workload Bicep
       shell: pwsh
       run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
+        $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $serversIntegrationApiName = "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)"
         $serversIntegrationApiAppId = (az ad app list --filter "displayName eq '$serversIntegrationApiName'" --query '[].appId') | ConvertFrom-Json

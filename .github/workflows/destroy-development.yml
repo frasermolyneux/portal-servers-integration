@@ -34,7 +34,7 @@ jobs:
         $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
-        $webAppName = $deployment.properties.outputs.webAppName.value
+        $webAppName = $deploymentOutput.properties.outputs.webAppName.value
         $resourceGroupName = "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"
 
         az webapp delete --name $webAppName --resource-group $resourceGroupName --keep-empty-plan

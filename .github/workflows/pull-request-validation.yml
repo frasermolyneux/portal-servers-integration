@@ -60,7 +60,7 @@ jobs:
         $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
-        echo "web_app_name=$($deployment.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "web_app_name=$($deploymentOutput.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
         echo "web_app_resource_group_name=$($config.parStrategicServices.value.WebAppsResourceGroupName)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     outputs:

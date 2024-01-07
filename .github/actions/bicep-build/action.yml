@@ -8,6 +8,10 @@ inputs:
     description: "The azure client/application ID configured for federated access"
     required: true
     type: string
+  AZURE_DEPLOY_SCRIPT_IDENTITY:
+    description: "The user assigned identity to execute the deployment scripts under"
+    required: true
+    type: string
   AZURE_TENANT_ID:
     description: "The target Azure tenant"
     required: true
@@ -45,7 +49,8 @@ runs:
           --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
           --template-file bicep/platform.bicep `
-          --parameters @params/platform.$($config.parameters.parEnvironment.value).json
+          --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
+          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
         if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
           az deployment group validate `
@@ -65,7 +70,8 @@ runs:
           --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
           --location $config.parameters.parLocation.value `
           --template-file bicep/platform.bicep `
-          --parameters @params/platform.$($config.parameters.parEnvironment.value).json
+          --parameters @params/platform.$($config.parameters.parEnvironment.value).json `
+          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
         if ((az group exists --name "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") -eq $true) {
           az deployment group what-if `

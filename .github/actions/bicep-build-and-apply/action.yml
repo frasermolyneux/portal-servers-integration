@@ -104,22 +104,6 @@ runs:
           parKeyVaultCreateMode=$keyVaultCreateMode `
           parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
-    - name: Platform AAD Scripts
-      shell: pwsh
-      run: |
-        $config = (Get-Content params/platform.${{ inputs.environmentName }}.json | ConvertFrom-Json)
-
-        $keyVaultName = az deployment sub show --name "portal-servers-integration-platform-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }} --query properties.outputs.keyVaultName.value
-
-        . scripts/CreateAppRegistration.ps1 -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          -appRoles "portal-servers-integration-approles.json"
-
-        . scripts/CreateAppRegistrationCredential.ps1 -keyVaultName $keyVaultName `
-          -applicationName "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          -secretPrefix "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          -secretDisplayName "portalserversintegration"
-
     - name: Deploy Workload Bicep
       shell: pwsh
       run: |

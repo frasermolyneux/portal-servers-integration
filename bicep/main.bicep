@@ -1,12 +1,19 @@
 targetScope = 'subscription'
 
 // Parameters
+@description('The location of the resource group.')
 param parLocation string
+
+@description('The environment name (e.g. dev, tst, prd).')
 param parEnvironment string
+
+@description('The instance of the environment.')
 param parInstance string
 
+@description('The strategic services configuration.')
 param parStrategicServices object
 
+@description('The tags to apply to the resources.')
 param parTags object
 
 // Dynamic params from pipeline invocation
@@ -27,6 +34,18 @@ var varAppInsightsRef = {
   Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
   SubscriptionId: subscription().subscriptionId
   ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
+
+var varAppServicePlanRef = {
+  Name: 'asp-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+}
+
+var varApiManagementRef = {
+  Name: parStrategicServices.ApiManagementName
+  SubscriptionId: parStrategicServices.SubscriptionId
+  ResourceGroupName: parStrategicServices.ApiManagementResourceGroupName
 }
 
 // Existing Out-Of-Scope Resources

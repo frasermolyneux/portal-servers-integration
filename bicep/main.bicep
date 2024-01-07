@@ -13,6 +13,9 @@ param parInstance string
 @description('The strategic services configuration.')
 param parStrategicServices object
 
+@description('The repository API configuration.')
+param parRepositoryApi object
+
 @description('The tags to apply to the resources.')
 param parTags object
 
@@ -27,6 +30,7 @@ var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvir
 var varDeploymentPrefix = 'platform-${varEnvironmentUniqueId}' //Prevent deployment naming conflicts
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
 
 // External Resource References
@@ -122,6 +126,24 @@ module platformScripts 'modules/platformScripts.bicep' = {
       subscriptionId: subscription().subscriptionId
       resourceGroupName: defaultResourceGroup.name
     }
+  }
+}
+
+// API Management subscription for the repository API that will be used by the webapp
+module repositoryApimSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
+  name: '${varDeploymentPrefix}-repositoryApimSubscription'
+  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+
+  params: {
+    parDeploymentPrefix: varDeploymentPrefix
+    parApiManagementName: varApiManagementRef.Name
+    parWorkloadSubscriptionId: subscription().subscriptionId
+    parWorkloadResourceGroupName: defaultResourceGroup.name
+    parWorkloadName: varWebAppName
+    parKeyVaultName: varKeyVaultName
+    parSubscriptionScopeIdentifier: 'repository'
+    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
+    parTags: parTags
   }
 }
 

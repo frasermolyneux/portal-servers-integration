@@ -18,6 +18,15 @@
                 "ApiManagementName": "apim-platform-dev-uksouth-amjx44uuirhb6"
             }
         },
+        "parRepositoryApi": {
+            "value": {
+                "ApplicationName": "portal-repository-dev-01",
+                "ApplicationAudience": "api://portal-repository-dev-01",
+                "ApimApiName": "repository-api",
+                "ApiPath": "repository",
+                "Revision": "1"
+            }
+        },
         "parTags": {
             "value": {
                 "Environment": "dev",

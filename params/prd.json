@@ -18,6 +18,15 @@
                 "ApiManagementName": "apim-platform-prd-uksouth-ty7og2i6qpv3s"
             }
         },
+        "parRepositoryApi": {
+            "value": {
+                "ApplicationName": "portal-repository-prd-01",
+                "ApplicationAudience": "api://portal-repository-prd-01",
+                "ApimApiName": "repository-api",
+                "ApiPath": "repository",
+                "Revision": "1"
+            }
+        },
         "parTags": {
             "value": {
                 "Environment": "prd",

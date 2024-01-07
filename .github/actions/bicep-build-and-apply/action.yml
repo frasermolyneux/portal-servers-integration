@@ -90,7 +90,8 @@ runs:
       run: |
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
-        $deploymentOutput = (az deployment group show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)") | ConvertFrom-Json
+        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --subscription ${{ inputs.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
         $repositoryApiName = $config.parameters.parRepositoryApi.value.ApplicationName
         $repositoryApiId = (az ad app list --filter "displayName eq '$repositoryApiName'" --query '[].appId') | ConvertFrom-Json

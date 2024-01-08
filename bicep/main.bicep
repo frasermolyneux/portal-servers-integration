@@ -182,6 +182,8 @@ module webApp 'modules/webApp.bicep' = {
     parInstance: parInstance
     parLocation: parLocation
 
+    parScriptIdentity: parScriptIdentity
+
     parKeyVaultRef: {
       name: keyVault.outputs.outKeyVaultName
       subscriptionId: subscription().subscriptionId

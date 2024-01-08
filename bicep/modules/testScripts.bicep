@@ -13,6 +13,9 @@ param parLocation string
 @description('The user assigned identity to use to execute the script')
 param parScriptIdentity string
 
+@description('The name of the API application registration')
+param parApiAppRegistrationName string
+
 // -- References
 @description('The key vault reference')
 param parKeyVaultRef object
@@ -67,6 +70,25 @@ resource appRegistrationTestsCredentials 'Microsoft.Resources/deploymentScripts@
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistrationCredential.sh'
     arguments: '"${keyVault.name}" "portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "portalserversintegrationtests"'
+    retentionInterval: 'P1D'
+    forceUpdateTag: updateTag
+  }
+}
+
+resource appRegistrationTestsAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
+  name: 'script-app-registration-tests-approle-${parEnvironment}-${parInstance}'
+  location: parLocation
+  kind: 'AzureCLI'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${parScriptIdentity}': {}
+    }
+  }
+  properties: {
+    azCliVersion: '2.52.0'
+    primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/GrantApplicationAppRole.sh'
+    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "${parApiAppRegistrationName}" "ServiceAccount'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }

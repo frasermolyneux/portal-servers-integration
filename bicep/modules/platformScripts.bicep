@@ -73,4 +73,5 @@ resource appRegistrationCredentials 'Microsoft.Resources/deploymentScripts@2023-
 }
 
 // Outputs
+output outAppRegistrationName string = appRegistration.properties.outputs.appRegistrationName
 output outServersIntegrationApiAppId string = appRegistration.properties.outputs.applicationId

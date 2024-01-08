@@ -258,6 +258,8 @@ module testScripts 'modules/testScripts.bicep' = {
     parInstance: parInstance
     parScriptIdentity: parScriptIdentity
 
+    parApiAppRegistrationName: platformScripts.outputs.outAppRegistrationName
+
     parKeyVaultRef: {
       name: keyVault.outputs.outKeyVaultName
       subscriptionId: subscription().subscriptionId

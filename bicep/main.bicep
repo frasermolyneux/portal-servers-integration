@@ -246,6 +246,26 @@ module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoor
   }
 }
 
+// Integration Test Resources
+module testScripts 'modules/testScripts.bicep' = {
+  name: '${varEnvironmentUniqueId}-testScripts'
+  scope: resourceGroup(defaultResourceGroup.name)
+  dependsOn: [ keyVaultSecretUserRoleAssignment ]
+
+  params: {
+    parEnvironment: parEnvironment
+    parLocation: parLocation
+    parInstance: parInstance
+    parScriptIdentity: parScriptIdentity
+
+    parKeyVaultRef: {
+      name: keyVault.outputs.outKeyVaultName
+      subscriptionId: subscription().subscriptionId
+      resourceGroupName: defaultResourceGroup.name
+    }
+  }
+}
+
 // Outputs
 output keyVaultName string = keyVault.outputs.outKeyVaultName
 output webAppName string = webApp.outputs.outWebAppName

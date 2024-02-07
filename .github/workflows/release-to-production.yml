@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - main
-    schedule:
-      - cron: "0 3 * * 5" # Every Friday at 3am
+  schedule:
+    - cron: "0 3 * * 5" # Every Friday at 3am
 
 permissions:
   id-token: write # This is required for Az CLI Login

@@ -14,7 +14,6 @@ permissions:
 
 concurrency: # This is required to prevent multiple runs of the same workflow from running at the same time.
   group: ${{ github.workflow }}
-  cancel-in-progress: true
 
 jobs:
   dotnet-web-ci:

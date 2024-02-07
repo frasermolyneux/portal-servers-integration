@@ -16,7 +16,6 @@ jobs:
 
     concurrency: # # This is required to prevent multiple GitHub Actions invocations against stateful resources. e.g. Terraform state file / Database / Deployed Apps
       group: ${{ github.repository }}-dev
-      cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v4

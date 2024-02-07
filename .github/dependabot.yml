@@ -20,3 +20,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "devcontainers"
+    assignees: ["frasermolyneux"]
+    directory: "/"
+    schedule:
+      interval: weekly

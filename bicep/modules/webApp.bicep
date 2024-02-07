@@ -13,6 +13,9 @@ param parInstance string
 @description('The location of the resource group.')
 param parLocation string
 
+@description('The user assigned identity to use to execute the script')
+param parScriptIdentity string
+
 // -- References
 @description('The key vault reference')
 param parKeyVaultRef object
@@ -40,6 +43,10 @@ param parTags object
 
 // Dynamic params from pipeline invocation
 param parServersIntegrationApiAppId string
+
+// Variables
+@description('Script is idempotent; execute each deployment to prevent drift')
+param updateTag string = newGuid()
 
 // Existing Out-Of-Scope Resources
 resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
@@ -152,7 +159,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-${parInstance}-clientsecret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-${parInstance}-client-secret)'
         }
         {
           name: 'AzureAd__Audience'
@@ -164,7 +171,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'portal_repository_apim_subscription_key'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${parWebAppName}-repository-subscription-apikey)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${apiManagement.name}-${parWebAppName}-repository-subscription-api-key)'
         }
         {
           name: 'repository_api_application_audience'
@@ -180,6 +187,25 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
       ]
     }
+  }
+}
+
+resource webAppAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
+  name: 'script-webapp-approle-${parEnvironment}-${parInstance}'
+  location: parLocation
+  kind: 'AzureCLI'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${parScriptIdentity}': {}
+    }
+  }
+  properties: {
+    azCliVersion: '2.52.0'
+    primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/GrantPrincipalAppRole.sh'
+    arguments: '"${webApp.identity.principalId}" "${parRepositoryApi.ApplicationName}" "ServiceAccount'
+    retentionInterval: 'P1D'
+    forceUpdateTag: updateTag
   }
 }
 

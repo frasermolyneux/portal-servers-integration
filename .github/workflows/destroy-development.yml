@@ -1,7 +1,9 @@
 name: Destroy Development
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  
+  schedule:
+    - cron: "0 23 * * *"
 
 permissions:
   id-token: write # This is required for Az CLI Login
@@ -12,8 +14,9 @@ jobs:
     environment: Development
     runs-on: ubuntu-latest
 
-    concurrency:
+    concurrency: # # This is required to prevent multiple GitHub Actions invocations against stateful resources. e.g. Terraform state file / Database / Deployed Apps
       group: ${{ github.repository }}-dev
+      cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v4
@@ -25,7 +28,14 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    #TODO: This step should delete all of the resources for the development environment
     - shell: pwsh
       run: |
-        az group delete --name rg-portal-servers-integration-dev-uksouth --yes
+        $config = (Get-Content params/dev.json | ConvertFrom-Json)
+
+        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
+
+        $webAppName = $deploymentOutput.properties.outputs.webAppName.value
+        $resourceGroupName = "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"
+
+        az webapp delete --name $webAppName --resource-group $resourceGroupName --keep-empty-plan

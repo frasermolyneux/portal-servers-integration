@@ -41,8 +41,9 @@ jobs:
     environment: Development
     runs-on: ubuntu-latest
 
-    concurrency:
+    concurrency: # This is required to prevent multiple GitHub Actions invocations against stateful resources. e.g. Terraform state file / Database / Deployed Apps
       group: ${{ github.repository }}-dev
+      cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v4
@@ -51,18 +52,19 @@ jobs:
       with:
         environmentName: dev
         AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_DEPLOY_SCRIPT_IDENTITY: ${{ secrets.AZURE_DEPLOY_SCRIPT_IDENTITY }}
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - id: bicep-output
       shell: pwsh
       run: |
-        $config = (Get-Content params/workload.dev.json | ConvertFrom-Json)
+        $config = (Get-Content params/dev.json | ConvertFrom-Json)
 
-        $deployment = az deployment group show --name "portal-servers-integration-workload-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --resource-group "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)" | ConvertFrom-Json
+        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+          --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
-        echo "web_app_name=$($deployment.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "web_app_name=$($deploymentOutput.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
         echo "web_app_resource_group_name=$($config.parStrategicServices.value.WebAppsResourceGroupName)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     outputs:
@@ -74,8 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dotnet-web-ci, bicep-build-and-apply-dev]
 
-    concurrency:
+    concurrency: # This is required to prevent multiple GitHub Actions invocations against stateful resources. e.g. Terraform state file / Database / Deployed Apps
       group: ${{ github.repository }}-dev
+      cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v4

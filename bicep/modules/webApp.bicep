@@ -175,7 +175,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'portal_repository_apim_subscription_key_secondary'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=-${parWebAppName}-repository-api-key-secondary)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${parWebAppName}-repository-api-key-secondary)'
         }
         {
           name: 'repository_api_application_audience'

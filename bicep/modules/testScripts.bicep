@@ -69,7 +69,7 @@ resource appRegistrationTestsCredentials 'Microsoft.Resources/deploymentScripts@
   properties: {
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistrationCredential.sh'
-    arguments: '"${keyVault.name}" "portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "portalserversintegrationtests"'
+    arguments: '"${keyVault.name}" "portal-servers-integration-${parEnvironment}-${parInstance}-tests" "portal-servers-integration-${parEnvironment}-${parInstance}-tests" "portalserversintegrationtests"'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }
@@ -88,7 +88,7 @@ resource appRegistrationTestsAppRole 'Microsoft.Resources/deploymentScripts@2023
   properties: {
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/GrantApplicationAppRole.sh'
-    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}-integration-tests" "${parApiAppRegistrationName}" "ServiceAccount'
+    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}-tests" "${parApiAppRegistrationName}" "ServiceAccount'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }

@@ -36,7 +36,8 @@ builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
 builder.Services.AddRepositoryApiClient(options =>
 {
     options.BaseUrl = builder.Configuration["apim_base_url"] ?? builder.Configuration["repository_base_url"] ?? throw new ArgumentNullException("apim_base_url");
-    options.ApiKey = builder.Configuration["portal_repository_apim_subscription_key"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key");
+    options.PrimaryApiKey = builder.Configuration["portal_repository_apim_subscription_key_primary"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key_primary");
+    options.SecondaryApiKey = builder.Configuration["portal_repository_apim_subscription_key_secondary"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key_secondary");
     options.ApiAudience = builder.Configuration["repository_api_application_audience"] ?? throw new ArgumentNullException("repository_api_application_audience");
     options.ApiPathPrefix = builder.Configuration["repository_api_path_prefix"] ?? "repository";
 });

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.74.1" />
+    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.75.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 	  <PackageReference Include="FluentFTP" Version="50.0.1" />
 	  <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />

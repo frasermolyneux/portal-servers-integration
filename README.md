@@ -6,7 +6,6 @@
 | Code Quality            | [![Code Quality](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml)                                    |
 | Feature Development     | [![Feature Development](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/feature-development.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/feature-development.yml)             |
 | Pull Request Validation | [![Pull Request Validation](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pull-request-validation.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pull-request-validation.yml) |
-| Destroy Development     | [![Destroy Development](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/destroy-development.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/destroy-development.yml)             |
 | Release to Production   | [![Release to Production](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-to-production.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-to-production.yml)       |
 
 ---

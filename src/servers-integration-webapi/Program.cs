@@ -81,6 +81,8 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 app.MapGet("/", [AllowAnonymous] () => "OK");
@@ -98,5 +100,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/api/health").AllowAnonymous();
 
 app.Run();

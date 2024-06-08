@@ -29,6 +29,7 @@ builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceO
 {
     EnableAdaptiveSampling = false,
 });
+builder.Services.AddServiceProfiler();
 
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();

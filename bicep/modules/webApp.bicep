@@ -189,6 +189,14 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
           name: 'repository_api_path_prefix'
           value: parRepositoryApi.ApiPath
         }
+        {
+          name: 'APPINSIGHTS_PROFILERFEATURE_VERSION'
+          value: '1.0.0'
+        }
+        {
+          name: 'DiagnosticServices_EXTENSION_VERSION'
+          value: '~3'
+        }
       ]
     }
   }

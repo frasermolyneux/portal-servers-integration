@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.6" />
     <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.82.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-	  <PackageReference Include="FluentFTP" Version="50.0.1" />
+	  <PackageReference Include="FluentFTP" Version="50.1.0" />
 	  <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
 	  <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
 	  <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />

@@ -10,6 +10,9 @@ param parEnvironment string
 @description('The instance of the environment.')
 param parInstance string
 
+@description('The API Management name')
+param parApiManagementName string
+
 @description('The front door configuration.')
 param parFrontDoorRef object
 
@@ -35,6 +38,7 @@ param parScriptIdentity string
 var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvironment, parInstance)
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
+var varCoreResourceGroupName = 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
 var varWorkloadName = 'app-portal-servers-int-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
 var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
@@ -108,7 +112,7 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
 module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
   name: '${varEnvironmentUniqueId}-apiManagementLogger'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
-  dependsOn: [ keyVaultSecretUserRoleAssignment ]
+  dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
     parApiManagementName: varApiManagementRef.Name
@@ -119,7 +123,7 @@ module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimana
 module platformScripts 'modules/platformScripts.bicep' = {
   name: '${varEnvironmentUniqueId}-platformScripts'
   scope: resourceGroup(defaultResourceGroup.name)
-  dependsOn: [ keyVaultSecretUserRoleAssignment ]
+  dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
     parEnvironment: parEnvironment
@@ -216,6 +220,21 @@ module webAppKeyVaultRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/module
 
 module apiManagementApi 'modules/apiManagementApi.bicep' = {
   name: '${varEnvironmentUniqueId}-apiManagementApi'
+  scope: resourceGroup(varCoreResourceGroupName)
+
+  params: {
+    parEnvironment: parEnvironment
+    parInstance: parInstance
+
+    parApiManagementName: parApiManagementName
+    parBackendHostname: webApp.outputs.outWebAppDefaultHostName
+
+    parAppInsightsRef: varAppInsightsRef
+  }
+}
+
+module legacy_apiManagementApi 'modules/legacy_apiManagementApi.bicep' = {
+  name: '${varEnvironmentUniqueId}-apiManagementApi'
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
@@ -252,7 +271,7 @@ module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoor
 module testScripts 'modules/testScripts.bicep' = {
   name: '${varEnvironmentUniqueId}-testScripts'
   scope: resourceGroup(defaultResourceGroup.name)
-  dependsOn: [ keyVaultSecretUserRoleAssignment ]
+  dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
     parEnvironment: parEnvironment

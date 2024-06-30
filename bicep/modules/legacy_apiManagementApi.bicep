@@ -5,7 +5,8 @@ param parEnvironment string
 param parInstance string
 
 param parApiManagementName string
-param parBackendHostname string
+param parFrontDoorDns string
+param parParentDnsName string
 
 @description('The app insights reference')
 param parAppInsightsRef object
@@ -23,13 +24,13 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
 
 // Module Resources
 resource apiBackend 'Microsoft.ApiManagement/service/backends@2021-08-01' = {
-  name: parBackendHostname
+  name: parFrontDoorDns
   parent: apiManagement
 
   properties: {
-    title: parBackendHostname
-    description: parBackendHostname
-    url: 'https://${parBackendHostname}/'
+    title: parFrontDoorDns
+    description: parFrontDoorDns
+    url: 'https://${parFrontDoorDns}.${parParentDnsName}/'
     protocol: 'http'
     properties: {}
 

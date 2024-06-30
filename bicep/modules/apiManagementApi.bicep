@@ -94,19 +94,20 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' = 
   parent: api
   properties: {
     format: 'xml'
-    value: '''
+    value: format(
+      '''
 <policies>
   <inbound>
       <base/>
       <set-backend-service backend-id="{{servers-integration-api-active-backend}}" />
       <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
       <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
-          <openid-config url="{{tenant-login-url}}{{tenant-id}}/v2.0/.well-known/openid-configuration" />
+          <openid-config url="%s%s/v2.0/.well-known/openid-configuration" />
           <audiences>
               <audience>{{servers-integration-api-audience}}</audience>
           </audiences>
           <issuers>
-              <issuer>https://sts.windows.net/{{tenant-id}}/</issuer>
+              <issuer>https://sts.windows.net/%s/</issuer>
           </issuers>
           <required-claims>
               <claim name="roles" match="any">
@@ -123,7 +124,11 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' = 
       <cache-store duration="3600" />
   </outbound>
   <on-error />
-</policies>'''
+</policies>''',
+      environment().authentication.loginEndpoint,
+      tenant().tenantId,
+      tenant().tenantId
+    )
   }
 
   dependsOn: [

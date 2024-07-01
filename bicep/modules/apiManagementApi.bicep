@@ -94,12 +94,37 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' = 
   parent: api
   properties: {
     format: 'xml'
-    value: format(
-      loadTextContent('../policies/apim-policy.xml'),
-      environment().authentication.loginEndpoint,
-      tenant().tenantId,
-      tenant().tenantId
-    )
+    value: '''
+<policies>
+  <inbound>
+      <base/>
+      <set-backend-service backend-id="{{servers-integration-api-active-backend}}" />
+      <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
+      <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
+          <openid-config url="https://login.microsoftonline.com/e56a6947-bb9a-4a6e-846a-1f118d1c3a14/v2.0/.well-known/openid-configuration" />
+          <audiences>
+              <audience>{{servers-integration-api-audience}}</audience>
+          </audiences>
+          <issuers>
+              <issuer>https://sts.windows.net/e56a6947-bb9a-4a6e-846a-1f118d1c3a14/</issuer>
+          </issuers>
+          <required-claims>
+              <claim name="roles" match="any">
+                <value>ServiceAccount</value>
+              </claim>
+          </required-claims>
+      </validate-jwt>
+  </inbound>
+  <backend>
+      <forward-request />
+  </backend>
+  <outbound>
+      <base/>
+      <cache-store duration="3600" />
+  </outbound>
+  <on-error />
+</policies>
+    '''
   }
 
   dependsOn: [

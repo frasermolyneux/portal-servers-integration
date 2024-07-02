@@ -243,7 +243,7 @@ module legacy_apiManagementApi 'modules/legacy_apiManagementApi.bicep' = {
 
     parApiManagementName: varApiManagementRef.Name
     parFrontDoorDns: varWorkloadName
-    parParentDnsName: parDns.ParentDnsName
+    parParentDnsName: parDns.Domain
 
     parAppInsightsRef: varAppInsightsRef
   }
@@ -257,12 +257,12 @@ module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoor
     parDeploymentPrefix: varEnvironmentUniqueId
     parFrontDoorName: parFrontDoorRef.Name
     parDnsSubscriptionId: parDns.SubscriptionId
-    parParentDnsName: parDns.ParentDnsName
+    parParentDnsName: parDns.Domain
     parDnsResourceGroupName: parDns.DnsResourceGroupName
     parWorkloadName: varWorkloadName
     parOriginHostName: webApp.outputs.outWebAppDefaultHostName
     parDnsZoneHostnamePrefix: varWorkloadName
-    parCustomHostname: '${varWorkloadName}.${parDns.ParentDnsName}'
+    parCustomHostname: '${varWorkloadName}.${parDns.Domain}'
     parTags: parTags
   }
 }

@@ -258,7 +258,7 @@ module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoor
     parFrontDoorName: parFrontDoorRef.Name
     parDnsSubscriptionId: parDns.SubscriptionId
     parParentDnsName: parDns.Domain
-    parDnsResourceGroupName: parDns.DnsResourceGroupName
+    parDnsResourceGroupName: parDns.ResourceGroupName
     parWorkloadName: varWorkloadName
     parOriginHostName: webApp.outputs.outWebAppDefaultHostName
     parDnsZoneHostnamePrefix: varWorkloadName

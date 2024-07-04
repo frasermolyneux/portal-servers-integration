@@ -147,7 +147,7 @@ module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep
   params: {
     apiManagementName: apiManagement.name
     subscriptionName: varWebAppName
-    apiScope: '/apis/${parRepositoryApi.ApimApiName}'
+    apiScope: parRepositoryApi.ApimApiName
     keyVaultRef: {
       Name: varKeyVaultName
       SubscriptionId: subscription().subscriptionId
@@ -165,7 +165,7 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
   params: {
     apiManagementName: apiManagement.name
     subscriptionName: '${varWebAppName}-tests'
-    apiScope: '/apis/${parRepositoryApi.ApimApiName}'
+    apiScope: parRepositoryApi.ApimApiName
     keyVaultRef: {
       Name: varKeyVaultName
       SubscriptionId: subscription().subscriptionId

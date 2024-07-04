@@ -115,8 +115,8 @@ module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimana
   dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
-    parApiManagementName: varApiManagementRef.Name
-    parAppInsightsRef: varAppInsightsRef
+    apiManagementName: varApiManagementRef.Name
+    appInsightsRef: varAppInsightsRef
   }
 }
 
@@ -145,15 +145,15 @@ module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
-    parDeploymentPrefix: varEnvironmentUniqueId
-    parApiManagementName: varApiManagementRef.Name
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: defaultResourceGroup.name
-    parWorkloadName: varWebAppName
-    parKeyVaultName: varKeyVaultName
-    parSubscriptionScopeIdentifier: 'repository'
-    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
-    parTags: parTags
+    apiManagementName: apiManagement.name
+    subscriptionName: varWebAppName
+    apiScope: '/apis/${parRepositoryApi.ApimApiName}'
+    keyVaultRef: {
+      Name: varKeyVaultName
+      SubscriptionId: subscription().subscriptionId
+      ResourceGroupName: defaultResourceGroup.name
+    }
+    tags: parTags
   }
 }
 
@@ -163,15 +163,15 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
   scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
 
   params: {
-    parDeploymentPrefix: varEnvironmentUniqueId
-    parApiManagementName: varApiManagementRef.Name
-    parWorkloadSubscriptionId: subscription().subscriptionId
-    parWorkloadResourceGroupName: defaultResourceGroup.name
-    parWorkloadName: '${varWebAppName}-tests'
-    parKeyVaultName: varKeyVaultName
-    parSubscriptionScopeIdentifier: 'repository'
-    parSubscriptionScope: '/apis/${parRepositoryApi.ApimApiName}'
-    parTags: parTags
+    apiManagementName: apiManagement.name
+    subscriptionName: '${varWebAppName}-tests'
+    apiScope: '/apis/${parRepositoryApi.ApimApiName}'
+    keyVaultRef: {
+      Name: varKeyVaultName
+      SubscriptionId: subscription().subscriptionId
+      ResourceGroupName: defaultResourceGroup.name
+    }
+    tags: parTags
   }
 }
 

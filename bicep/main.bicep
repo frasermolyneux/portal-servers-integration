@@ -254,16 +254,15 @@ module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoor
   scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
 
   params: {
-    parDeploymentPrefix: varEnvironmentUniqueId
-    parFrontDoorName: parFrontDoorRef.Name
-    parDnsSubscriptionId: parDns.SubscriptionId
-    parParentDnsName: parDns.Domain
-    parDnsResourceGroupName: parDns.ResourceGroupName
-    parWorkloadName: varWorkloadName
-    parOriginHostName: webApp.outputs.outWebAppDefaultHostName
-    parDnsZoneHostnamePrefix: varWorkloadName
-    parCustomHostname: '${varWorkloadName}.${parDns.Domain}'
-    parTags: parTags
+    frontDoorName: parFrontDoorRef.Name
+    dnsZoneRef: {
+      SubscriptionId: parDns.SubscriptionId
+      ResourceGroupName: parDns.ResourceGroupName
+      Name: parDns.Domain
+    }
+    subdomain: parDns.Subdomain
+    originHostName: webApp.outputs.outWebAppDefaultHostName
+    tags: parTags
   }
 }
 

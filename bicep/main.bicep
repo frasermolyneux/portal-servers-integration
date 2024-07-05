@@ -139,24 +139,6 @@ module platformScripts 'modules/platformScripts.bicep' = {
   }
 }
 
-// API Management subscription for the repository API that will be used by the webapp
-module repositoryApimSubscriptionForWebApp 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varEnvironmentUniqueId}-repositoryApimSubscriptionForWebApp'
-  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
-
-  params: {
-    apiManagementName: apiManagement.name
-    subscriptionName: varWebAppName
-    apiScope: parRepositoryApi.ApimApiName
-    keyVaultRef: {
-      Name: varKeyVaultName
-      SubscriptionId: subscription().subscriptionId
-      ResourceGroupName: defaultResourceGroup.name
-    }
-    tags: parTags
-  }
-}
-
 // API Management subscription for the repository API that will be used by the integration tests
 module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
   name: '${varEnvironmentUniqueId}-repositoryApimSubscriptionForTests'
@@ -164,7 +146,7 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
 
   params: {
     apiManagementName: apiManagement.name
-    subscriptionName: '${varWebAppName}-tests'
+    workloadName: '${varWebAppName}-tests'
     apiScope: parRepositoryApi.ApimApiName
     keyVaultRef: {
       Name: varKeyVaultName

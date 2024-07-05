@@ -224,27 +224,9 @@ module legacy_apiManagementApi 'modules/legacy_apiManagementApi.bicep' = {
     parInstance: parInstance
 
     parApiManagementName: varApiManagementRef.Name
-    parFrontDoorDns: varWorkloadName
-    parParentDnsName: parDns.Domain
+    parBackendHostname: webApp.outputs.outWebAppDefaultHostName
 
     parAppInsightsRef: varAppInsightsRef
-  }
-}
-
-module frontDoorEndpoint 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/frontdoorendpoint:latest' = {
-  name: '${varEnvironmentUniqueId}-frontDoorEndpoint'
-  scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
-
-  params: {
-    frontDoorName: parFrontDoorRef.Name
-    dnsZoneRef: {
-      SubscriptionId: parDns.SubscriptionId
-      ResourceGroupName: parDns.ResourceGroupName
-      Name: parDns.Domain
-    }
-    subdomain: parDns.Subdomain
-    originHostName: webApp.outputs.outWebAppDefaultHostName
-    tags: parTags
   }
 }
 

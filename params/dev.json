@@ -25,8 +25,8 @@
             "value": {
                 "SubscriptionId": "db34f572-8b71-40d6-8f99-f29a27612144",
                 "ResourceGroupName": "rg-platform-dns-prd-uksouth-01",
-                "Domain": "geo-location.net",
-                "Subdomain": "dev"
+                "Domain": "xtremeidiots.dev",
+                "Subdomain": "servers-integration-dev"
             }
         },
         "parStrategicServices": {

@@ -136,7 +136,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__Instance'
-          value: environment().authentication.loginEndpoint
+          value: az.environment().authentication.loginEndpoint
         }
         {
           name: 'AzureAd__ClientId'

@@ -1,24 +1,26 @@
 targetScope = 'resourceGroup'
 
 // Parameters
-param parEnvironment string
-param parInstance string
+@description('The environment for the resources')
+param environment string
+param instance string
 
-param parApiManagementName string
-param parBackendHostname string
+@description('The api management resource name')
+param apiManagementName string
+param backendHostname string
 
-@description('The app insights reference')
-param parAppInsightsRef object
+@description('A reference to the app insights resource')
+param appInsightsRef object
 
 // Existing In-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: parApiManagementName
+  name: apiManagementName
 }
 
 // Existing Out-Of-Scope Resources
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: parAppInsightsRef.Name
-  scope: resourceGroup(parAppInsightsRef.SubscriptionId, parAppInsightsRef.ResourceGroupName)
+  name: appInsightsRef.Name
+  scope: resourceGroup(appInsightsRef.SubscriptionId, appInsightsRef.ResourceGroupName)
 }
 
 // Module Resources
@@ -27,9 +29,9 @@ resource apiBackend 'Microsoft.ApiManagement/service/backends@2021-08-01' = {
   parent: apiManagement
 
   properties: {
-    title: parBackendHostname
-    description: parBackendHostname
-    url: 'https://${parBackendHostname}/'
+    title: backendHostname
+    description: backendHostname
+    url: 'https://${backendHostname}/'
     protocol: 'http'
     properties: {}
 
@@ -57,7 +59,7 @@ resource apiAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2021
 
   properties: {
     displayName: 'servers-integration-api-audience'
-    value: 'api://portal-servers-integration-${parEnvironment}-${parInstance}'
+    value: 'api://portal-servers-integration-${environment}-${instance}'
     secret: false
   }
 }

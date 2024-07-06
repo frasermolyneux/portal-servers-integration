@@ -45,11 +45,11 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --location $config.parameters.parLocation.value `
+          --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
+          --location $config.parameters.location.value `
           --template-file bicep/main.bicep `
-          --parameters @params/$($config.parameters.parEnvironment.value).json `
-          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
+          --parameters @params/$($config.parameters.environment.value).json `
+          scriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
     - name: WhatIf Bicep
       shell: pwsh
@@ -57,11 +57,11 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --location $config.parameters.parLocation.value `
+          --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
+          --location $config.parameters.location.value `
           --template-file bicep/main.bicep `
-          --parameters @params/$($config.parameters.parEnvironment.value).json `
-          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
+          --parameters @params/$($config.parameters.environment.value).json `
+          scriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
     - name: Deploy Bicep
       shell: pwsh
@@ -69,7 +69,7 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         $deletedKeyVaults = az keyvault list-deleted --query '[].properties.vaultId' | ConvertFrom-Json
-        $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parLocation.value)-$($config.parameters.parInstance.value)"}
+        $isDeleted = $deletedKeyVaults | where {$_ -match "rg-portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.location.value)-$($config.parameters.instance.value)"}
 
         $keyVaultCreateMode = "default"
         if ($isDeleted -ne $null) {
@@ -78,9 +78,9 @@ runs:
         }
 
         az deployment sub create `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --location $config.parameters.parLocation.value `
+          --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
+          --location $config.parameters.location.value `
           --template-file bicep/main.bicep `
-          --parameters @params/$($config.parameters.parEnvironment.value).json `
-          parKeyVaultCreateMode=$keyVaultCreateMode `
-          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
+          --parameters @params/$($config.parameters.environment.value).json `
+          keyVaultCreateMode=$keyVaultCreateMode `
+          scriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}

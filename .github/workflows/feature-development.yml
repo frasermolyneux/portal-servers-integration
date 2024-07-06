@@ -60,7 +60,7 @@ jobs:
       run: |
         $config = (Get-Content params/dev.json | ConvertFrom-Json)
 
-        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
+        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
           --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
         echo "web_app_name=$($deploymentOutput.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append

@@ -1,21 +1,21 @@
 targetScope = 'resourceGroup'
 
 // Parameters
-@description('The environment name (e.g. dev, tst, prd).')
-param parEnvironment string
+@description('The environment for the resources')
+param environment string
 
 @description('The instance of the environment.')
-param parInstance string
+param instance string
 
-@description('The location of the resource group.')
-param parLocation string
+@description('The location to deploy the resources')
+param location string
 
 @description('The user assigned identity to use to execute the script')
-param parScriptIdentity string
+param scriptIdentity string
 
 // -- References
-@description('The key vault reference')
-param parKeyVaultRef object
+@description('A reference to the key vault resource')
+param keyVaultRef object
 
 // Variables
 @description('Script is idempotent; execute each deployment to prevent drift')
@@ -23,19 +23,19 @@ param updateTag string = newGuid()
 
 // Existing Out-Of-Scope Resources
 resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
-  name: parKeyVaultRef.Name
-  scope: resourceGroup(parKeyVaultRef.SubscriptionId, parKeyVaultRef.ResourceGroupName)
+  name: keyVaultRef.Name
+  scope: resourceGroup(keyVaultRef.SubscriptionId, keyVaultRef.ResourceGroupName)
 }
 
 // Module Resources
 resource appRegistration 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'script-app-registration-${parEnvironment}-${parInstance}'
-  location: parLocation
+  name: 'script-app-registration-${environment}-${instance}'
+  location: location
   kind: 'AzureCLI'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${parScriptIdentity}': {}
+      '${scriptIdentity}': {}
     }
   }
   properties: {
@@ -47,26 +47,26 @@ resource appRegistration 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
       }
     ]
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistration.sh'
-    arguments: '"portal-servers-integration-${parEnvironment}-${parInstance}"'
+    arguments: '"portal-servers-integration-${environment}-${instance}"'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }
 }
 
 resource appRegistrationCredentials 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'script-app-registration-credentials-${parEnvironment}-${parInstance}'
-  location: parLocation
+  name: 'script-app-registration-credentials-${environment}-${instance}'
+  location: location
   kind: 'AzureCLI'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${parScriptIdentity}': {}
+      '${scriptIdentity}': {}
     }
   }
   properties: {
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/CreateAppRegistrationCredential.sh'
-    arguments: '"${keyVault.name}" "portal-servers-integration-${parEnvironment}-${parInstance}" "portal-servers-integration-${parEnvironment}-${parInstance}" "portalserversintegration"'
+    arguments: '"${keyVault.name}" "portal-servers-integration-${environment}-${instance}" "portal-servers-integration-${environment}-${instance}" "portalserversintegration"'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }

@@ -1,81 +1,81 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The location of the resource group.')
-param parLocation string
+@description('The location to deploy the resources')
+param location string
 
 @description('The environment name (e.g. dev, tst, prd).')
-param parEnvironment string
+param environment string
 
 @description('The instance of the environment.')
-param parInstance string
+param instance string
 
-@description('The API Management name')
-param parApiManagementName string
+@description('The api management resource name')
+param apiManagementName string
 
 @description('The repository API configuration.')
-param parRepositoryApi object
+param repositoryApi object
 
 @description('The tags to apply to the resources.')
-param parTags object
+param tags object
 
 // Dynamic params from pipeline invocation
-param parKeyVaultCreateMode string = 'default'
+param keyVaultCreateMode string = 'default'
 
 @description('The user assigned identity to execute the deployment scripts under')
-param parScriptIdentity string
+param scriptIdentity string
 
 // Variables
-var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvironment, parInstance)
+var environmentUniqueId = uniqueString('portal-servers-integration', environment, instance)
 
-var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
-var varCoreResourceGroupName = 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
-var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
-var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
+var resourceGroupName = 'rg-portal-servers-integration-${environment}-${location}-${instance}'
+var coreResourceGroupName = 'rg-portal-core-${environment}-${location}-${instance}'
+var webAppName = 'app-portal-servers-int-${environment}-${location}-${instance}-${environmentUniqueId}'
+var keyVaultName = 'kv-${environmentUniqueId}-${location}'
 
 // External Resource References
-var varAppInsightsRef = {
+var appInsightsRef = {
   SubscriptionId: subscription().subscriptionId
-  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
-  Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  ResourceGroupName: 'rg-portal-core-${environment}-${location}-${instance}'
+  Name: 'ai-portal-core-${environment}-${location}-${instance}'
 }
 
-var varAppServicePlanRef = {
+var appServicePlanRef = {
   SubscriptionId: subscription().subscriptionId
-  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
-  Name: 'asp-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  ResourceGroupName: 'rg-portal-core-${environment}-${location}-${instance}'
+  Name: 'asp-portal-core-${environment}-${location}-${instance}'
 }
 
-var varApiManagementRef = {
+var apiManagementRef = {
   SubscriptionId: subscription().subscriptionId
-  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
-  Name: parApiManagementName
+  ResourceGroupName: 'rg-portal-core-${environment}-${location}-${instance}'
+  Name: apiManagementName
 }
 
 // Existing Out-Of-Scope Resources
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: varApiManagementRef.Name
-  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+  name: apiManagementRef.Name
+  scope: resourceGroup(apiManagementRef.SubscriptionId, apiManagementRef.ResourceGroupName)
 }
 
 // Module Resources
 resource defaultResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: varResourceGroupName
-  location: parLocation
-  tags: parTags
+  name: resourceGroupName
+  location: location
+  tags: tags
 
   properties: {}
 }
 
 module keyVault 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvault:latest' = {
-  name: '${varEnvironmentUniqueId}-keyVault'
+  name: '${environmentUniqueId}-keyVault'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    keyVaultName: varKeyVaultName
-    keyVaultCreateMode: parKeyVaultCreateMode
-    location: parLocation
-    tags: parTags
+    keyVaultName: keyVaultName
+    keyVaultCreateMode: keyVaultCreateMode
+    location: location
+    tags: tags
   }
 }
 
@@ -86,7 +86,7 @@ resource keyVaultSecretUserRoleDefinition 'Microsoft.Authorization/roleDefinitio
 }
 
 module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
-  name: '${varEnvironmentUniqueId}-keyVaultSecretUserRoleAssignment'
+  name: '${environmentUniqueId}-keyVaultSecretUserRoleAssignment'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
@@ -97,121 +97,121 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
 }
 
 module apiManagementLogger 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementlogger:latest' = {
-  name: '${varEnvironmentUniqueId}-apiManagementLogger'
-  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+  name: '${environmentUniqueId}-apiManagementLogger'
+  scope: resourceGroup(apiManagementRef.SubscriptionId, apiManagementRef.ResourceGroupName)
   dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
-    apiManagementName: varApiManagementRef.Name
-    appInsightsRef: varAppInsightsRef
+    apiManagementName: apiManagementRef.Name
+    appInsightsRef: appInsightsRef
   }
 }
 
 module platformScripts 'modules/platformScripts.bicep' = {
-  name: '${varEnvironmentUniqueId}-platformScripts'
+  name: '${environmentUniqueId}-platformScripts'
   scope: resourceGroup(defaultResourceGroup.name)
   dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
-    parEnvironment: parEnvironment
-    parLocation: parLocation
-    parInstance: parInstance
-    parScriptIdentity: parScriptIdentity
-    parKeyVaultRef: keyVault.outputs.keyVaultRef
+    environment: environment
+    location: location
+    instance: instance
+    scriptIdentity: scriptIdentity
+    keyVaultRef: keyVault.outputs.keyVaultRef
   }
 }
 
 // API Management subscription for the repository API that will be used by the integration tests
 module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
-  name: '${varEnvironmentUniqueId}-repositoryApimSubscriptionForTests'
-  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
+  name: '${environmentUniqueId}-repositoryApimSubscriptionForTests'
+  scope: resourceGroup(apiManagementRef.SubscriptionId, apiManagementRef.ResourceGroupName)
 
   params: {
     apiManagementName: apiManagement.name
-    workloadName: '${varWebAppName}-tests'
-    apiScope: parRepositoryApi.ApimApiName
+    workloadName: '${webAppName}-tests'
+    apiScope: repositoryApi.ApimApiName
     keyVaultRef: {
-      Name: varKeyVaultName
+      Name: keyVaultName
       SubscriptionId: subscription().subscriptionId
       ResourceGroupName: defaultResourceGroup.name
     }
-    tags: parTags
+    tags: tags
   }
 }
 
 // Main web app resource for the workload
 module webApp 'modules/webApp.bicep' = {
-  name: '${varEnvironmentUniqueId}-webApp'
+  name: '${environmentUniqueId}-webApp'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    parWebAppName: varWebAppName
-    parEnvironment: parEnvironment
-    parInstance: parInstance
-    parLocation: parLocation
+    webAppName: webAppName
+    environment: environment
+    instance: instance
+    location: location
 
-    parScriptIdentity: parScriptIdentity
+    scriptIdentity: scriptIdentity
 
-    parKeyVaultRef: keyVault.outputs.keyVaultRef
+    keyVaultRef: keyVault.outputs.keyVaultRef
 
-    parAppInsightsRef: varAppInsightsRef
-    parAppServicePlanRef: varAppServicePlanRef
-    parApiManagementRef: varApiManagementRef
+    appInsightsRef: appInsightsRef
+    appServicePlanRef: appServicePlanRef
+    apiManagementRef: apiManagementRef
 
-    parRepositoryApi: parRepositoryApi
+    repositoryApi: repositoryApi
 
-    parTags: parTags
+    tags: tags
 
-    parServersIntegrationApiAppId: platformScripts.outputs.outServersIntegrationApiAppId
+    serversIntegrationApiAppId: platformScripts.outputs.outServersIntegrationApiAppId
   }
 }
 
 module webAppKeyVaultRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/keyvaultroleassignment:latest' = {
-  name: '${varEnvironmentUniqueId}-webAppKeyVaultRoleAssignment'
+  name: '${environmentUniqueId}-webAppKeyVaultRoleAssignment'
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    keyVaultName: varKeyVaultName
-    principalId: webApp.outputs.outWebAppIdentityPrincipalId
+    keyVaultName: keyVaultName
+    principalId: webApp.outputs.webAppIdentityPrincipalId
     roleDefinitionId: keyVaultSecretUserRoleDefinition.id
   }
 }
 
 module apiManagementApi 'modules/apiManagementApi.bicep' = {
-  name: '${varEnvironmentUniqueId}-apiManagementApi'
-  scope: resourceGroup(varCoreResourceGroupName)
+  name: '${environmentUniqueId}-apiManagementApi'
+  scope: resourceGroup(coreResourceGroupName)
 
   params: {
-    parEnvironment: parEnvironment
-    parInstance: parInstance
+    environment: environment
+    instance: instance
 
-    parApiManagementName: parApiManagementName
-    parBackendHostname: webApp.outputs.outWebAppDefaultHostName
+    apiManagementName: apiManagementName
+    backendHostname: webApp.outputs.outWebAppDefaultHostName
 
-    parAppInsightsRef: varAppInsightsRef
+    appInsightsRef: appInsightsRef
   }
 }
 
 // Integration Test Resources
 module testScripts 'modules/testScripts.bicep' = {
-  name: '${varEnvironmentUniqueId}-testScripts'
+  name: '${environmentUniqueId}-testScripts'
   scope: resourceGroup(defaultResourceGroup.name)
   dependsOn: [keyVaultSecretUserRoleAssignment]
 
   params: {
-    parEnvironment: parEnvironment
-    parLocation: parLocation
-    parInstance: parInstance
-    parScriptIdentity: parScriptIdentity
+    environment: environment
+    location: location
+    instance: instance
+    scriptIdentity: scriptIdentity
 
-    parApiAppRegistrationName: platformScripts.outputs.outAppRegistrationName
+    apiAppRegistrationName: platformScripts.outputs.outAppRegistrationName
 
-    parKeyVaultRef: keyVault.outputs.keyVaultRef
+    keyVaultRef: keyVault.outputs.keyVaultRef
   }
 }
 
 // Outputs
 output keyVaultName string = keyVault.outputs.keyVaultRef.name
-output webAppName string = webApp.outputs.outWebAppName
+output webAppName string = webApp.outputs.webAppName
 output webAppResourceGroup string = webApp.outputs.outWebAppResourceGroup
-output principalId string = webApp.outputs.outWebAppIdentityPrincipalId
+output principalId string = webApp.outputs.webAppIdentityPrincipalId

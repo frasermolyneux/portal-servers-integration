@@ -45,11 +45,11 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub validate `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --location $config.parameters.parLocation.value `
+          --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
+          --location $config.parameters.location.value `
           --template-file bicep/main.bicep `
-          --parameters @params/$($config.parameters.parEnvironment.value).json `
-          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
+          --parameters @params/$($config.parameters.environment.value).json `
+          scriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
 
     - name: WhatIf Bicep
       shell: pwsh
@@ -57,8 +57,8 @@ runs:
         $config = (Get-Content params/${{ inputs.environmentName }}.json | ConvertFrom-Json)
 
         az deployment sub what-if `
-          --name "portal-servers-integration-$($config.parameters.parEnvironment.value)-$($config.parameters.parInstance.value)" `
-          --location $config.parameters.parLocation.value `
+          --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
+          --location $config.parameters.location.value `
           --template-file bicep/main.bicep `
-          --parameters @params/$($config.parameters.parEnvironment.value).json `
-          parScriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}
+          --parameters @params/$($config.parameters.environment.value).json `
+          scriptIdentity=${{ inputs.AZURE_DEPLOY_SCRIPT_IDENTITY }}

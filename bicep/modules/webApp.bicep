@@ -2,44 +2,44 @@ targetScope = 'resourceGroup'
 
 // Parameters
 @description('The name of the web app.')
-param parWebAppName string
+param webAppName string
 
-@description('The environment name (e.g. dev, tst, prd).')
-param parEnvironment string
+@description('The environment for the resources')
+param environment string
 
 @description('The instance of the environment.')
-param parInstance string
+param instance string
 
-@description('The location of the resource group.')
-param parLocation string
+@description('The location to deploy the resources')
+param location string
 
 @description('The user assigned identity to use to execute the script')
-param parScriptIdentity string
+param scriptIdentity string
 
 // -- References
-@description('The key vault reference')
-param parKeyVaultRef object
+@description('A reference to the key vault resource')
+param keyVaultRef object
 
-@description('The app insights reference')
-param parAppInsightsRef object
+@description('A reference to the app insights resource')
+param appInsightsRef object
 
-@description('The app service plan reference')
-param parAppServicePlanRef object
+@description('A reference to the app service plan resource')
+param appServicePlanRef object
 
-@description('The api management reference')
-param parApiManagementRef object
+@description('A reference to the api management resource')
+param apiManagementRef object
 
 // -- Apis
 
 @description('The repository api object.')
-param parRepositoryApi object
+param repositoryApi object
 
 // -- Common
 @description('The tags to apply to the resources.')
-param parTags object
+param tags object
 
 // Dynamic params from pipeline invocation
-param parServersIntegrationApiAppId string
+param serversIntegrationApiAppId string
 
 // Variables
 @description('Script is idempotent; execute each deployment to prevent drift')
@@ -47,44 +47,44 @@ param updateTag string = newGuid()
 
 // Existing Out-Of-Scope Resources
 resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
-  name: parKeyVaultRef.Name
-  scope: resourceGroup(parKeyVaultRef.SubscriptionId, parKeyVaultRef.ResourceGroupName)
+  name: keyVaultRef.Name
+  scope: resourceGroup(keyVaultRef.SubscriptionId, keyVaultRef.ResourceGroupName)
 }
 
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {
-  name: parApiManagementRef.Name
-  scope: resourceGroup(parApiManagementRef.SubscriptionId, parApiManagementRef.ResourceGroupName)
+  name: apiManagementRef.Name
+  scope: resourceGroup(apiManagementRef.SubscriptionId, apiManagementRef.ResourceGroupName)
 }
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2020-10-01' existing = {
-  name: parAppServicePlanRef.Name
-  scope: resourceGroup(parAppServicePlanRef.SubscriptionId, parAppServicePlanRef.ResourceGroupName)
+  name: appServicePlanRef.Name
+  scope: resourceGroup(appServicePlanRef.SubscriptionId, appServicePlanRef.ResourceGroupName)
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: parAppInsightsRef.Name
-  scope: resourceGroup(parAppInsightsRef.SubscriptionId, parAppInsightsRef.ResourceGroupName)
+  name: appInsightsRef.Name
+  scope: resourceGroup(appInsightsRef.SubscriptionId, appInsightsRef.ResourceGroupName)
 }
 
 // Module Resources
 module repositoryApimSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/apimanagementsubscription:latest' = {
   name: 'repositoryApimSubscription'
-  scope: resourceGroup(parApiManagementRef.SubscriptionId, parApiManagementRef.ResourceGroupName)
+  scope: resourceGroup(apiManagementRef.SubscriptionId, apiManagementRef.ResourceGroupName)
 
   params: {
     apiManagementName: apiManagement.name
-    workloadName: parWebAppName
-    apiScope: parRepositoryApi.ApimApiName
-    keyVaultRef: parKeyVaultRef
-    tags: parTags
+    workloadName: webAppName
+    apiScope: repositoryApi.ApimApiName
+    keyVaultRef: keyVaultRef
+    tags: tags
   }
 }
 
 resource webApp 'Microsoft.Web/sites@2020-06-01' = {
-  name: parWebAppName
-  location: parLocation
+  name: webAppName
+  location: location
   kind: 'app'
-  tags: parTags
+  tags: tags
 
   identity: {
     type: 'SystemAssigned'
@@ -108,7 +108,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
       appSettings: [
         {
           name: 'READ_ONLY_MODE'
-          value: (parEnvironment == 'prd') ? 'true' : 'false'
+          value: (environment == 'prd') ? 'true' : 'false'
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -140,15 +140,15 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'AzureAd__ClientId'
-          value: parServersIntegrationApiAppId
+          value: serversIntegrationApiAppId
         }
         {
           name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${parEnvironment}-${parInstance}-client-secret)'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=portal-servers-integration-${environment}-${instance}-client-secret)'
         }
         {
           name: 'AzureAd__Audience'
-          value: 'api://portal-servers-integration-${parEnvironment}-${parInstance}'
+          value: 'api://portal-servers-integration-${environment}-${instance}'
         }
         {
           name: 'apim_base_url'
@@ -164,7 +164,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'repository_api_application_audience'
-          value: parRepositoryApi.ApplicationAudience
+          value: repositoryApi.ApplicationAudience
         }
         {
           name: 'xtremeidiots_ftp_certificate_thumbprint'
@@ -172,7 +172,7 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
         }
         {
           name: 'repository_api_path_prefix'
-          value: parRepositoryApi.ApiPath
+          value: repositoryApi.ApiPath
         }
         {
           name: 'APPINSIGHTS_PROFILERFEATURE_VERSION'
@@ -189,31 +189,31 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
 
 module webTest 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/webtest:latest' = {
   name: '${deployment().name}-webtest'
-  scope: resourceGroup(parAppInsightsRef.SubscriptionId, parAppInsightsRef.ResourceGroupName)
+  scope: resourceGroup(appInsightsRef.SubscriptionId, appInsightsRef.ResourceGroupName)
 
   params: {
     workloadName: webApp.name
     testUrl: 'https://${webApp.properties.defaultHostName}/api/health'
-    appInsightsRef: parAppInsightsRef
-    location: parLocation
-    tags: parTags
+    appInsightsRef: appInsightsRef
+    location: location
+    tags: tags
   }
 }
 
 resource webAppAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'script-webapp-approle-${parEnvironment}-${parInstance}'
-  location: parLocation
+  name: 'script-webapp-approle-${environment}-${instance}'
+  location: location
   kind: 'AzureCLI'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${parScriptIdentity}': {}
+      '${scriptIdentity}': {}
     }
   }
   properties: {
     azCliVersion: '2.52.0'
     primaryScriptUri: 'https://raw.githubusercontent.com/frasermolyneux/bicep-modules/main/scripts/GrantPrincipalAppRole.sh'
-    arguments: '"${webApp.identity.principalId}" "${parRepositoryApi.ApplicationName}" "ServiceAccount'
+    arguments: '"${webApp.identity.principalId}" "${repositoryApi.ApplicationName}" "ServiceAccount'
     retentionInterval: 'P1D'
     forceUpdateTag: updateTag
   }
@@ -221,6 +221,6 @@ resource webAppAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
 
 // Outputs
 output outWebAppDefaultHostName string = webApp.properties.defaultHostName
-output outWebAppIdentityPrincipalId string = webApp.identity.principalId
-output outWebAppName string = webApp.name
+output webAppIdentityPrincipalId string = webApp.identity.principalId
+output webAppName string = webApp.name
 output outWebAppResourceGroup string = resourceGroup().name

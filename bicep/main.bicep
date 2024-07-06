@@ -90,7 +90,7 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    keyVaultName: keyVault.outputs.outKeyVaultName
+    keyVaultName: keyVault.outputs.keyVaultRef.name
     principalId: apiManagement.identity.principalId
     roleDefinitionId: keyVaultSecretUserRoleDefinition.id
   }
@@ -117,12 +117,7 @@ module platformScripts 'modules/platformScripts.bicep' = {
     parLocation: parLocation
     parInstance: parInstance
     parScriptIdentity: parScriptIdentity
-
-    parKeyVaultRef: {
-      name: keyVault.outputs.outKeyVaultName
-      subscriptionId: subscription().subscriptionId
-      resourceGroupName: defaultResourceGroup.name
-    }
+    parKeyVaultRef: keyVault.outputs.keyVaultRef
   }
 }
 
@@ -157,11 +152,7 @@ module webApp 'modules/webApp.bicep' = {
 
     parScriptIdentity: parScriptIdentity
 
-    parKeyVaultRef: {
-      name: keyVault.outputs.outKeyVaultName
-      subscriptionId: subscription().subscriptionId
-      resourceGroupName: defaultResourceGroup.name
-    }
+    parKeyVaultRef: keyVault.outputs.keyVaultRef
 
     parAppInsightsRef: varAppInsightsRef
     parAppServicePlanRef: varAppServicePlanRef
@@ -215,16 +206,12 @@ module testScripts 'modules/testScripts.bicep' = {
 
     parApiAppRegistrationName: platformScripts.outputs.outAppRegistrationName
 
-    parKeyVaultRef: {
-      name: keyVault.outputs.outKeyVaultName
-      subscriptionId: subscription().subscriptionId
-      resourceGroupName: defaultResourceGroup.name
-    }
+    parKeyVaultRef: keyVault.outputs.keyVaultRef
   }
 }
 
 // Outputs
-output keyVaultName string = keyVault.outputs.outKeyVaultName
+output keyVaultName string = keyVault.outputs.keyVaultRef.name
 output webAppName string = webApp.outputs.outWebAppName
 output webAppResourceGroup string = webApp.outputs.outWebAppResourceGroup
 output principalId string = webApp.outputs.outWebAppIdentityPrincipalId

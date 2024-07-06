@@ -46,6 +46,7 @@ resource apiBackend 'Microsoft.ApiManagement/service/backends@2021-08-01' = {
           parBackendKey
         ]
       }
+    }
   }
 }
 

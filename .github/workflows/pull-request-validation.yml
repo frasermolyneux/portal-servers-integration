@@ -61,7 +61,7 @@ jobs:
           --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
         echo "web_app_name=$($deploymentOutput.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-        echo "web_app_resource_group_name=$($config.parStrategicServices.value.WebAppsResourceGroupName)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "web_app_resource_group_name=$($deploymentOutput.properties.outputs.webAppResourceGroup.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     outputs:
       web_app_name: ${{ steps.bicep-output.outputs.web_app_name }}

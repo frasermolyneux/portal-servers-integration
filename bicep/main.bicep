@@ -13,12 +13,6 @@ param parInstance string
 @description('The API Management name')
 param parApiManagementName string
 
-@description('The DNS configuration.')
-param parDns object
-
-@description('The strategic services configuration.')
-param parStrategicServices object
-
 @description('The repository API configuration.')
 param parRepositoryApi object
 
@@ -36,27 +30,26 @@ var varEnvironmentUniqueId = uniqueString('portal-servers-integration', parEnvir
 
 var varResourceGroupName = 'rg-portal-servers-integration-${parEnvironment}-${parLocation}-${parInstance}'
 var varCoreResourceGroupName = 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
-var varWorkloadName = 'app-portal-servers-int-${parEnvironment}-${parInstance}-${varEnvironmentUniqueId}'
 var varWebAppName = 'app-portal-servers-int-${parEnvironment}-${parLocation}-${parInstance}-${varEnvironmentUniqueId}'
 var varKeyVaultName = 'kv-${varEnvironmentUniqueId}-${parLocation}'
 
 // External Resource References
 var varAppInsightsRef = {
-  Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
   SubscriptionId: subscription().subscriptionId
   ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  Name: 'ai-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
 }
 
 var varAppServicePlanRef = {
-  Name: 'asp-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
   SubscriptionId: subscription().subscriptionId
   ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  Name: 'asp-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
 }
 
 var varApiManagementRef = {
-  Name: parStrategicServices.ApiManagementName
-  SubscriptionId: parStrategicServices.SubscriptionId
-  ResourceGroupName: parStrategicServices.ApiManagementResourceGroupName
+  SubscriptionId: subscription().subscriptionId
+  ResourceGroupName: 'rg-portal-core-${parEnvironment}-${parLocation}-${parInstance}'
+  Name: parApiManagementName
 }
 
 // Existing Out-Of-Scope Resources
@@ -211,21 +204,6 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
   }
 }
 
-module legacy_apiManagementApi 'modules/legacy_apiManagementApi.bicep' = {
-  name: '${varEnvironmentUniqueId}-apiManagementApi'
-  scope: resourceGroup(varApiManagementRef.SubscriptionId, varApiManagementRef.ResourceGroupName)
-
-  params: {
-    parEnvironment: parEnvironment
-    parInstance: parInstance
-
-    parApiManagementName: varApiManagementRef.Name
-    parBackendHostname: webApp.outputs.outWebAppDefaultHostName
-
-    parAppInsightsRef: varAppInsightsRef
-  }
-}
-
 // Integration Test Resources
 module testScripts 'modules/testScripts.bicep' = {
   name: '${varEnvironmentUniqueId}-testScripts'
@@ -251,5 +229,5 @@ module testScripts 'modules/testScripts.bicep' = {
 // Outputs
 output keyVaultName string = keyVault.outputs.outKeyVaultName
 output webAppName string = webApp.outputs.outWebAppName
-
+output webAppResourceGroup string = webApp.outputs.outWebAppResourceGroup
 output principalId string = webApp.outputs.outWebAppIdentityPrincipalId

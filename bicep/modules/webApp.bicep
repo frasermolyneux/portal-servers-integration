@@ -223,3 +223,4 @@ resource webAppAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
 output outWebAppDefaultHostName string = webApp.properties.defaultHostName
 output outWebAppIdentityPrincipalId string = webApp.identity.principalId
 output outWebAppName string = webApp.name
+output outWebAppResourceGroup string = resourceGroup().name

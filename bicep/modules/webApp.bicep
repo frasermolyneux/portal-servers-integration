@@ -29,9 +29,6 @@ param parAppServicePlanRef object
 @description('The api management reference')
 param parApiManagementRef object
 
-@description('The front door reference')
-param parFrontDoorRef object
-
 // -- Apis
 
 @description('The repository api object.')
@@ -52,11 +49,6 @@ param updateTag string = newGuid()
 resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' existing = {
   name: parKeyVaultRef.Name
   scope: resourceGroup(parKeyVaultRef.SubscriptionId, parKeyVaultRef.ResourceGroupName)
-}
-
-resource frontDoor 'Microsoft.Cdn/profiles@2021-06-01' existing = {
-  name: parFrontDoorRef.Name
-  scope: resourceGroup(parFrontDoorRef.SubscriptionId, parFrontDoorRef.ResourceGroupName)
 }
 
 resource apiManagement 'Microsoft.ApiManagement/service@2021-12-01-preview' existing = {

@@ -13,9 +13,6 @@ param parInstance string
 @description('The API Management name')
 param parApiManagementName string
 
-@description('The front door configuration.')
-param parFrontDoorRef object
-
 @description('The DNS configuration.')
 param parDns object
 
@@ -179,7 +176,6 @@ module webApp 'modules/webApp.bicep' = {
     parAppInsightsRef: varAppInsightsRef
     parAppServicePlanRef: varAppServicePlanRef
     parApiManagementRef: varApiManagementRef
-    parFrontDoorRef: parFrontDoorRef
 
     parRepositoryApi: parRepositoryApi
 

@@ -113,28 +113,6 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
 
       healthCheckPath: '/api/health'
 
-      ipSecurityRestrictions: [
-        {
-          ipAddress: 'AzureFrontDoor.Backend'
-          action: 'Allow'
-          tag: 'ServiceTag'
-          priority: 1000
-          name: 'RestrictToFrontDoor'
-          headers: {
-            'x-azure-fdid': [
-              frontDoor.properties.frontDoorId
-            ]
-          }
-        }
-        {
-          ipAddress: 'Any'
-          action: 'Deny'
-          priority: 2147483647
-          name: 'Deny all'
-          description: 'Deny all access'
-        }
-      ]
-
       appSettings: [
         {
           name: 'READ_ONLY_MODE'

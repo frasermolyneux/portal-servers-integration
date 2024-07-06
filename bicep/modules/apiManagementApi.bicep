@@ -6,8 +6,6 @@ param parInstance string
 
 param parApiManagementName string
 param parBackendHostname string
-@secure()
-param parBackendKey string
 
 @description('The app insights reference')
 param parAppInsightsRef object
@@ -38,14 +36,6 @@ resource apiBackend 'Microsoft.ApiManagement/service/backends@2021-08-01' = {
     tls: {
       validateCertificateChain: true
       validateCertificateName: true
-    }
-
-    credentials: {
-      query: {
-        code: [
-          parBackendKey
-        ]
-      }
     }
   }
 }

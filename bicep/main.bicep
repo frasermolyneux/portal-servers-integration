@@ -210,7 +210,6 @@ module apiManagementApi 'modules/apiManagementApi.bicep' = {
 
     parApiManagementName: parApiManagementName
     parBackendHostname: webApp.outputs.outWebAppDefaultHostName
-    parBackendKey: listkeys('${resourceId('Microsoft.Web/sites', varWebAppName)}/host/default', '2022-03-01').masterKey
 
     parAppInsightsRef: varAppInsightsRef
   }

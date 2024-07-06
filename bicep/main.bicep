@@ -90,9 +90,9 @@ module keyVaultSecretUserRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/mo
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    parKeyVaultName: keyVault.outputs.outKeyVaultName
-    parRoleDefinitionId: keyVaultSecretUserRoleDefinition.id
-    parPrincipalId: apiManagement.identity.principalId
+    keyVaultName: keyVault.outputs.outKeyVaultName
+    principalId: apiManagement.identity.principalId
+    roleDefinitionId: keyVaultSecretUserRoleDefinition.id
   }
 }
 
@@ -180,9 +180,9 @@ module webAppKeyVaultRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/module
   scope: resourceGroup(defaultResourceGroup.name)
 
   params: {
-    parKeyVaultName: varKeyVaultName
-    parRoleDefinitionId: keyVaultSecretUserRoleDefinition.id
-    parPrincipalId: webApp.outputs.outWebAppIdentityPrincipalId
+    keyVaultName: varKeyVaultName
+    principalId: webApp.outputs.outWebAppIdentityPrincipalId
+    roleDefinitionId: keyVaultSecretUserRoleDefinition.id
   }
 }
 

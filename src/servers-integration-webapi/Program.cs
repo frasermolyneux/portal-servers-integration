@@ -18,17 +18,29 @@ builder.Services.AddMemoryCache();
 
 builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
 {
-    var builder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
+    var telemetryProcessorChainBuilder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
 
-    // Using fixed rate sampling
-    double fixedSamplingPercentage = 50;
-    builder.UseSampling(fixedSamplingPercentage);
+    // Using adaptive sampling
+    telemetryProcessorChainBuilder.UseAdaptiveSampling(maxTelemetryItemsPerSecond: 5);
+
+    // Alternately, the following configures adaptive sampling with 5 items per second, and also excludes DependencyTelemetry from being subject to sampling:
+    telemetryProcessorChainBuilder.UseAdaptiveSampling(excludedTypes: "Dependency");
+
+    telemetryProcessorChainBuilder.Build();
 });
 
+//https://learn.microsoft.com/en-us/azure/azure-monitor/app/sampling-classic-api#configure-sampling-settings
+builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
+{
+    var telemetryProcessorChainBuilder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
+    telemetryProcessorChainBuilder.UseAdaptiveSampling(excludedTypes: "Exception");
+    telemetryProcessorChainBuilder.Build();
+});
 builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceOptions
 {
     EnableAdaptiveSampling = false,
 });
+
 builder.Services.AddServiceProfiler();
 
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();

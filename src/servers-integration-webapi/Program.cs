@@ -21,7 +21,7 @@ builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
     var builder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
 
     // Using fixed rate sampling
-    double fixedSamplingPercentage = 100;
+    double fixedSamplingPercentage = 50;
     builder.UseSampling(fixedSamplingPercentage);
 });
 

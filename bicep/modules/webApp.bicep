@@ -187,18 +187,18 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
   }
 }
 
-module webTest 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/webtest:latest' = if (environment == 'prd') {
-  name: '${deployment().name}-webtest'
-  scope: resourceGroup(appInsightsRef.SubscriptionId, appInsightsRef.ResourceGroupName)
-
-  params: {
-    workloadName: webApp.name
-    testUrl: 'https://${webApp.properties.defaultHostName}/api/health'
-    appInsightsRef: appInsightsRef
-    location: location
-    tags: tags
-  }
-}
+//module webTest 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/webtest:latest' = if (environment == 'prd') {
+//  name: '${deployment().name}-webtest'
+//  scope: resourceGroup(appInsightsRef.SubscriptionId, appInsightsRef.ResourceGroupName)
+//
+//  params: {
+//    workloadName: webApp.name
+//    testUrl: 'https://${webApp.properties.defaultHostName}/api/health'
+//    appInsightsRef: appInsightsRef
+//    location: location
+//    tags: tags
+//  }
+//}
 
 resource webAppAppRole 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'script-webapp-approle-${environment}-${instance}'

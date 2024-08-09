@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.Profiler.AspNetCore" Version="2.7.1" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.7" />
-    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.89.1" />
+    <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.90.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0" />
 	  <PackageReference Include="FluentFTP" Version="51.0.0" />
 	  <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />

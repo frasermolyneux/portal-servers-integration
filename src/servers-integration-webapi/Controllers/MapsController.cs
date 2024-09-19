@@ -21,15 +21,18 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
     [Authorize(Roles = "ServiceAccount")]
     public class MapsController : Controller, IMapsApi
     {
+        private readonly ILogger<MapsController> logger;
         private readonly IRepositoryApiClient repositoryApiClient;
         private readonly TelemetryClient telemetryClient;
         private readonly IConfiguration configuration;
 
         public MapsController(
+            ILogger<MapsController> logger,
             IRepositoryApiClient repositoryApiClient,
             TelemetryClient telemetryClient,
             IConfiguration configuration)
         {
+            this.logger = logger;
             this.repositoryApiClient = repositoryApiClient;
             this.telemetryClient = telemetryClient;
             this.configuration = configuration;
@@ -135,24 +138,30 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
                 var mapDirectoryPath = $"usermaps/{mapName}";
 
-                if (!await ftpClient.DirectoryExists(mapDirectoryPath))
+                if (await ftpClient.DirectoryExists(mapDirectoryPath))
+                {
+                    logger.LogInformation($"Directory {mapDirectoryPath} already exists on the server, skipping sync");
+                    return new ApiResponseDto(HttpStatusCode.NotModified);
+                }
+                else
                 {
                     await ftpClient.CreateDirectory(mapDirectoryPath);
-                }
 
-                foreach (var file in mapApiResponse.Result.MapFiles)
-                {
-                    using (var httpClient = new HttpClient())
+                    foreach (var file in mapApiResponse.Result.MapFiles)
                     {
-                        var filePath = Path.Join(Path.GetTempPath(), file.FileName);
-                        using (var stream = System.IO.File.Create(filePath))
-                            await (await httpClient.GetStreamAsync(file.Url)).CopyToAsync(stream);
+                        using (var httpClient = new HttpClient())
+                        {
+                            var filePath = Path.Join(Path.GetTempPath(), file.FileName);
+                            using (var stream = System.IO.File.Create(filePath))
+                                await (await httpClient.GetStreamAsync(file.Url)).CopyToAsync(stream);
 
-                        await ftpClient.UploadFile(filePath, $"{mapDirectoryPath}/{file.FileName}");
+                            await ftpClient.UploadFile(filePath, $"{mapDirectoryPath}/{file.FileName}");
+                        }
                     }
+
+                    return new ApiResponseDto(HttpStatusCode.OK);
                 }
 
-                return new ApiResponseDto(HttpStatusCode.OK);
             }
             catch (Exception ex)
             {

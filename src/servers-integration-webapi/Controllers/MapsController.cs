@@ -121,6 +121,9 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
             if (mapApiResponse.IsNotFound || mapApiResponse.Result == null)
                 return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, "Map could not be found in the database");
 
+            if (!mapApiResponse.Result.MapFiles.Any())
+                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, "There are no map files to be pushed to the server");
+
             AsyncFtpClient? ftpClient = null;
 
             try

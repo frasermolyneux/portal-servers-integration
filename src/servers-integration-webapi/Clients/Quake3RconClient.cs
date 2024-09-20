@@ -97,6 +97,28 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             return Task.CompletedTask;
         }
 
+        public Task<List<Quake3QueryMap>> GetMaps()
+        {
+            var maps = MapRotation();
+
+            var mapList = new List<Quake3QueryMap>();
+            var mapRegex = new Regex(@"gametype\s+([a-zA-Z0-9]+)\s+map\s+([a-zA-Z0-9_]+)");
+
+            var matches = mapRegex.Matches(maps);
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count != 3)
+                    continue;
+
+                var gameType = match.Groups[1].ToString();
+                var mapName = match.Groups[2].ToString();
+
+                mapList.Add(new Quake3QueryMap { GameType = gameType, MapName = mapName });
+            }
+
+            return Task.FromResult(mapList);
+        }
+
         public Task<string> Restart()
         {
             _logger.LogDebug("[{GameServerId}] Attempting to send restart the server", _serverId);
@@ -146,6 +168,17 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("status"));
+
+            _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
+
+            return GetStringFromPackets(packets);
+        }
+
+        private string MapRotation()
+        {
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .Execute(() => GetCommandPackets("sv_mapRotation"));
 
             _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
 

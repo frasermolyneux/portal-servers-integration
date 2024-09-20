@@ -91,6 +91,11 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             return Task.CompletedTask;
         }
 
+        public Task<List<Quake3QueryMap>> GetMaps()
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<string> Restart()
         {
             return Task.FromResult("Not Implemented");

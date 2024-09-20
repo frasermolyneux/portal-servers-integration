@@ -6,7 +6,7 @@ namespace XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces
 {
     public interface IMapsApi
     {
-        Task<ApiResponseDto<ServerMapsCollectionDto>> GetServerMaps(Guid gameServerId);
-        Task<ApiResponseDto> PushServerMap(Guid gameServerId, string mapName);
+        Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId);
+        Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName);
     }
 }

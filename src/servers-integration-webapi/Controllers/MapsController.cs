@@ -39,15 +39,15 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
         }
 
         [HttpGet]
-        [Route("maps/{gameServerId}")]
-        public async Task<IActionResult> GetServerMaps(Guid gameServerId)
+        [Route("maps/{gameServerId}/host/loaded")]
+        public async Task<IActionResult> GetLoadedServerMapsFromHost(Guid gameServerId)
         {
-            var response = await ((IMapsApi)this).GetServerMaps(gameServerId);
+            var response = await ((IMapsApi)this).GetLoadedServerMapsFromHost(gameServerId);
 
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto<ServerMapsCollectionDto>> IMapsApi.GetServerMaps(Guid gameServerId)
+        async Task<ApiResponseDto<ServerMapsCollectionDto>> IMapsApi.GetLoadedServerMapsFromHost(Guid gameServerId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
 
@@ -101,15 +101,15 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
         }
 
         [HttpPost]
-        [Route("maps/{gameServerId}/{mapName}")]
-        public async Task<IActionResult> PushServerMap(Guid gameServerId, string mapName)
+        [Route("maps/{gameServerId}/host/{mapName}")]
+        public async Task<IActionResult> PushServerMapToHost(Guid gameServerId, string mapName)
         {
-            var response = await ((IMapsApi)this).PushServerMap(gameServerId, mapName);
+            var response = await ((IMapsApi)this).PushServerMapToHost(gameServerId, mapName);
 
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto> IMapsApi.PushServerMap(Guid gameServerId, string mapName)
+        async Task<ApiResponseDto> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
 

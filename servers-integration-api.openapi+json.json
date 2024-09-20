@@ -1,11 +1,11 @@
 {
     "openapi": "3.0.1",
     "info": {
-        "title": "servers-integration-api",
-        "version": "1.0"
+        "title": "Servers API",
+        "version": "v1"
     },
     "paths": {
-        "/maps/{gameServerId}": {
+        "/maps/{gameServerId}/host/loaded": {
             "get": {
                 "tags": [
                     "Maps"
@@ -23,12 +23,12 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "OK"
                     }
                 }
             }
         },
-        "/maps/{gameServerId}/{mapName}": {
+        "/maps/{gameServerId}/host/{mapName}": {
             "post": {
                 "tags": [
                     "Maps"
@@ -54,7 +54,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "OK"
                     }
                 }
             }
@@ -77,7 +77,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "OK"
                     }
                 }
             }
@@ -100,7 +100,30 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/rcon/{gameServerId}/maps": {
+            "get": {
+                "tags": [
+                    "Rcon"
+                ],
+                "parameters": [
+                    {
+                        "name": "gameServerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -108,11 +131,11 @@
         "/": {
             "get": {
                 "tags": [
-                    "servers-webapi"
+                    "servers-integration-webapi"
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success",
+                        "description": "OK",
                         "content": {
                             "text/plain": {
                                 "schema": {
@@ -125,5 +148,19 @@
             }
         }
     },
-    "components": {}
+    "components": {
+        "securitySchemes": {
+            "Bearer": {
+                "type": "apiKey",
+                "description": "",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "security": [
+        {
+            "Bearer": []
+        }
+    ]
 }

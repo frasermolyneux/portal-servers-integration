@@ -141,7 +141,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                 if (await ftpClient.DirectoryExists(mapDirectoryPath))
                 {
                     logger.LogInformation($"Directory {mapDirectoryPath} already exists on the server, skipping sync");
-                    return new ApiResponseDto(HttpStatusCode.NotModified);
+                    return new ApiResponseDto(HttpStatusCode.OK);
                 }
                 else
                 {

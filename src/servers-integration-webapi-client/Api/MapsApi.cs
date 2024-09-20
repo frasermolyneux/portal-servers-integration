@@ -19,7 +19,8 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
         {
         }
 
-        public async Task<ApiResponseDto<ServerMapsCollectionDto>> GetServerMaps(Guid gameServerId)
+
+        public async Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId)
         {
             var request = await CreateRequest($"maps/{gameServerId}", Method.Get);
             var response = await ExecuteAsync(request);
@@ -27,7 +28,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
             return response.ToApiResponse<ServerMapsCollectionDto>();
         }
 
-        public async Task<ApiResponseDto> PushServerMap(Guid gameServerId, string mapName)
+        public async Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName)
         {
             var request = await CreateRequest($"maps/{gameServerId}/{mapName}", Method.Post);
             var response = await ExecuteAsync(request);

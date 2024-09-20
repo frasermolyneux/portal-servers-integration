@@ -9,6 +9,7 @@ using RestSharp;
 
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models;
+using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Rcon;
 
 namespace XtremeIdiots.Portal.ServersApiClient.Api
 {
@@ -24,6 +25,14 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerRconStatusResponseDto>();
+        }
+
+        public async Task<ApiResponseDto<RconMapCollectionDto>> GetServerMaps(Guid gameServerId)
+        {
+            var request = await CreateRequest($"rcon/{gameServerId}/maps", Method.Get);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResponse<RconMapCollectionDto>();
         }
     }
 }

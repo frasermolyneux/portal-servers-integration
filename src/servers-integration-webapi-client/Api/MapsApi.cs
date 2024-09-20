@@ -22,7 +22,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId)
         {
-            var request = await CreateRequest($"maps/{gameServerId}", Method.Get);
+            var request = await CreateRequest($"maps/{gameServerId}/host/loaded", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerMapsCollectionDto>();
@@ -30,7 +30,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName)
         {
-            var request = await CreateRequest($"maps/{gameServerId}/{mapName}", Method.Post);
+            var request = await CreateRequest($"maps/{gameServerId}/host/{mapName}", Method.Post);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse();

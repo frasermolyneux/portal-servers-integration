@@ -102,15 +102,16 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             var maps = MapRotation();
 
             var mapList = new List<Quake3QueryMap>();
-            var mapRegex = new Regex(@"gametype\s+([a-zA-Z0-9]+)\s+map\s+([a-zA-Z0-9_]+)");
+            // The map rotation is returned in the format:
+            // gametype {gameType} map {mapName}
+            // or in the format map {mapName}
+            // The game type is optional
+            var mapRegex = new Regex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)");
 
             var matches = mapRegex.Matches(maps);
             foreach (Match match in matches)
             {
-                if (match.Groups.Count != 3)
-                    continue;
-
-                var gameType = match.Groups[1].ToString();
+                var gameType = match.Groups[1].Success ? match.Groups[1].ToString() : "";
                 var mapName = match.Groups[2].ToString();
 
                 mapList.Add(new Quake3QueryMap { GameType = gameType, MapName = mapName });

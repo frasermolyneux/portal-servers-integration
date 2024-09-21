@@ -57,6 +57,35 @@
                         "description": "OK"
                     }
                 }
+            },
+            "delete": {
+                "tags": [
+                    "Maps"
+                ],
+                "parameters": [
+                    {
+                        "name": "gameServerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "mapName",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/query/{gameServerId}/status": {

@@ -8,5 +8,6 @@ namespace XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces
     {
         Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId);
         Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName);
+        Task<ApiResponseDto> DeleteServerMapFromHost(Guid gameServerId, string mapName);
     }
 }

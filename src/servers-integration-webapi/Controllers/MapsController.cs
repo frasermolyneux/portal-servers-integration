@@ -176,5 +176,64 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                 ftpClient?.Dispose();
             }
         }
+
+        [HttpDelete]
+        [Route("maps/{gameServerId}/host/{mapName}")]
+        public async Task<IActionResult> DeleteServerMapFromHost(Guid gameServerId, string mapName)
+        {
+            var response = await ((IMapsApi)this).DeleteServerMapFromHost(gameServerId, mapName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResponseDto> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
+
+            AsyncFtpClient? ftpClient = null;
+
+            try
+            {
+                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort.Value);
+                ftpClient.ValidateCertificate += (control, e) =>
+                {
+                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
+                    { // Account for self-signed FTP certificate for self-hosted servers
+                        e.Accept = true;
+                    }
+                };
+
+                await ftpClient.AutoConnect();
+
+                var mapDirectoryPath = $"usermaps/{mapName}";
+
+                if (await ftpClient.DirectoryExists(mapDirectoryPath))
+                {
+                    await ftpClient.DeleteDirectory(mapDirectoryPath);
+                    return new ApiResponseDto(HttpStatusCode.OK);
+                }
+                else
+                {
+                    logger.LogInformation($"Directory {mapDirectoryPath} does not exist on the server, skipping delete");
+                    return new ApiResponseDto(HttpStatusCode.OK);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                telemetryClient.TrackException(ex);
+                throw;
+            }
+            finally
+            {
+                ftpClient?.Dispose();
+            }
+
+
+
+        }
     }
 }

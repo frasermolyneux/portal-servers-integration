@@ -28,7 +28,7 @@ jobs:
 
       # Run analyzers
     - name: Run Microsoft Security DevOps Analysis
-      uses: microsoft/security-devops-action@v1.11.0
+      uses: microsoft/security-devops-action@v1.12.0
       id: msdo
       #with:
       # config: string. Optional. A file path to an MSDO configuration file ('*.gdnconfig').

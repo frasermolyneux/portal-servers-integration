@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.Profiler.AspNetCore" Version="2.7.2" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.0" />
-    <PackageReference Include="MxIO.ApiClient" Version="1.1.109.1" />
+    <PackageReference Include="MxIO.ApiClient" Version="1.1.110.1" />
     <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.110.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.1.0" />
 	  <PackageReference Include="FluentFTP" Version="52.0.0" />
@@ -19,7 +19,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
 	  <PackageReference Include="Microsoft.Identity.Web" Version="3.5.0" />
 	  <PackageReference Include="Polly" Version="8.5.0" />
-	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.280.1" />
+	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.281.1" />
   </ItemGroup>
 
   <ItemGroup>

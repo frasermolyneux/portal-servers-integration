@@ -50,10 +50,10 @@ jobs:
     - uses: ./.github/actions/bicep-build-and-apply
       with:
         environmentName: dev
-        AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
         AZURE_DEPLOY_SCRIPT_IDENTITY: ${{ secrets.AZURE_DEPLOY_SCRIPT_IDENTITY }}
-        AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
-        AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
     - id: bicep-output
       shell: pwsh
@@ -61,7 +61,7 @@ jobs:
         $config = (Get-Content params/dev.json | ConvertFrom-Json)
 
         $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
-          --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
+          --subscription ${{ vars.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
 
         echo "web_app_name=$($deploymentOutput.properties.outputs.webAppName.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
         echo "web_app_resource_group_name=$($deploymentOutput.properties.outputs.webAppResourceGroup.value)" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -86,6 +86,6 @@ jobs:
         web-artifact-name: "servers-integration-webapi"
         web-app-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_name }}
         resource-group-name: ${{ needs.bicep-build-and-apply-dev.outputs.web_app_resource_group_name }}
-        AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
-        AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
-        AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

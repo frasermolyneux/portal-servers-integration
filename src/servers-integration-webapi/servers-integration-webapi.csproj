@@ -19,7 +19,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.2" />
 	  <PackageReference Include="Microsoft.Identity.Web" Version="3.7.1" />
 	  <PackageReference Include="Polly" Version="8.5.2" />
-	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.291.1" />
+	  <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient" Version="1.1.298.1" />
   </ItemGroup>
 
   <ItemGroup>

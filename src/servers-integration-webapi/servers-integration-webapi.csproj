@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.Profiler.AspNetCore" Version="2.7.2" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.3" />
     <PackageReference Include="MxIO.ApiClient" Version="1.1.123.1" />
     <PackageReference Include="MxIO.ApiClient.WebExtensions" Version="1.1.124.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />

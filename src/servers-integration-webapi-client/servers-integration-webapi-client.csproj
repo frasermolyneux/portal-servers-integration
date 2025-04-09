@@ -24,7 +24,7 @@
 
   <ItemGroup>
 	<PackageReference Include="Azure.Identity" Version="1.13.2" />
-	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.3" />
+	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.4" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
 	<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.4" />
 	<PackageReference Include="MxIO.ApiClient" Version="1.1.129.1" />

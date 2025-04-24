@@ -1,6 +1,6 @@
 namespace XtremeIdiots.Portal.ServersApi.Abstractions.Models.Rcon
 {
-    public class RconMapDto
+    public record RconMapDto
     {
         public RconMapDto(string gameType, string mapName)
         {

@@ -1,6 +1,6 @@
 ﻿namespace XtremeIdiots.Portal.ServersApi.Abstractions.Models
 {
-    public class ServerRconPlayerDto
+    public record ServerRconPlayerDto
     {
         public int Num { get; set; }
         public string? Guid { get; set; }

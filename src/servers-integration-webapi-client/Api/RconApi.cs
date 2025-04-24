@@ -21,7 +21,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto<ServerRconStatusResponseDto>> GetServerStatus(Guid gameServerId)
         {
-            var request = await CreateRequest($"rcon/{gameServerId}/status", Method.Get);
+            var request = await CreateRequestAsync($"rcon/{gameServerId}/status", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerRconStatusResponseDto>();
@@ -29,7 +29,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto<RconMapCollectionDto>> GetServerMaps(Guid gameServerId)
         {
-            var request = await CreateRequest($"rcon/{gameServerId}/maps", Method.Get);
+            var request = await CreateRequestAsync($"rcon/{gameServerId}/maps", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<RconMapCollectionDto>();

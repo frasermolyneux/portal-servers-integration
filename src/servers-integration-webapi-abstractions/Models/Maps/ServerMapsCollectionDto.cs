@@ -2,7 +2,7 @@
 
 namespace XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps
 {
-    public class ServerMapsCollectionDto : CollectionDto<ServerMapDto>
+    public record ServerMapsCollectionDto : CollectionDto<ServerMapDto>
     {
     }
 }

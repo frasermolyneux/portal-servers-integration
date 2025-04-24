@@ -21,7 +21,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId)
         {
-            var request = await CreateRequest($"maps/{gameServerId}/host/loaded", Method.Get);
+            var request = await CreateRequestAsync($"maps/{gameServerId}/host/loaded", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerMapsCollectionDto>();
@@ -29,7 +29,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName)
         {
-            var request = await CreateRequest($"maps/{gameServerId}/host/{mapName}", Method.Post);
+            var request = await CreateRequestAsync($"maps/{gameServerId}/host/{mapName}", Method.Post);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse();
@@ -37,7 +37,7 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
         public async Task<ApiResponseDto> DeleteServerMapFromHost(Guid gameServerId, string mapName)
         {
-            var request = await CreateRequest($"maps/{gameServerId}/host/{mapName}", Method.Delete);
+            var request = await CreateRequestAsync($"maps/{gameServerId}/host/{mapName}", Method.Delete);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse();

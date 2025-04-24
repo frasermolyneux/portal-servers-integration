@@ -1,6 +1,6 @@
 ﻿namespace XtremeIdiots.Portal.ServersApi.Abstractions.Models
 {
-    public class ServerQueryStatusResponseDto
+    public record ServerQueryStatusResponseDto
     {
         public string? ServerName { get; set; }
         public string? Map { get; set; }

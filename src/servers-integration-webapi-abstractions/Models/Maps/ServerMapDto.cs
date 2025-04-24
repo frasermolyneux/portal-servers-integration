@@ -2,7 +2,7 @@
 
 namespace XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps
 {
-    public class ServerMapDto
+    public record ServerMapDto
     {
         public ServerMapDto(string name, string fullName, DateTime modified)
         {

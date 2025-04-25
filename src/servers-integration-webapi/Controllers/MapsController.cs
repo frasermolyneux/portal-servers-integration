@@ -119,10 +119,10 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
             var mapApiResponse = await repositoryApiClient.Maps.GetMap(gameServerApiResponse.Result.GameType, mapName);
 
             if (mapApiResponse.IsNotFound || mapApiResponse.Result == null)
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, "Map could not be found in the database");
+                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, null, new List<string> { "Map could not be found in the database" });
 
             if (!mapApiResponse.Result.MapFiles.Any())
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, "There are no map files to be pushed to the server");
+                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, null, new List<string> { "There are no map files to be pushed to the server" });
 
             AsyncFtpClient? ftpClient = null;
 

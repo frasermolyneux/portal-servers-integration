@@ -54,7 +54,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                 return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.NotFound);
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.BadRequest, "The game server does not have an rcon password configured");
+                return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.BadRequest, null, new List<string> { "The game server does not have an rcon password configured" });
 
             var queryClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 
@@ -121,7 +121,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                 return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.NotFound);
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.BadRequest, "The game server does not have an rcon password configured");
+                return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.BadRequest, null, new List<string> { "The game server does not have an rcon password configured" });
 
             var queryClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 

@@ -161,5 +161,127 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
                 telemetryClient.StopOperation(operation);
             }
         }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/kick/{clientId}")]
+        public async Task<IActionResult> KickPlayer(Guid gameServerId, int clientId)
+        {
+            var response = await ((IRconApi)this).KickPlayer(gameServerId, clientId);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResponseDto> IRconApi.KickPlayer(Guid gameServerId, int clientId)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+
+            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
+                return new ApiResponseDto(HttpStatusCode.InternalServerError);
+
+            if (gameServerApiResponse.IsNotFound)
+                return new ApiResponseDto(HttpStatusCode.NotFound);
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+                return new ApiResponseDto(HttpStatusCode.BadRequest, new List<string> { "The game server does not have an rcon password configured" });
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconKickPlayer");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.KickPlayer(clientId);
+
+                telemetryClient.TrackEvent("RconKickPlayer", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "Result", result.ToString() }
+                });
+
+                return new ApiResponseDto(HttpStatusCode.OK);
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+                return new ApiResponseDto(HttpStatusCode.NotImplemented, new List<string> { "The kick player operation is not implemented for this game server type" });
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+                throw;
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/ban/{clientId}")]
+        public async Task<IActionResult> BanPlayer(Guid gameServerId, int clientId)
+        {
+            var response = await ((IRconApi)this).BanPlayer(gameServerId, clientId);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResponseDto> IRconApi.BanPlayer(Guid gameServerId, int clientId)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+
+            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
+                return new ApiResponseDto(HttpStatusCode.InternalServerError);
+
+            if (gameServerApiResponse.IsNotFound)
+                return new ApiResponseDto(HttpStatusCode.NotFound);
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+                return new ApiResponseDto(HttpStatusCode.BadRequest, new List<string> { "The game server does not have an rcon password configured" });
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconBanPlayer");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.BanPlayer(clientId);
+
+                telemetryClient.TrackEvent("RconBanPlayer", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "Result", result.ToString() }
+                });
+
+                return new ApiResponseDto(HttpStatusCode.OK);
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+                return new ApiResponseDto(HttpStatusCode.NotImplemented, new List<string> { "The ban player operation is not implemented for this game server type" });
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+                throw;
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
     }
 }

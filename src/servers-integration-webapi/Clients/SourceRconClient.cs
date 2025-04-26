@@ -116,6 +116,16 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             return Task.FromResult("Not Implemented");
         }
 
+        public Task<string> KickPlayer(int clientId)
+        {
+            throw new NotImplementedException("Kicking players is not implemented for Source engine games");
+        }
+
+        public Task<string> BanPlayer(int clientId)
+        {
+            throw new NotImplementedException("Banning players is not implemented for Source engine games");
+        }
+
         private string PlayerStatus()
         {
             CreateConnection();

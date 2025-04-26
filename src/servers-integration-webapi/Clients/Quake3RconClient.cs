@@ -164,6 +164,34 @@ namespace XtremeIdiots.Portal.ServersWebApi.Clients
             return Task.FromResult(GetStringFromPackets(packets));
         }
 
+        public Task<string> KickPlayer(int clientId)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to kick client ID {ClientId} from the server", _serverId, clientId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"clientkick {clientId}"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> BanPlayer(int clientId)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to ban client ID {ClientId} from the server", _serverId, clientId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"banClient {clientId}"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
         private string PlayerStatus()
         {
             var packets = Policy.Handle<Exception>()

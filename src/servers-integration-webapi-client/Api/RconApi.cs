@@ -34,5 +34,21 @@ namespace XtremeIdiots.Portal.ServersApiClient.Api
 
             return response.ToApiResponse<RconMapCollectionDto>();
         }
+
+        public async Task<ApiResponseDto> KickPlayer(Guid gameServerId, int clientId)
+        {
+            var request = await CreateRequestAsync($"rcon/{gameServerId}/kick/{clientId}", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResponse();
+        }
+
+        public async Task<ApiResponseDto> BanPlayer(Guid gameServerId, int clientId)
+        {
+            var request = await CreateRequestAsync($"rcon/{gameServerId}/ban/{clientId}", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResponse();
+        }
     }
 }

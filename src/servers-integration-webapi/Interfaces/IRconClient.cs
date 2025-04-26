@@ -13,5 +13,19 @@ namespace XtremeIdiots.Portal.ServersWebApi.Interfaces
         Task<string> RestartMap();
         Task<string> FastRestartMap();
         Task<string> NextMap();
+
+        /// <summary>
+        /// Kicks a player from the server by their client ID
+        /// </summary>
+        /// <param name="clientId">The client ID to kick</param>
+        /// <returns>Response message from the server</returns>
+        Task<string> KickPlayer(int clientId);
+
+        /// <summary>
+        /// Bans a player from the server by their client ID
+        /// </summary>
+        /// <param name="clientId">The client ID to ban</param>
+        /// <returns>Response message from the server</returns>
+        Task<string> BanPlayer(int clientId);
     }
 }

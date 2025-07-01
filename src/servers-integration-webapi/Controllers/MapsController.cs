@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using MxIO.ApiClient.Abstractions;
 using MxIO.ApiClient.WebExtensions;
 
-using XtremeIdiots.Portal.RepositoryApiClient;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Maps;
 
@@ -49,7 +49,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto<ServerMapsCollectionDto>> IMapsApi.GetLoadedServerMapsFromHost(Guid gameServerId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
@@ -111,12 +111,12 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
 
-            var mapApiResponse = await repositoryApiClient.Maps.GetMap(gameServerApiResponse.Result.GameType, mapName);
+            var mapApiResponse = await repositoryApiClient.Maps.V1.GetMap(gameServerApiResponse.Result.GameType, mapName);
 
             if (mapApiResponse.IsNotFound || mapApiResponse.Result == null)
                 return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, null, new List<string> { "Map could not be found in the database" });
@@ -188,7 +188,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);

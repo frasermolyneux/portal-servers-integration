@@ -9,7 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 using MxIO.ApiClient.Abstractions;
 using MxIO.ApiClient.WebExtensions;
 
-using XtremeIdiots.Portal.RepositoryApiClient;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models;
 using XtremeIdiots.Portal.ServersWebApi.Interfaces;
@@ -48,7 +48,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto<ServerQueryStatusResponseDto>> IQueryApi.GetServerStatus(Guid gameServerId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<ServerQueryStatusResponseDto>(HttpStatusCode.InternalServerError);

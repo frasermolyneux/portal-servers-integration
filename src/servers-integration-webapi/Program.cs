@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
-using XtremeIdiots.Portal.RepositoryApiClient;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 using XtremeIdiots.Portal.ServersWebApi;
 using XtremeIdiots.Portal.ServersWebApi.Factories;
 using XtremeIdiots.Portal.ServersWebApi.Interfaces;

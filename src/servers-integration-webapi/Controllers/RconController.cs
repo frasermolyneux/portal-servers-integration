@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using MxIO.ApiClient.Abstractions;
 using MxIO.ApiClient.WebExtensions;
 
-using XtremeIdiots.Portal.RepositoryApiClient;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models;
 using XtremeIdiots.Portal.ServersApi.Abstractions.Models.Rcon;
@@ -45,7 +45,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto<ServerRconStatusResponseDto>> IRconApi.GetServerStatus(Guid gameServerId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.InternalServerError);
@@ -112,7 +112,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto<RconMapCollectionDto>> IRconApi.GetServerMaps(Guid gameServerId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
                 return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.InternalServerError);
@@ -173,7 +173,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto> IRconApi.KickPlayer(Guid gameServerId, int clientId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
                 return new ApiResponseDto(HttpStatusCode.InternalServerError);
@@ -234,7 +234,7 @@ namespace XtremeIdiots.Portal.ServersWebApi.Controllers
 
         async Task<ApiResponseDto> IRconApi.BanPlayer(Guid gameServerId, int clientId)
         {
-            var gameServerApiResponse = await repositoryApiClient.GameServers.GetGameServer(gameServerId);
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
                 return new ApiResponseDto(HttpStatusCode.InternalServerError);

@@ -100,11 +100,12 @@ resource apiV1Policy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' 
 
   properties: {
     format: 'xml'
-    value: '''
+    value: format(
+      '''
 <policies>
   <inbound>
       <base/>
-      <set-backend-service backend-id="${apiBackend.name}" />
+      <set-backend-service backend-id="{0}" />
       <set-variable name="rewriteUriTemplate" value="@("/api" + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
       <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
   </inbound>
@@ -116,12 +117,10 @@ resource apiV1Policy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' 
   </outbound>
   <on-error />
 </policies>
-    '''
+    ''',
+      apiBackend.name
+    )
   }
-
-  dependsOn: [
-    apiBackend
-  ]
 }
 
 // Diagnostics for V1 API

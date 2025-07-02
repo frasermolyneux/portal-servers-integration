@@ -31,9 +31,6 @@ resource apiVersionSet 'Microsoft.ApiManagement/service/apiVersionSets@2021-08-0
 
 // Variables for policy template
 var audienceValue = 'api://portal-servers-integration-${environment}-${instance}'
-var issuerValue = 'https://sts.windows.net/${tenantId}/'
-var loginEndpoint = replace(az.environment().authentication.loginEndpoint, '/', '')
-var openIdConfigUrl = 'https://${loginEndpoint}/${tenantId}/v2.0/.well-known/openid-configuration'
 
 resource apiProduct 'Microsoft.ApiManagement/service/products@2021-08-01' = {
   name: 'servers-integration-api'
@@ -53,18 +50,19 @@ resource apiProductPolicy 'Microsoft.ApiManagement/service/products/policies@202
 
   properties: {
     format: 'xml'
-    value: '''
+    value: format(
+      '''
 <policies>
   <inbound>
       <base/>
       <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
       <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
-          <openid-config url="${loginEndpoint}/${tenantId}/v2.0/.well-known/openid-configuration" />
+          <openid-config url="https://login.microsoftonline.com/{0}/.well-known/openid-configuration" />
           <audiences>
-              <audience>${audienceValue}</audience>
+              <audience>{1}</audience>
           </audiences>
           <issuers>
-              <issuer>${issuerValue}</issuer>
+              <issuer>https://sts.windows.net/{0}/</issuer>
           </issuers>
           <required-claims>
               <claim name="roles" match="any">
@@ -82,7 +80,10 @@ resource apiProductPolicy 'Microsoft.ApiManagement/service/products/policies@202
   </outbound>
   <on-error />
 </policies>
-    '''
+''',
+      tenantId,
+      audienceValue
+    )
   }
 }
 

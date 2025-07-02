@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi", "servers-integration-webapi\servers-integration-webapi.csproj", "{726BCA49-CC8C-4A1D-AE00-1D31C198970C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Api.V1", "XtremeIdiots.Portal.Integrations.Servers.Api.V1\XtremeIdiots.Portal.Integrations.Servers.Api.V1.csproj", "{726BCA49-CC8C-4A1D-AE00-1D31C198970C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi-client", "servers-integration-webapi-client\servers-integration-webapi-client.csproj", "{2048EA3B-0C2F-4959-92C1-32A3195AC4C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1", "XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1\XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1.csproj", "{2048EA3B-0C2F-4959-92C1-32A3195AC4C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi-abstractions", "servers-integration-webapi-abstractions\servers-integration-webapi-abstractions.csproj", "{56C79EEB-4372-4E9B-8A84-C751A98C0393}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1", "XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj", "{56C79EEB-4372-4E9B-8A84-C751A98C0393}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi-client.Tests", "servers-integration-webapi-client.Tests\servers-integration-webapi-client.Tests.csproj", "{B5040F40-32A5-491C-B328-29A6233BE4EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1", "XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1\XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1.csproj", "{B5040F40-32A5-491C-B328-29A6233BE4EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi.Tests", "servers-integration-webapi.Tests\servers-integration-webapi.Tests.csproj", "{06DC2E63-EF66-4208-BBD9-1398C4FF0E79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1", "XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1\XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.csproj", "{06DC2E63-EF66-4208-BBD9-1398C4FF0E79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "servers-integration-webapi.IntegrationTests", "servers-integration-webapi.IntegrationTests\servers-integration-webapi.IntegrationTests.csproj", "{74D53713-08AD-454A-9E5B-FCABBB9BECEC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1", "XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1\XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1.csproj", "{74D53713-08AD-454A-9E5B-FCABBB9BECEC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

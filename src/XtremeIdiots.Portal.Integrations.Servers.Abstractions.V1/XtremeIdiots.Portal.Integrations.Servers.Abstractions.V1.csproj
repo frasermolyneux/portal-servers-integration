@@ -20,7 +20,7 @@
 
   <ItemGroup>
 	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-		<_Parameter1>servers-integration-webapi</_Parameter1>
+		<_Parameter1>XtremeIdiots.Portal.Integrations.Servers.Api.V1</_Parameter1>
 	</AssemblyAttribute>
   </ItemGroup>
 

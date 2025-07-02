@@ -129,7 +129,7 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
   params: {
     apiManagementName: apiManagement.name
     workloadName: '${webAppName}-tests'
-    apiScope: '/products/${repositoryApi.ApimProductId}'
+    scope: '/products/${repositoryApi.ApimProductId}'
     keyVaultRef: {
       Name: keyVaultName
       SubscriptionId: subscription().subscriptionId

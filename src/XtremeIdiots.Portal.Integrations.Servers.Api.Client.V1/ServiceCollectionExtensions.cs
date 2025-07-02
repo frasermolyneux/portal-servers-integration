@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
 using MxIO.ApiClient.Extensions;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 
-using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
-using XtremeIdiots.Portal.ServersApiClient.Api;
-
-namespace XtremeIdiots.Portal.ServersApiClient
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public static class ServiceCollectionExtensions
     {
@@ -13,13 +11,19 @@ namespace XtremeIdiots.Portal.ServersApiClient
             Action<ServersApiClientOptions> configure)
         {
             serviceCollection.AddApiClient();
-
             serviceCollection.Configure(configure);
 
+            // Register V1 API implementations
             serviceCollection.AddSingleton<IQueryApi, QueryApi>();
             serviceCollection.AddSingleton<IRconApi, RconApi>();
             serviceCollection.AddSingleton<IMapsApi, MapsApi>();
 
+            // Register version selectors
+            serviceCollection.AddSingleton<IVersionedQueryApi, VersionedQueryApi>();
+            serviceCollection.AddSingleton<IVersionedRconApi, VersionedRconApi>();
+            serviceCollection.AddSingleton<IVersionedMapsApi, VersionedMapsApi>();
+
+            // Register the unified client
             serviceCollection.AddSingleton<IServersApiClient, ServersApiClient>();
         }
     }

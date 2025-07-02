@@ -1,4 +1,4 @@
-namespace servers_integration_webapi_client.Tests;
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1;
 
 public class Tests
 {

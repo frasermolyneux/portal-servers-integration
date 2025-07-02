@@ -1,7 +1,7 @@
 ﻿using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 
-namespace XtremeIdiots.Portal.ServersWebApi
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1
 {
     public class TelemetryInitializer : ITelemetryInitializer
     {

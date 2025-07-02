@@ -2,11 +2,11 @@
 	
   <PropertyGroup>
 	<TargetFramework>net9.0</TargetFramework>
-	<RootNamespace>XtremeIdiots.Portal.ServersApi.Abstractions</RootNamespace>
+	<RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1</RootNamespace>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<PackageId>XtremeIdiots.Portal.ServersApi.Abstractions</PackageId>
+	<PackageId>XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1</PackageId>
 	<Authors>Fraser Molyneux</Authors>
 	<Company>XtremeIdiots</Company>
 	<Product>XtremeIdiots Portal</Product>

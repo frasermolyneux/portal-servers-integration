@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <RootNamespace>servers_integration_webapi.IntegrationTests</RootNamespace>
+    <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 

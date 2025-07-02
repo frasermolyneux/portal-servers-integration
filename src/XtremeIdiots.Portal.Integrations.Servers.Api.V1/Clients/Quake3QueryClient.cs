@@ -2,12 +2,12 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using XtremeIdiots.Portal.ServersWebApi.Interfaces;
-using XtremeIdiots.Portal.ServersWebApi.Models;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 
 // ReSharper disable StringLiteralTypo
 
-namespace XtremeIdiots.Portal.ServersWebApi.Clients
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
 {
     public class Quake3QueryClient : IQueryClient
     {

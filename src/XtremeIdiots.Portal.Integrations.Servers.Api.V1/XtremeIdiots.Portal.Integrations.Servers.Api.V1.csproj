@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>servers_integration_webapi</RootNamespace>
+    <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.V1</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

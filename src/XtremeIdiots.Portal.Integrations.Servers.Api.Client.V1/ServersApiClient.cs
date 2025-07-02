@@ -1,22 +1,19 @@
-﻿
-using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
-
-namespace XtremeIdiots.Portal.ServersApiClient
+﻿namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public class ServersApiClient : IServersApiClient
     {
         public ServersApiClient(
-            IQueryApi queryApiClient,
-            IRconApi rconApiClient,
-            IMapsApi mapsApiClient)
+            IVersionedQueryApi queryApiClient,
+            IVersionedRconApi rconApiClient,
+            IVersionedMapsApi mapsApiClient)
         {
             Query = queryApiClient;
             Rcon = rconApiClient;
             Maps = mapsApiClient;
         }
 
-        public IQueryApi Query { get; }
-        public IRconApi Rcon { get; }
-        public IMapsApi Maps { get; }
+        public IVersionedQueryApi Query { get; }
+        public IVersionedRconApi Rcon { get; }
+        public IVersionedMapsApi Maps { get; }
     }
 }

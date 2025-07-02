@@ -1,11 +1,9 @@
-﻿using XtremeIdiots.Portal.ServersApi.Abstractions.Interfaces;
-
-namespace XtremeIdiots.Portal.ServersApiClient
+﻿namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public interface IServersApiClient
     {
-        public IQueryApi Query { get; }
-        public IRconApi Rcon { get; }
-        public IMapsApi Maps { get; }
+        public IVersionedQueryApi Query { get; }
+        public IVersionedRconApi Rcon { get; }
+        public IVersionedMapsApi Maps { get; }
     }
 }

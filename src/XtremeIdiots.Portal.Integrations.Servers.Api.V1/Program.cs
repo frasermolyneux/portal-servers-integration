@@ -5,10 +5,10 @@ using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
 using XtremeIdiots.Portal.RepositoryApiClient.V1;
-using XtremeIdiots.Portal.ServersWebApi;
-using XtremeIdiots.Portal.ServersWebApi.Factories;
-using XtremeIdiots.Portal.ServersWebApi.Interfaces;
-using XtremeIdiots.Portal.ServersWebApi.OpenApiOperationFilters;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApiOperationFilters;
 
 var builder = WebApplication.CreateBuilder(args);
 

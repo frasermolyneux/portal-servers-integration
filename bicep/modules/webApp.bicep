@@ -74,7 +74,7 @@ module repositoryApimSubscription 'br:acrty7og2i6qpv3s.azurecr.io/bicep/modules/
   params: {
     apiManagementName: apiManagement.name
     workloadName: webAppName
-    scope: '/products/${repositoryApi.ApimProductId}'
+    apiScope: '/products/${repositoryApi.ApimProductId}'
     keyVaultRef: keyVaultRef
     tags: tags
   }

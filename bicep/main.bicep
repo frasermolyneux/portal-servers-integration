@@ -129,7 +129,7 @@ module repositoryApimSubscriptionForTests 'br:acrty7og2i6qpv3s.azurecr.io/bicep/
   params: {
     apiManagementName: apiManagement.name
     workloadName: '${webAppName}-tests'
-    scope: '/products/${repositoryApi.ApimProductId}'
+    apiScope: '/products/${repositoryApi.ApimProductId}'
     keyVaultRef: {
       Name: keyVaultName
       SubscriptionId: subscription().subscriptionId
@@ -177,19 +177,44 @@ module webAppKeyVaultRoleAssignment 'br:acrty7og2i6qpv3s.azurecr.io/bicep/module
   }
 }
 
-module apiManagementApi 'modules/apiManagementApi.bicep' = {
-  name: '${environmentUniqueId}-apiManagementApi'
+module apiManagementProduct 'modules/apiManagementProduct.bicep' = {
+  name: '${environmentUniqueId}-apiManagementProduct'
   scope: resourceGroup(coreResourceGroupName)
 
   params: {
     environment: environment
     instance: instance
+    apiManagementName: apiManagementName
+  }
+}
 
+module apiManagementVersionedApis 'modules/apiManagementVersionedApis.bicep' = {
+  name: '${environmentUniqueId}-apiManagementVersionedApis'
+  scope: resourceGroup(coreResourceGroupName)
+
+  params: {
     apiManagementName: apiManagementName
     backendHostname: webApp.outputs.outWebAppDefaultHostName
-
+    productId: apiManagementProduct.outputs.productId
+    versionSetId: apiManagementProduct.outputs.versionSetId
     appInsightsRef: appInsightsRef
   }
+}
+
+module apiManagementLegacyApi 'modules/apiManagementLegacyApi.bicep' = {
+  name: '${environmentUniqueId}-apiManagementLegacyApi'
+  scope: resourceGroup(coreResourceGroupName)
+
+  params: {
+    apiManagementName: apiManagementName
+    productId: apiManagementProduct.outputs.productId
+    versionSetId: apiManagementProduct.outputs.versionSetId
+    appInsightsRef: appInsightsRef
+  }
+
+  dependsOn: [
+    apiManagementVersionedApis // Ensure backend is created first
+  ]
 }
 
 // Integration Test Resources

@@ -17,11 +17,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddSingleton<IQueryApi, QueryApi>();
             serviceCollection.AddSingleton<IRconApi, RconApi>();
             serviceCollection.AddSingleton<IMapsApi, MapsApi>();
+            serviceCollection.AddSingleton<IRootApi, RootApi>();
 
             // Register version selectors
             serviceCollection.AddSingleton<IVersionedQueryApi, VersionedQueryApi>();
             serviceCollection.AddSingleton<IVersionedRconApi, VersionedRconApi>();
             serviceCollection.AddSingleton<IVersionedMapsApi, VersionedMapsApi>();
+            serviceCollection.AddSingleton<IVersionedRootApi, VersionedRootApi>();
 
             // Register the unified client
             serviceCollection.AddSingleton<IServersApiClient, ServersApiClient>();

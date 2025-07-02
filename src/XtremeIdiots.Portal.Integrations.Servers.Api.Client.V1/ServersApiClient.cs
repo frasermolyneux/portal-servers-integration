@@ -5,15 +5,18 @@
         public ServersApiClient(
             IVersionedQueryApi queryApiClient,
             IVersionedRconApi rconApiClient,
-            IVersionedMapsApi mapsApiClient)
+            IVersionedMapsApi mapsApiClient,
+            IVersionedRootApi rootApiClient)
         {
             Query = queryApiClient;
             Rcon = rconApiClient;
             Maps = mapsApiClient;
+            Root = rootApiClient;
         }
 
         public IVersionedQueryApi Query { get; }
         public IVersionedRconApi Rcon { get; }
         public IVersionedMapsApi Maps { get; }
+        public IVersionedRootApi Root { get; }
     }
 }

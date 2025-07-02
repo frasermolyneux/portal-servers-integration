@@ -21,7 +21,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResponseDto<ServerRconStatusResponseDto>> GetServerStatus(Guid gameServerId)
         {
-            var request = await CreateRequestAsync($"rcon/{gameServerId}/status", Method.Get);
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/status", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerRconStatusResponseDto>();
@@ -29,7 +29,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResponseDto<RconMapCollectionDto>> GetServerMaps(Guid gameServerId)
         {
-            var request = await CreateRequestAsync($"rcon/{gameServerId}/maps", Method.Get);
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/maps", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<RconMapCollectionDto>();
@@ -37,7 +37,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResponseDto> KickPlayer(Guid gameServerId, int clientId)
         {
-            var request = await CreateRequestAsync($"rcon/{gameServerId}/kick/{clientId}", Method.Post);
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/kick/{clientId}", Method.Post);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse();
@@ -45,7 +45,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResponseDto> BanPlayer(Guid gameServerId, int clientId)
         {
-            var request = await CreateRequestAsync($"rcon/{gameServerId}/ban/{clientId}", Method.Post);
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/ban/{clientId}", Method.Post);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse();

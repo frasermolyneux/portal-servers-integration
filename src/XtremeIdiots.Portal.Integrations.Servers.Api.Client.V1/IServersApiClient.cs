@@ -5,5 +5,6 @@
         public IVersionedQueryApi Query { get; }
         public IVersionedRconApi Rcon { get; }
         public IVersionedMapsApi Maps { get; }
+        public IVersionedRootApi Root { get; }
     }
 }

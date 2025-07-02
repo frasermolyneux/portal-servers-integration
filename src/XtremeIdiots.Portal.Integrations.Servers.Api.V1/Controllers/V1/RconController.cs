@@ -13,11 +13,15 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.RepositoryApi.Abstractions.Constants;
+using Asp.Versioning;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 {
     [ApiController]
     [Authorize(Roles = "ServiceAccount")]
+    [ApiVersion(ApiVersions.V1)]
+    [Route("api/v{version:apiVersion}")]
     public class RconController : Controller, IRconApi
     {
         private readonly IRepositoryApiClient repositoryApiClient;

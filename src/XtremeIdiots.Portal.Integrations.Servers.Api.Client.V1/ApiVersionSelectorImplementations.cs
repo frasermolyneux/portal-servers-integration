@@ -31,4 +31,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public IRconApi V1 { get; }
     }
+
+    public class VersionedRootApi : IVersionedRootApi
+    {
+        public VersionedRootApi(IRootApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IRootApi V1 { get; }
+    }
 }

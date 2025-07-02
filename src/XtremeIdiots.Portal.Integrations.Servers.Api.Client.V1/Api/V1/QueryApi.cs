@@ -20,7 +20,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResponseDto<ServerQueryStatusResponseDto>> GetServerStatus(Guid gameServerId)
         {
-            var request = await CreateRequestAsync($"query/{gameServerId}/status", Method.Get);
+            var request = await CreateRequestAsync($"v1/query/{gameServerId}/status", Method.Get);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResponse<ServerQueryStatusResponseDto>();

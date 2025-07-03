@@ -81,11 +81,12 @@ resource legacyApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-
 
   properties: {
     format: 'xml'
-    value: '''
+    value: format(
+      '''
 <policies>
   <inbound>
       <base/>
-      <set-backend-service backend-id="${apiBackend.name}" />
+      <set-backend-service backend-id="{0}" />
       <set-variable name="rewriteUriTemplate" value="@(&quot;/api/v1&quot; + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
       <rewrite-uri template="@((string)context.Variables[&quot;rewriteUriTemplate&quot;])" />
   </inbound>
@@ -97,7 +98,9 @@ resource legacyApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-
   </outbound>
   <on-error />
 </policies>
-    '''
+    ''',
+      apiBackend.name
+    )
   }
 
   dependsOn: [

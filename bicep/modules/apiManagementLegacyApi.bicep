@@ -86,8 +86,8 @@ resource legacyApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-08-
   <inbound>
       <base/>
       <set-backend-service backend-id="${apiBackend.name}" />
-      <set-variable name="rewriteUriTemplate" value="@("/api/v1" + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
-      <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
+      <set-variable name="rewriteUriTemplate" value="@(&quot;/api/v1&quot; + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
+      <rewrite-uri template="@((string)context.Variables[&quot;rewriteUriTemplate&quot;])" />
   </inbound>
   <backend>
       <forward-request />

@@ -106,8 +106,8 @@ resource apiV1Policy 'Microsoft.ApiManagement/service/apis/policies@2021-08-01' 
   <inbound>
       <base/>
       <set-backend-service backend-id="{0}" />
-      <set-variable name="rewriteUriTemplate" value="@("/api" + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
-      <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
+      <set-variable name="rewriteUriTemplate" value="@(&quot;/api&quot; + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
+      <rewrite-uri template="@((string)context.Variables[&quot;rewriteUriTemplate&quot;])" />
   </inbound>
   <backend>
       <forward-request />

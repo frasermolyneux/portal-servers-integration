@@ -57,7 +57,7 @@ resource apiProductPolicy 'Microsoft.ApiManagement/service/products/policies@202
       <base/>
       <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
       <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
-          <openid-config url="https://login.microsoftonline.com/{0}/.well-known/openid-configuration" />
+          <openid-config url="{2}{0}/.well-known/openid-configuration" />
           <audiences>
               <audience>{1}</audience>
           </audiences>
@@ -82,7 +82,8 @@ resource apiProductPolicy 'Microsoft.ApiManagement/service/products/policies@202
 </policies>
 ''',
       tenantId,
-      audienceValue
+      audienceValue,
+      az.environment().authentication.loginEndpoint
     )
   }
 }

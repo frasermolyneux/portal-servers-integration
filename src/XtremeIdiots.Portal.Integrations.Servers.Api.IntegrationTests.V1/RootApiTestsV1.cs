@@ -1,5 +1,3 @@
-using MxIO.ApiClient.Abstractions;
-
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
 
 public class RootApiTestsV1 : BaseApiTests

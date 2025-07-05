@@ -1,21 +1,18 @@
 ﻿
 using System.Net;
-
+using Asp.Versioning;
 using FluentFTP;
-
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-using MxIO.ApiClient.Abstractions;
-using MxIO.ApiClient.WebExtensions;
-
-using XtremeIdiots.Portal.RepositoryApiClient.V1;
+using MX.Api.Abstractions;
+using MX.Api.Web.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
-using Asp.Versioning;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.RepositoryApi.Abstractions.Constants;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 {
@@ -51,12 +48,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto<ServerMapsCollectionDto>> IMapsApi.GetLoadedServerMapsFromHost(Guid gameServerId)
+        async Task<ApiResult<ServerMapsCollectionDto>> IMapsApi.GetLoadedServerMapsFromHost(Guid gameServerId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
+                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("GetFileList");
             operation.Telemetry.Type = $"FTP";
@@ -66,7 +63,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort.Value);
+                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -80,14 +77,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
                 var files = await ftpClient.GetListing();
 
-                var result = new ServerMapsCollectionDto
-                {
-                    TotalRecords = files.Count(),
-                    FilteredRecords = files.Count(),
-                    Entries = files.Select(f => new ServerMapDto(f.Name, f.FullName, f.Modified)).ToList()
-                };
+                var result = new ServerMapsCollectionDto(files.Select(f => new ServerMapDto(f.Name, f.FullName, f.Modified)).ToList(), files.Count(), files.Count());
 
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.OK, result);
+                return new ApiResponse<ServerMapsCollectionDto>(result).ToApiResult();
             }
             catch (Exception ex)
             {
@@ -95,7 +87,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
 
-                throw;
+                logger.LogError(ex, "Failed to retrieve server maps from FTP host for game server {GameServerId}", gameServerId);
+                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to retrieve maps.")).ToApiResult();
             }
             finally
             {
@@ -113,26 +106,26 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
+        async Task<ApiResult> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             var mapApiResponse = await repositoryApiClient.Maps.V1.GetMap(gameServerApiResponse.Result.GameType, mapName);
 
             if (mapApiResponse.IsNotFound || mapApiResponse.Result == null)
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, null, new List<string> { "Map could not be found in the database" });
+                return new ApiResponse(new ApiError(ErrorCodes.MAP_NOT_FOUND, $"The map '{mapName}' does not exist in the repository.")).ToNotFoundResult();
 
             if (!mapApiResponse.Result.MapFiles.Any())
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound, null, new List<string> { "There are no map files to be pushed to the server" });
+                return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' does not have any files associated with it.")).ToBadRequestResult();
 
             AsyncFtpClient? ftpClient = null;
 
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort.Value);
+                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -147,8 +140,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
                 if (await ftpClient.DirectoryExists(mapDirectoryPath))
                 {
-                    logger.LogInformation($"Directory {mapDirectoryPath} already exists on the server, skipping sync");
-                    return new ApiResponseDto(HttpStatusCode.OK);
+                    logger.LogInformation("Directory {MapDirectoryPath} already exists on the server, skipping sync", mapDirectoryPath);
+                    return new ApiResponse().ToApiResult();
                 }
                 else
                 {
@@ -166,14 +159,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                         }
                     }
 
-                    return new ApiResponseDto(HttpStatusCode.OK);
+                    return new ApiResponse().ToApiResult();
                 }
 
             }
             catch (Exception ex)
             {
                 telemetryClient.TrackException(ex);
-                throw;
+                logger.LogError(ex, "Failed to push map {MapName} to game server {GameServerId}", mapName, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to push map files to the game server's FTP host.")).ToApiResult();
             }
             finally
             {
@@ -190,18 +184,18 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
+        async Task<ApiResult> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
-                return new ApiResponseDto<ServerMapsCollectionDto>(HttpStatusCode.NotFound);
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             AsyncFtpClient? ftpClient = null;
 
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort.Value);
+                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.FtpHostname, gameServerApiResponse.Result.FtpUsername, gameServerApiResponse.Result.FtpPassword, gameServerApiResponse.Result.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -217,27 +211,25 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 if (await ftpClient.DirectoryExists(mapDirectoryPath))
                 {
                     await ftpClient.DeleteDirectory(mapDirectoryPath);
-                    return new ApiResponseDto(HttpStatusCode.OK);
+                    return new ApiResponse().ToApiResult();
                 }
                 else
                 {
-                    logger.LogInformation($"Directory {mapDirectoryPath} does not exist on the server, skipping delete");
-                    return new ApiResponseDto(HttpStatusCode.OK);
+                    logger.LogInformation("Directory {MapDirectoryPath} does not exist on the server, skipping delete", mapDirectoryPath);
+                    return new ApiResponse().ToApiResult();
                 }
 
             }
             catch (Exception ex)
             {
                 telemetryClient.TrackException(ex);
-                throw;
+                logger.LogError(ex, "Failed to delete map {MapName} from game server {GameServerId}", mapName, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to delete map directory from the game server's FTP host.")).ToApiResult();
             }
             finally
             {
                 ftpClient?.Dispose();
             }
-
-
-
         }
     }
 }

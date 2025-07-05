@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MX.Api.Client.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
@@ -34,14 +35,30 @@ public class BaseApiTests
             loggingBuilder.AddProvider(new ConsoleLoggerProvider());
         });
 
-        // Add ServersApiClient with configuration
-        services.AddServersApiClient(options =>
+        // Add ServersApiClient with conditional authentication
+        var clientBuilder = services.AddServersApiClient()
+            .WithBaseUrl(baseUrl, options =>
+            {
+                options.ApiPathPrefix = configuration["api_path_prefix"] ?? "servers-integration";
+            })
+            .WithApiKeyAuthentication(apiKey);
+
+        // Check if running in GitHub Actions workflow
+        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
         {
-            options.BaseUrl = baseUrl;
-            options.PrimaryApiKey = apiKey;
-            options.ApiAudience = apiAudience;
-            options.ApiPathPrefix = configuration["api_path_prefix"] ?? "servers-integration";
-        });
+            Console.WriteLine("Detected GitHub Actions environment - using client credentials authentication");
+
+            string tenantId = configuration["tenant_id"] ?? throw new Exception("Environment variable 'tenant_id' is null - this needs to be set for GitHub Actions authentication");
+            string clientId = configuration["client_id"] ?? throw new Exception("Environment variable 'client_id' is null - this needs to be set for GitHub Actions authentication");
+            string clientSecret = configuration["client_secret"] ?? throw new Exception("Environment variable 'client_secret' is null - this needs to be set for GitHub Actions authentication");
+
+            clientBuilder.WithClientCredentials(apiAudience, tenantId, clientId, clientSecret);
+        }
+        else
+        {
+            Console.WriteLine("Detected local environment - using Azure credentials authentication");
+            clientBuilder.WithAzureCredentials(apiAudience);
+        }
 
         var serviceProvider = services.BuildServiceProvider();
         serversApiClient = serviceProvider.GetRequiredService<IServersApiClient>();

@@ -1,11 +1,11 @@
 ﻿
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using MxIO.ApiClient;
-using MxIO.ApiClient.Abstractions;
-using MxIO.ApiClient.Extensions;
-
+using MX.Api.Abstractions;
+using MX.Api.Client;
+using MX.Api.Client.Auth;
+using MX.Api.Client.Configuration;
+using MX.Api.Client.Extensions;
 using RestSharp;
 
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
@@ -16,32 +16,32 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public class MapsApi : BaseApi, IMapsApi
     {
-        public MapsApi(ILogger<MapsApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ServersApiClientOptions> options, IRestClientSingleton restClientSingleton) : base(logger, apiTokenProvider, restClientSingleton, options)
+        public MapsApi(ILogger<MapsApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ApiClientOptions> options, IRestClientService restClientService) : base(logger, apiTokenProvider, restClientService, options)
         {
         }
 
-        public async Task<ApiResponseDto<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId)
+        public async Task<ApiResult<ServerMapsCollectionDto>> GetLoadedServerMapsFromHost(Guid gameServerId)
         {
             var request = await CreateRequestAsync($"v1/maps/{gameServerId}/host/loaded", Method.Get);
             var response = await ExecuteAsync(request);
 
-            return response.ToApiResponse<ServerMapsCollectionDto>();
+            return response.ToApiResult<ServerMapsCollectionDto>();
         }
 
-        public async Task<ApiResponseDto> PushServerMapToHost(Guid gameServerId, string mapName)
+        public async Task<ApiResult> PushServerMapToHost(Guid gameServerId, string mapName)
         {
             var request = await CreateRequestAsync($"v1/maps/{gameServerId}/host/{mapName}", Method.Post);
             var response = await ExecuteAsync(request);
 
-            return response.ToApiResponse();
+            return response.ToApiResult();
         }
 
-        public async Task<ApiResponseDto> DeleteServerMapFromHost(Guid gameServerId, string mapName)
+        public async Task<ApiResult> DeleteServerMapFromHost(Guid gameServerId, string mapName)
         {
             var request = await CreateRequestAsync($"v1/maps/{gameServerId}/host/{mapName}", Method.Delete);
             var response = await ExecuteAsync(request);
 
-            return response.ToApiResponse();
+            return response.ToApiResult();
         }
     }
 }

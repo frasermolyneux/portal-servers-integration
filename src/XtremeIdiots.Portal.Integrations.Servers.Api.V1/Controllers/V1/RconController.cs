@@ -1,20 +1,18 @@
 ﻿using System.Net;
-
+using Asp.Versioning;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-using MxIO.ApiClient.Abstractions;
-using MxIO.ApiClient.WebExtensions;
-
-using XtremeIdiots.Portal.RepositoryApiClient.V1;
+using MX.Api.Abstractions;
+using MX.Api.Web.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.RepositoryApi.Abstractions.Constants;
-using Asp.Versioning;
+using XtremeIdiots.Portal.RepositoryApiClient.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 {
@@ -24,15 +22,18 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
     [Route("api/v{version:apiVersion}")]
     public class RconController : Controller, IRconApi
     {
+        private readonly ILogger<RconController> logger;
         private readonly IRepositoryApiClient repositoryApiClient;
         private readonly IRconClientFactory rconClientFactory;
         private readonly TelemetryClient telemetryClient;
 
         public RconController(
+            ILogger<RconController> logger,
             IRepositoryApiClient repositoryApiClient,
             IRconClientFactory rconClientFactory,
             TelemetryClient telemetryClient)
         {
+            this.logger = logger;
             this.repositoryApiClient = repositoryApiClient;
             this.rconClientFactory = rconClientFactory;
             this.telemetryClient = telemetryClient;
@@ -47,20 +48,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto<ServerRconStatusResponseDto>> IRconApi.GetServerStatus(Guid gameServerId)
+        async Task<ApiResult<ServerRconStatusResponseDto>> IRconApi.GetServerStatus(Guid gameServerId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
-                return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.InternalServerError);
-
-            if (gameServerApiResponse.IsNotFound)
-                return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.NotFound);
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+                return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.BadRequest, null, new List<string> { "The game server does not have an rcon password configured" });
+                return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var queryClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconServerStatus");
             operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
@@ -68,7 +66,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
             try
             {
-                var statusResult = queryClient.GetPlayers();
+                var statusResult = rconClient.GetPlayers();
 
                 if (statusResult != null)
                 {
@@ -85,11 +83,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                         }).ToList()
                     };
 
-                    return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.OK, dto);
+                    return new ApiResponse<ServerRconStatusResponseDto>(dto).ToApiResult();
                 }
                 else
                 {
-                    return new ApiResponseDto<ServerRconStatusResponseDto>(HttpStatusCode.OK, new ServerRconStatusResponseDto());
+                    return new ApiResponse<ServerRconStatusResponseDto>(new ServerRconStatusResponseDto()).ToApiResult();
                 }
             }
             catch (Exception ex)
@@ -97,7 +95,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                throw;
+
+                logger.LogError(ex, "Failed to get RCON server status for game server {GameServerId}", gameServerId);
+                return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.RCON_CONNECTION_FAILED, "Failed to connect to the game server via RCON.")).ToApiResult();
             }
             finally
             {
@@ -114,20 +114,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto<RconMapCollectionDto>> IRconApi.GetServerMaps(Guid gameServerId)
+        async Task<ApiResult<RconMapCollectionDto>> IRconApi.GetServerMaps(Guid gameServerId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
-                return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.InternalServerError);
-
-            if (gameServerApiResponse.IsNotFound)
-                return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.NotFound);
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+                return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.BadRequest, null, new List<string> { "The game server does not have an rcon password configured" });
+                return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var queryClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconMapRotation");
             operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
@@ -135,22 +132,19 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
             try
             {
-                var statusResult = await queryClient.GetMaps();
+                var statusResult = await rconClient.GetMaps();
 
-                if (statusResult != null)
+                if (statusResult != null && statusResult.Any())
                 {
-                    var result = new RconMapCollectionDto
-                    {
-                        TotalRecords = statusResult.Count,
-                        FilteredRecords = statusResult.Count,
-                        Entries = statusResult.Select(m => new RconMapDto(m.GameType, m.MapName)).ToList()
-                    };
+                    var maps = statusResult.Select(m => new RconMapDto(m.GameType, m.MapName)).ToList();
+                    var result = new RconMapCollectionDto(maps, maps.Count, maps.Count);
 
-                    return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.OK, result);
+                    return new ApiResponse<RconMapCollectionDto>(result).ToApiResult();
                 }
                 else
                 {
-                    return new ApiResponseDto<RconMapCollectionDto>(HttpStatusCode.OK, new RconMapCollectionDto());
+                    var emptyResult = new RconMapCollectionDto(new List<RconMapDto>(), 0, 0);
+                    return new ApiResponse<RconMapCollectionDto>(emptyResult).ToApiResult();
                 }
             }
             catch (Exception ex)
@@ -158,7 +152,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                throw;
+
+                logger.LogError(ex, "Failed to get RCON server maps for game server {GameServerId}", gameServerId);
+                return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to retrieve map rotation from the game server via RCON.")).ToApiResult();
             }
             finally
             {
@@ -175,18 +171,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto> IRconApi.KickPlayer(Guid gameServerId, int clientId)
+        async Task<ApiResult> IRconApi.KickPlayer(Guid gameServerId, int clientId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
-                return new ApiResponseDto(HttpStatusCode.InternalServerError);
-
-            if (gameServerApiResponse.IsNotFound)
-                return new ApiResponseDto(HttpStatusCode.NotFound);
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto(HttpStatusCode.BadRequest, new List<string> { "The game server does not have an rcon password configured" });
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
             var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 
@@ -205,21 +198,25 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                     { "Result", result.ToString() }
                 });
 
-                return new ApiResponseDto(HttpStatusCode.OK);
+                return new ApiResponse().ToApiResult();
             }
             catch (NotImplementedException ex)
             {
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                return new ApiResponseDto(HttpStatusCode.NotImplemented, new List<string> { "The kick player operation is not implemented for this game server type" });
+
+                logger.LogWarning(ex, "Kick player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The kick player operation is not implemented for this game server type.")).ToApiResult();
             }
             catch (Exception ex)
             {
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                throw;
+
+                logger.LogError(ex, "Failed to kick player {ClientId} from game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to kick player from the game server via RCON.")).ToApiResult();
             }
             finally
             {
@@ -236,18 +233,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             return response.ToHttpResult();
         }
 
-        async Task<ApiResponseDto> IRconApi.BanPlayer(Guid gameServerId, int clientId)
+        async Task<ApiResult> IRconApi.BanPlayer(Guid gameServerId, int clientId)
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (!gameServerApiResponse.IsSuccess || gameServerApiResponse.Result == null)
-                return new ApiResponseDto(HttpStatusCode.InternalServerError);
-
-            if (gameServerApiResponse.IsNotFound)
-                return new ApiResponseDto(HttpStatusCode.NotFound);
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
             if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
-                return new ApiResponseDto(HttpStatusCode.BadRequest, new List<string> { "The game server does not have an rcon password configured" });
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
             var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
 
@@ -266,21 +260,25 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                     { "Result", result.ToString() }
                 });
 
-                return new ApiResponseDto(HttpStatusCode.OK);
+                return new ApiResponse().ToApiResult();
             }
             catch (NotImplementedException ex)
             {
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                return new ApiResponseDto(HttpStatusCode.NotImplemented, new List<string> { "The ban player operation is not implemented for this game server type" });
+
+                logger.LogWarning(ex, "Ban player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The ban player operation is not implemented for this game server type.")).ToApiResult();
             }
             catch (Exception ex)
             {
                 operation.Telemetry.Success = false;
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
-                throw;
+
+                logger.LogError(ex, "Failed to ban player {ClientId} from game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to ban player from the game server via RCON.")).ToApiResult();
             }
             finally
             {

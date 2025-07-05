@@ -5,8 +5,8 @@
     <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
+    <UserSecretsId>22376aef-b553-4de9-9f44-4b1fd8aa4902</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

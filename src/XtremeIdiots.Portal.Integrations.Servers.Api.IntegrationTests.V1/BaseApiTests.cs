@@ -37,8 +37,8 @@ public class BaseApiTests
 
         // Add ServersApiClient with conditional authentication
         var clientBuilder = services.AddServersApiClient()
-            .WithBaseUrl(baseUrl)
-            .WithApiKeyAuthentication(apiKey);
+            .WithBaseUrl(nameof(ServersApiClientOptions), baseUrl)
+            .WithApiKeyAuthentication(nameof(ServersApiClientOptions), apiKey);
 
         // Check if running in GitHub Actions workflow
         if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")

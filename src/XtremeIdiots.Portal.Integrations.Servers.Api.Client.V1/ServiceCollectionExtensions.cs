@@ -16,20 +16,20 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
                 serviceCollection.Configure(configure);
             }
 
-            // Register V1 API implementations
-            serviceCollection.AddSingleton<IQueryApi, QueryApi>();
-            serviceCollection.AddSingleton<IRconApi, RconApi>();
-            serviceCollection.AddSingleton<IMapsApi, MapsApi>();
-            serviceCollection.AddSingleton<IRootApi, RootApi>();
+            // Register V1 API implementations as scoped to match IRestClientService lifetime
+            serviceCollection.AddScoped<IQueryApi, QueryApi>();
+            serviceCollection.AddScoped<IRconApi, RconApi>();
+            serviceCollection.AddScoped<IMapsApi, MapsApi>();
+            serviceCollection.AddScoped<IRootApi, RootApi>();
 
-            // Register version selectors
-            serviceCollection.AddSingleton<IVersionedQueryApi, VersionedQueryApi>();
-            serviceCollection.AddSingleton<IVersionedRconApi, VersionedRconApi>();
-            serviceCollection.AddSingleton<IVersionedMapsApi, VersionedMapsApi>();
-            serviceCollection.AddSingleton<IVersionedRootApi, VersionedRootApi>();
+            // Register version selectors as scoped to match V1 API lifetime
+            serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
+            serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
+            serviceCollection.AddScoped<IVersionedMapsApi, VersionedMapsApi>();
+            serviceCollection.AddScoped<IVersionedRootApi, VersionedRootApi>();
 
-            // Register the unified client
-            serviceCollection.AddSingleton<IServersApiClient, ServersApiClient>();
+            // Register the unified client as scoped to match versioned API lifetime
+            serviceCollection.AddScoped<IServersApiClient, ServersApiClient>();
 
             return serviceCollection;
         }

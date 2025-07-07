@@ -14,7 +14,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public class QueryApi : BaseApi, IQueryApi
     {
-        public QueryApi(ILogger<QueryApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ApiClientOptions> options, IRestClientService restClientService) : base(logger, apiTokenProvider, restClientService, options)
+        public QueryApi(ILogger<QueryApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
+            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
         {
         }
 

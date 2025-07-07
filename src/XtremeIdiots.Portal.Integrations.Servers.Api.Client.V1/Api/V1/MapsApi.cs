@@ -16,7 +16,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public class MapsApi : BaseApi, IMapsApi
     {
-        public MapsApi(ILogger<MapsApi> logger, IApiTokenProvider apiTokenProvider, IOptions<ApiClientOptions> options, IRestClientService restClientService) : base(logger, apiTokenProvider, restClientService, options)
+        public MapsApi(ILogger<MapsApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
+            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
         {
         }
 

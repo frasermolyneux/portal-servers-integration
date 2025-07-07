@@ -12,7 +12,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public class RootApi : BaseApi, IRootApi
     {
-        public RootApi(ILogger<BaseApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptions<ApiClientOptions> options) : base(logger, apiTokenProvider, restClientService, options)
+        public RootApi(ILogger<BaseApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
+            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
         {
         }
 

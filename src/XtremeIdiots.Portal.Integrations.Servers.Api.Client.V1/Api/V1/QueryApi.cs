@@ -12,10 +12,14 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class QueryApi : BaseApi, IQueryApi
+    public class QueryApi : BaseApi<ServersApiClientOptions>, IQueryApi
     {
-        public QueryApi(ILogger<QueryApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
-            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
+        public QueryApi(
+            ILogger<BaseApi<ServersApiClientOptions>> logger, 
+            IApiTokenProvider? apiTokenProvider, 
+            IRestClientService restClientService, 
+            IOptions<ServersApiClientOptions> options) 
+            : base(logger, apiTokenProvider, restClientService, options)
         {
         }
 

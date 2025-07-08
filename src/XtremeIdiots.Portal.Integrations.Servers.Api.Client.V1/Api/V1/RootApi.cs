@@ -10,10 +10,14 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class RootApi : BaseApi, IRootApi
+    public class RootApi : BaseApi<ServersApiClientOptions>, IRootApi
     {
-        public RootApi(ILogger<BaseApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
-            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
+        public RootApi(
+            ILogger<BaseApi<ServersApiClientOptions>> logger, 
+            IApiTokenProvider? apiTokenProvider, 
+            IRestClientService restClientService, 
+            IOptions<ServersApiClientOptions> options) 
+            : base(logger, apiTokenProvider, restClientService, options)
         {
         }
 

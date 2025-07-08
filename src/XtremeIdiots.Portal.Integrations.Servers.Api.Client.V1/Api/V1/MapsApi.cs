@@ -14,10 +14,14 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class MapsApi : BaseApi, IMapsApi
+    public class MapsApi : BaseApi<ServersApiClientOptions>, IMapsApi
     {
-        public MapsApi(ILogger<MapsApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
-            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
+        public MapsApi(
+            ILogger<BaseApi<ServersApiClientOptions>> logger, 
+            IApiTokenProvider? apiTokenProvider, 
+            IRestClientService restClientService, 
+            IOptions<ServersApiClientOptions> options) 
+            : base(logger, apiTokenProvider, restClientService, options)
         {
         }
 

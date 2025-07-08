@@ -13,10 +13,14 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class RconApi : BaseApi, IRconApi
+    public class RconApi : BaseApi<ServersApiClientOptions>, IRconApi
     {
-        public RconApi(ILogger<RconApi> logger, IApiTokenProvider apiTokenProvider, IRestClientService restClientService, IOptionsSnapshot<ApiClientOptions> optionsSnapshot) 
-            : base(logger, apiTokenProvider, restClientService, optionsSnapshot, nameof(ServersApiClientOptions))
+        public RconApi(
+            ILogger<BaseApi<ServersApiClientOptions>> logger, 
+            IApiTokenProvider? apiTokenProvider, 
+            IRestClientService restClientService, 
+            IOptions<ServersApiClientOptions> options) 
+            : base(logger, apiTokenProvider, restClientService, options)
         {
         }
 

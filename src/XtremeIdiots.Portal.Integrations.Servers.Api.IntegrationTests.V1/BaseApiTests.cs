@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MX.Api.Client.Extensions;
+using MX.Api.Client.Configuration;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
@@ -36,26 +37,36 @@ public class BaseApiTests
         });
 
         // Add ServersApiClient with conditional authentication
-        var clientBuilder = services.AddServersApiClient()
-            .WithBaseUrl(nameof(ServersApiClientOptions), baseUrl)
-            .WithApiKeyAuthentication(nameof(ServersApiClientOptions), apiKey);
-
-        // Check if running in GitHub Actions workflow
-        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+        services.AddServersApiClient(options =>
         {
-            Console.WriteLine("Detected GitHub Actions environment - using client credentials authentication");
+            options.WithBaseUrl(baseUrl)
+                   .WithApiKeyAuthentication(apiKey);
 
-            string tenantId = configuration["tenant_id"] ?? throw new Exception("Environment variable 'tenant_id' is null - this needs to be set for GitHub Actions authentication");
-            string clientId = configuration["client_id"] ?? throw new Exception("Environment variable 'client_id' is null - this needs to be set for GitHub Actions authentication");
-            string clientSecret = configuration["client_secret"] ?? throw new Exception("Environment variable 'client_secret' is null - this needs to be set for GitHub Actions authentication");
+            // Check if running in GitHub Actions workflow
+            if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+            {
+                Console.WriteLine("Detected GitHub Actions environment - using client credentials authentication");
 
-            clientBuilder.WithClientCredentials(apiAudience, tenantId, clientId, clientSecret);
-        }
-        else
-        {
-            Console.WriteLine("Detected local environment - using Azure credentials authentication");
-            clientBuilder.WithAzureCredentials(apiAudience);
-        }
+                string tenantId = configuration["tenant_id"] ?? throw new Exception("Environment variable 'tenant_id' is null - this needs to be set for GitHub Actions authentication");
+                string clientId = configuration["client_id"] ?? throw new Exception("Environment variable 'client_id' is null - this needs to be set for GitHub Actions authentication");
+                string clientSecret = configuration["client_secret"] ?? throw new Exception("Environment variable 'client_secret' is null - this needs to be set for GitHub Actions authentication");
+
+                // Create client credential authentication options
+                var clientCredOptions = new ClientCredentialAuthenticationOptions
+                {
+                    ApiAudience = apiAudience,
+                    TenantId = tenantId,
+                    ClientId = clientId
+                };
+                clientCredOptions.SetClientSecret(clientSecret);
+                options.WithAuthentication(clientCredOptions);
+            }
+            else
+            {
+                Console.WriteLine("Detected local environment - using Azure credentials authentication");
+                options.WithEntraIdAuthentication(apiAudience);
+            }
+        });
 
         var serviceProvider = services.BuildServiceProvider();
         serversApiClient = serviceProvider.GetRequiredService<IServersApiClient>();

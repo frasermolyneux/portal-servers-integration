@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MX.Api.Abstractions;
 using MX.Api.Client;
 using MX.Api.Client.Auth;
@@ -15,10 +14,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     public class QueryApi : BaseApi<ServersApiClientOptions>, IQueryApi
     {
         public QueryApi(
-            ILogger<BaseApi<ServersApiClientOptions>> logger, 
-            IApiTokenProvider? apiTokenProvider, 
-            IRestClientService restClientService, 
-            IOptions<ServersApiClientOptions> options) 
+            ILogger<BaseApi<ServersApiClientOptions>> logger,
+            IApiTokenProvider? apiTokenProvider,
+            IRestClientService restClientService,
+            ServersApiClientOptions options)
             : base(logger, apiTokenProvider, restClientService, options)
         {
         }

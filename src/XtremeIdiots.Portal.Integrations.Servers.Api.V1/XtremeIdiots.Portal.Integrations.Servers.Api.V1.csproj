@@ -16,7 +16,7 @@
     <PackageReference Include="MX.Api.Client" Version="2.0.172.1" />
     <PackageReference Include="MX.Api.Web.Extensions" Version="2.0.172.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
-    <PackageReference Include="FluentFTP" Version="52.1.0" />
+    <PackageReference Include="FluentFTP" Version="53.0.1" />
     <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.7" />

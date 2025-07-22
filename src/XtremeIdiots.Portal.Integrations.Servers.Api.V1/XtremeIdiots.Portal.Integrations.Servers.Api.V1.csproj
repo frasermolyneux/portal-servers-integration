@@ -13,15 +13,15 @@
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.7" />
-    <PackageReference Include="MX.Api.Client" Version="2.0.172.1" />
-    <PackageReference Include="MX.Api.Web.Extensions" Version="2.0.172.1" />
+    <PackageReference Include="MX.Api.Client" Version="2.0.173.1" />
+    <PackageReference Include="MX.Api.Web.Extensions" Version="2.0.173.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
-    <PackageReference Include="FluentFTP" Version="52.1.0" />
+    <PackageReference Include="FluentFTP" Version="53.0.1" />
     <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="3.10.0" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.11.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Polly" Version="8.6.2" />
     <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient.V1" Version="1.1.409.1" />

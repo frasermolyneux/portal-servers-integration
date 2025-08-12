@@ -16,7 +16,7 @@ jobs:
       group: ${{ github.repository }}-dev
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: "Az CLI Login"
       uses: azure/login@v2

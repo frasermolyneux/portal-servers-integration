@@ -1,5 +1,5 @@
-﻿using XtremeIdiots.Portal.RepositoryApi.Abstractions.Constants;
-using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
+﻿using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
 {

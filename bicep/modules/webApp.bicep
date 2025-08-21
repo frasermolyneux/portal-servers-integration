@@ -143,28 +143,20 @@ resource webApp 'Microsoft.Web/sites@2020-06-01' = {
           value: 'api://portal-servers-integration-${environment}-${instance}'
         }
         {
-          name: 'apim_base_url'
-          value: apiManagement.properties.gatewayUrl
+          name: 'RepositoryApi__BaseUrl'
+          value: '${apiManagement.properties.gatewayUrl}/repository'
         }
         {
-          name: 'portal_repository_apim_subscription_key_primary'
+          name: 'RepositoryApi__ApiKey'
           value: '@Microsoft.KeyVault(SecretUri=${repositoryApimSubscription.outputs.primaryKeySecretRef.secretUri})'
         }
         {
-          name: 'portal_repository_apim_subscription_key_secondary'
-          value: '@Microsoft.KeyVault(SecretUri=${repositoryApimSubscription.outputs.secondaryKeySecretRef.secretUri})'
-        }
-        {
-          name: 'repository_api_application_audience'
+          name: 'RepositoryApi__ApplicationAudience'
           value: repositoryApi.ApplicationAudience
         }
         {
           name: 'xtremeidiots_ftp_certificate_thumbprint'
           value: '65173167144EA988088DA20915ABB83DB27645FA'
-        }
-        {
-          name: 'repository_api_path_prefix'
-          value: repositoryApi.ApiPath
         }
         {
           name: 'APPINSIGHTS_PROFILERFEATURE_VERSION'

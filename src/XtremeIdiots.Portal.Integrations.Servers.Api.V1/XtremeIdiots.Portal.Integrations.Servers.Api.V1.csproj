@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="3.13.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Polly" Version="8.6.2" />
-    <PackageReference Include="XtremeIdiots.Portal.RepositoryApiClient.V1" Version="1.1.409.1" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="2.0.440.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,12 +1,10 @@
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
 using Newtonsoft.Json.Converters;
 
-using XtremeIdiots.Portal.RepositoryApiClient.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
@@ -14,6 +12,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApiOperationFilters;
 using Asp.Versioning;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Configuration;
 using Asp.Versioning.ApiExplorer;
+using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,14 +101,10 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
 
-builder.Services.AddRepositoryApiClient(options =>
-{
-    options.BaseUrl = builder.Configuration["apim_base_url"] ?? builder.Configuration["repository_base_url"] ?? throw new ArgumentNullException("apim_base_url");
-    options.PrimaryApiKey = builder.Configuration["portal_repository_apim_subscription_key_primary"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key_primary");
-    options.SecondaryApiKey = builder.Configuration["portal_repository_apim_subscription_key_secondary"] ?? throw new ArgumentNullException("portal_repository_apim_subscription_key_secondary");
-    options.ApiAudience = builder.Configuration["repository_api_application_audience"] ?? throw new ArgumentNullException("repository_api_application_audience");
-    options.ApiPathPrefix = builder.Configuration["repository_api_path_prefix"] ?? "repository";
-});
+builder.Services.AddRepositoryApiClient(options => options
+    .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
+    .WithApiKeyAuthentication(builder.Configuration["RepositoryApi:ApiKey"] ?? throw new InvalidOperationException("RepositoryApi:ApiKey configuration is required"))
+    .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
 
 builder.Services.AddHealthChecks();
 

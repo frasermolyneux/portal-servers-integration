@@ -11,8 +11,8 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
-using XtremeIdiots.Portal.RepositoryApi.Abstractions.Constants;
-using XtremeIdiots.Portal.RepositoryApiClient.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 {
@@ -52,17 +52,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
                 return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconServerStatus");
-            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
-            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
 
             try
             {
@@ -118,17 +118,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
                 return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconMapRotation");
-            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
-            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
 
             try
             {
@@ -175,17 +175,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
                 return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconKickPlayer");
-            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
-            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
 
             try
             {
@@ -193,7 +193,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
                 telemetryClient.TrackEvent("RconKickPlayer", new Dictionary<string, string>
                 {
-                    { "GameServerId", gameServerApiResponse.Result.GameServerId.ToString() },
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
                     { "ClientId", clientId.ToString() },
                     { "Result", result.ToString() }
                 });
@@ -237,17 +237,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
         {
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result == null)
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.RconPassword))
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
                 return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
 
-            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.GameType, gameServerApiResponse.Result.GameServerId, gameServerApiResponse.Result.Hostname, gameServerApiResponse.Result.QueryPort, gameServerApiResponse.Result.RconPassword);
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconBanPlayer");
-            operation.Telemetry.Type = $"{gameServerApiResponse.Result.GameType}Server";
-            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Hostname}:{gameServerApiResponse.Result.QueryPort}";
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
 
             try
             {
@@ -255,7 +255,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
                 telemetryClient.TrackEvent("RconBanPlayer", new Dictionary<string, string>
                 {
-                    { "GameServerId", gameServerApiResponse.Result.GameServerId.ToString() },
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
                     { "ClientId", clientId.ToString() },
                     { "Result", result.ToString() }
                 });

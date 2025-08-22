@@ -3,11 +3,13 @@ name: DevOps Secure Scanning
 on:
   workflow_dispatch:
   pull_request:
-      branches:
+    branches:
       - main
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 2 * * 4" # Weekly security scan (Thu 02:00 UTC)
 
 permissions:
   contents: read # This is required for actions/checkout

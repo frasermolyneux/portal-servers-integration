@@ -132,6 +132,10 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/", () => Results.Ok("OK"))
+   .WithName("Root")
+   .AllowAnonymous();
+
 app.MapControllers();
 app.MapHealthChecks("/api/health").AllowAnonymous();
 

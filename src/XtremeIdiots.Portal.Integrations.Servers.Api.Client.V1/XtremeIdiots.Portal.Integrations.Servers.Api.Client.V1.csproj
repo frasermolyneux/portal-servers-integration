@@ -27,7 +27,7 @@
 	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.8" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
 	<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
-	<PackageReference Include="MX.Api.Client" Version="2.0.184.1" />
+	<PackageReference Include="MX.Api.Client" Version="2.0.185.1" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	<PackageReference Include="RestSharp" Version="112.1.0" />
   </ItemGroup>

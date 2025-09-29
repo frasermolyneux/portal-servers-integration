@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.8" />
-	<PackageReference Include="MX.Api.Abstractions" Version="2.0.182.1" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.9" />
+	<PackageReference Include="MX.Api.Abstractions" Version="2.0.186.1" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 	
 </Project>

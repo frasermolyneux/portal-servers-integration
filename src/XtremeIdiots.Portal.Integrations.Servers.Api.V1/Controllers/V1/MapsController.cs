@@ -76,10 +76,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 await ftpClient.SetWorkingDirectory("usermaps");
 
                 var files = await ftpClient.GetListing();
+                var entries = files.Select(f => new ServerMapDto(f.Name, f.FullName, f.Modified)).ToList();
 
-                var result = new ServerMapsCollectionDto(files.Select(f => new ServerMapDto(f.Name, f.FullName, f.Modified)).ToList(), files.Count(), files.Count());
+                var data = new ServerMapsCollectionDto(entries);
 
-                return new ApiResponse<ServerMapsCollectionDto>(result).ToApiResult();
+                return new ApiResponse<ServerMapsCollectionDto>(data).ToApiResult();
             }
             catch (Exception ex)
             {

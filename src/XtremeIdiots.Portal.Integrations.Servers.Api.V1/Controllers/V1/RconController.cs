@@ -137,13 +137,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 if (statusResult != null && statusResult.Any())
                 {
                     var maps = statusResult.Select(m => new RconMapDto(m.GameType, m.MapName)).ToList();
-                    var result = new RconMapCollectionDto(maps, maps.Count, maps.Count);
+                    var data = new RconMapCollectionDto(maps);
 
-                    return new ApiResponse<RconMapCollectionDto>(result).ToApiResult();
+                    return new ApiResponse<RconMapCollectionDto>(data).ToApiResult();
                 }
                 else
                 {
-                    var emptyResult = new RconMapCollectionDto(new List<RconMapDto>(), 0, 0);
+                    var emptyResult = new RconMapCollectionDto(new List<RconMapDto>());
                     return new ApiResponse<RconMapCollectionDto>(emptyResult).ToApiResult();
                 }
             }

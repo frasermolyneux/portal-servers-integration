@@ -24,11 +24,11 @@
 
   <ItemGroup>
 	<PackageReference Include="Azure.Identity" Version="1.16.0" />
-	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.8" />
-	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-	<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
-	<PackageReference Include="MX.Api.Client" Version="2.0.185.1" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.9" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
+	<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.9" />
+	<PackageReference Include="MX.Api.Client" Version="2.0.186.1" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	<PackageReference Include="RestSharp" Version="112.1.0" />
   </ItemGroup>
 

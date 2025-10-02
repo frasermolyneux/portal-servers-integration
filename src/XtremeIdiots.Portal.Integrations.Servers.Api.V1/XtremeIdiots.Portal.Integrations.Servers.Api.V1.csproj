@@ -14,7 +14,7 @@
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.9" />
     <PackageReference Include="MX.Api.Client" Version="2.0.186.1" />
-    <PackageReference Include="MX.Api.Web.Extensions" Version="2.0.186.1" />
+    <PackageReference Include="MX.Api.Web.Extensions" Version="2.0.190.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.5" />
     <PackageReference Include="FluentFTP" Version="53.0.1" />
     <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />

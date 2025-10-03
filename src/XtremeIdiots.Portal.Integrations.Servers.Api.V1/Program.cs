@@ -13,6 +13,7 @@ using Asp.Versioning;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Configuration;
 using Asp.Versioning.ApiExplorer;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
+using Microsoft.ApplicationInsights.WindowsServer.Channel.Implementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +25,15 @@ builder.Services.AddMemoryCache();
 builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
 {
     var telemetryProcessorChainBuilder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
-    telemetryProcessorChainBuilder.UseAdaptiveSampling(excludedTypes: "Exception");
+    telemetryProcessorChainBuilder.UseAdaptiveSampling(
+        settings: new SamplingPercentageEstimatorSettings
+        {
+            InitialSamplingPercentage = 5,
+            MinSamplingPercentage = 5,
+            MaxSamplingPercentage = 60
+        },
+        callback: null,
+        excludedTypes: "Exception");
     telemetryProcessorChainBuilder.Build();
 });
 

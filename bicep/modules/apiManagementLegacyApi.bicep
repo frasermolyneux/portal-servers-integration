@@ -122,7 +122,7 @@ resource legacyApiDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@
     operationNameFormat: 'Name'
 
     sampling: {
-      percentage: 100
+      percentage: 20
       samplingType: 'fixed'
     }
 

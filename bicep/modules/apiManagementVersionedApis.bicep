@@ -137,7 +137,7 @@ resource apiV1Diagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2021
     operationNameFormat: 'Name'
 
     sampling: {
-      percentage: 100
+      percentage: 20
       samplingType: 'fixed'
     }
 

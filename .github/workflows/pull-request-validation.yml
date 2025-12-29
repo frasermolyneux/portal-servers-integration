@@ -32,7 +32,6 @@ jobs:
         dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
         dotnet-version: 9.0.x
         src-folder: "src"
-        majorMinorVersion: "1.1"
 
   bicep-build-and-apply-dev:
     environment: Development

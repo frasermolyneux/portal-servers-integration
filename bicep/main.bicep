@@ -31,7 +31,7 @@ var environmentUniqueId = uniqueString('portal-servers-integration', environment
 var resourceGroupName = 'rg-portal-servers-integration-${environment}-${location}-${instance}'
 var coreResourceGroupName = 'rg-portal-core-${environment}-${location}-${instance}'
 var webAppName = 'app-portal-servers-int-${environment}-${location}-${instance}-${environmentUniqueId}'
-var keyVaultName = 'kv-${environmentUniqueId}-${location}'
+var keyVaultName = substring('kv-${environmentUniqueId}-${location}', 0, 24)
 
 // External Resource References
 var appInsightsRef = {

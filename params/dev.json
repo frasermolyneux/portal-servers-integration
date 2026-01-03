@@ -6,13 +6,13 @@
             "value": "dev"
         },
         "location": {
-            "value": "uksouth"
+            "value": "swedencentral"
         },
         "instance": {
             "value": "01"
         },
         "apiManagementName": {
-            "value": "apim-portal-core-dev-uksouth-01-3138575b4c87"
+            "value": "apim-portal-core-dev-swedencentral-01-2db7de738f7a"
         },
         "repositoryApi": {
             "value": {

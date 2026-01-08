@@ -20,21 +20,11 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: "Az CLI Login"
-      uses: azure/login@v2
+    - uses: frasermolyneux/actions/terraform-destroy@main
       with:
-        client-id: ${{ vars.AZURE_CLIENT_ID }}
-        tenant-id: ${{ vars.AZURE_TENANT_ID }}
-        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-    - shell: pwsh
-      run: |
-        $config = (Get-Content params/dev.json | ConvertFrom-Json)
-
-        $deploymentOutput = (az deployment sub show --name "portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.instance.value)" `
-          --subscription ${{ vars.AZURE_SUBSCRIPTION_ID }}) | ConvertFrom-Json
-
-        $webAppName = $deploymentOutput.properties.outputs.webAppName.value
-        $resourceGroupName = "rg-portal-servers-integration-$($config.parameters.environment.value)-$($config.parameters.location.value)-$($config.parameters.instance.value)"
-
-        az webapp delete --name $webAppName --resource-group $resourceGroupName --keep-empty-plan
+        terraform-folder: "terraform"
+        terraform-var-file: "tfvars/dev.tfvars"
+        terraform-backend-file: "backends/dev.backend.hcl"
+        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

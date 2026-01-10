@@ -23,3 +23,16 @@ provider "azurerm" {
 
   storage_use_azuread = true
 }
+
+provider "azuread" {
+}
+
+provider "azurerm" {
+  alias           = "dns"
+  subscription_id = var.dns_subscription_id
+
+  features {}
+
+  storage_use_azuread = true
+}
+

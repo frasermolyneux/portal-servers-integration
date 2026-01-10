@@ -1,19 +1,15 @@
-variable "environment" {
-  default = "dev"
-}
-
 variable "workload_name" {
   description = "Name of the workload as defined in platform-workloads state"
   type        = string
   default     = "portal-servers-integration"
 }
 
-variable "location" {
-  default = "uksouth"
+variable "environment" {
+  default = "dev"
 }
 
-variable "instance" {
-  default = "01"
+variable "location" {
+  default = "uksouth"
 }
 
 variable "subscription_id" {}
@@ -65,6 +61,10 @@ variable "portal_core_state" {
     tenant_id            = string
   })
 }
+
+variable "dns_subscription_id" {}
+variable "dns_resource_group_name" {}
+variable "dns_zone_name" {}
 
 variable "tags" {
   default = {}

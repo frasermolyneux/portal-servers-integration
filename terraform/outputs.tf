@@ -1,9 +1,7 @@
-output "workload_resource_group" {
-  description = "Resource group details for the workload from platform-workloads state"
-  value       = local.workload_resource_group
+output "web_app_name_v1" {
+  value = azurerm_linux_web_app.app_v1.name
 }
 
-output "workload_backend" {
-  description = "Terraform backend configuration for the workload from platform-workloads state"
-  value       = local.workload_backend
+output "web_app_resource_group_v1" {
+  value = azurerm_linux_web_app.app_v1.resource_group_name
 }

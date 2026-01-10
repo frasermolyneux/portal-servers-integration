@@ -24,7 +24,10 @@ resource "azurerm_api_management_product_policy" "api_product_policy" {
               </claim>
           </required-claims>
       </validate-jwt>
-      <authentication-managed-identity resource="${local.servers_integration_api.application.client_id}"${format(" client-id=\"%s\"", local.api_management_identity.client_id)} />
+      <authentication-managed-identity resource="${local.servers_integration_api.application.primary_identifier_uri}" output-token-variable-name="msi-access-token" ${format(" client-id=\"%s\"", local.api_management_identity.client_id)} />
+      <set-header name="Authorization" exists-action="override">
+          <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
+      </set-header>
   </inbound>
   <backend>
       <forward-request />

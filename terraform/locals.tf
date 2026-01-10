@@ -29,6 +29,7 @@ locals {
 
   managed_identities                  = data.terraform_remote_state.portal_environments.outputs.managed_identities
   servers_integration_webapi_identity = local.managed_identities["servers_integration_webapi_identity"]
+  api_management_identity             = local.managed_identities["environments_api_management_identity"]
 
   api_management          = data.terraform_remote_state.portal_environments.outputs.api_management
   repository_api          = data.terraform_remote_state.portal_environments.outputs.repository_api

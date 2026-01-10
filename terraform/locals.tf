@@ -38,5 +38,5 @@ locals {
   app_service_plan        = data.terraform_remote_state.portal_core.outputs.app_service_plans["apps"]
 
   # Local Resource Naming
-  web_app_name_v1 = "app-portal-servers-integration-${var.environment}-${var.location}-v1-${random_id.environment_id.hex}"
+  web_app_name_v1 = "app-portal-servers-int-${var.environment}-${var.location}-v1-${random_id.environment_id.hex}"
 }

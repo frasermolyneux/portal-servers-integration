@@ -149,8 +149,7 @@ resource "azurerm_api_management_api_policy" "versioned_api_policy" {
   ? azurerm_api_management_backend.versioned_api_backend[local.get_major_version[each.key]].name
   : azurerm_api_management_backend.versioned_api_backend[local.default_backend_version].name
 }" />
-      <!-- Correct path rewriting for versioned APIs -->
-      <set-variable name="rewriteUriTemplate" value="@("/api" + context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
+      <set-variable name="rewriteUriTemplate" value="@((string)context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
       <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
   </inbound>
   <backend>

@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Identity.Web;
@@ -16,6 +18,32 @@ using XtremeIdiots.Portal.Repository.Api.Client.V1;
 using Microsoft.ApplicationInsights.WindowsServer.Channel.Implementation;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var appConfigurationEndpoint = builder.Configuration["AzureAppConfiguration:Endpoint"];
+var isAzureAppConfigurationEnabled = false;
+
+if (!string.IsNullOrWhiteSpace(appConfigurationEndpoint))
+{
+    var managedIdentityClientId = builder.Configuration["AzureAppConfiguration:ManagedIdentityClientId"];
+    TokenCredential identityCredential = string.IsNullOrWhiteSpace(managedIdentityClientId)
+        ? new DefaultAzureCredential()
+        : new ManagedIdentityCredential(managedIdentityClientId);
+
+    builder.Configuration.AddAzureAppConfiguration(options =>
+    {
+        options.Connect(new Uri(appConfigurationEndpoint), identityCredential)
+               .Select("XtremeIdiots.Portal.Integrations.Servers.Api.V1:*", labelFilter: builder.Configuration["AzureAppConfiguration:Environment"])
+               .TrimKeyPrefix("XtremeIdiots.Portal.Integrations.Servers.Api.V1:");
+
+        options.ConfigureKeyVault(keyVaultOptions =>
+        {
+            keyVaultOptions.SetCredential(identityCredential);
+        });
+    });
+
+    builder.Services.AddAzureAppConfiguration();
+    isAzureAppConfigurationEnabled = true;
+}
 
 builder.Services.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
 builder.Services.AddLogging();
@@ -117,6 +145,11 @@ builder.Services.AddRepositoryApiClient(options => options
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+if (isAzureAppConfigurationEnabled)
+{
+    app.UseAzureAppConfiguration();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

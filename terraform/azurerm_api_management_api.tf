@@ -149,7 +149,7 @@ resource "azurerm_api_management_api_policy" "versioned_api_policy" {
   ? azurerm_api_management_backend.versioned_api_backend[local.get_major_version[each.key]].name
   : azurerm_api_management_backend.versioned_api_backend[local.default_backend_version].name
 }" />
-      <set-variable name="rewriteUriTemplate" value="@RegexReplace((string)context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length), \"^/v[0-9]+(\\.[0-9]+)?\", string.Empty)" />
+      <set-variable name="rewriteUriTemplate" value="@RegexReplace((string)context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length), '^/v[0-9]+(\\.[0-9]+)?', string.Empty)" />
       <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
   </inbound>
   <backend>

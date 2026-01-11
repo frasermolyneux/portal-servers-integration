@@ -76,7 +76,7 @@ resource "azurerm_api_management_backend" "versioned_api_backend" {
   protocol    = lower(each.value.protocol)
   title       = each.value.name
   description = each.value.description
-  url         = format("https://%s/api/%s", each.value.hostname, lower(local.api_version_formats[each.key]))
+  url         = format("https://%s/api", each.value.hostname)
 
   tls {
     validate_certificate_chain = each.value.tls_validate

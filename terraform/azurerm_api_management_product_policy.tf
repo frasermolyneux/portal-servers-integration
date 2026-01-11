@@ -20,7 +20,7 @@ resource "azurerm_api_management_product_policy" "api_product_policy" {
           </issuers>
           <required-claims>
               <claim name="roles" match="any">
-                <value>EventGenerator</value>
+                <value>ServiceAccount</value>
               </claim>
           </required-claims>
       </validate-jwt>

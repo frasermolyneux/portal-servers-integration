@@ -76,7 +76,7 @@ resource "azurerm_api_management_backend" "versioned_api_backend" {
   protocol    = lower(each.value.protocol)
   title       = each.value.name
   description = each.value.description
-  url         = format("https://%s/api", each.value.hostname)
+  url         = format("https://%s/api/%s", each.value.hostname, lower(local.api_version_formats[each.key]))
 
   tls {
     validate_certificate_chain = each.value.tls_validate
@@ -149,7 +149,7 @@ resource "azurerm_api_management_api_policy" "versioned_api_policy" {
   ? azurerm_api_management_backend.versioned_api_backend[local.get_major_version[each.key]].name
   : azurerm_api_management_backend.versioned_api_backend[local.default_backend_version].name
 }" />
-      <set-variable name="rewriteUriTemplate" value="@((string)context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length))" />
+      <set-variable name="rewriteUriTemplate" value="@RegexReplace((string)context.Request.OriginalUrl.Path.Substring(context.Api.Path.Length), \"^/v[0-9]+(\\.[0-9]+)?\", string.Empty)" />
       <rewrite-uri template="@((string)context.Variables["rewriteUriTemplate"])" />
   </inbound>
   <backend>

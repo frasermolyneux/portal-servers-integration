@@ -15,6 +15,8 @@ resource "azurerm_linux_web_app" "app_v1" {
     identity_ids = [local.servers_integration_identity.id]
   }
 
+  key_vault_reference_identity_id = local.servers_integration_identity.id
+
   site_config {
     application_stack {
       dotnet_version = "9.0"

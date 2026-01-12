@@ -12,7 +12,7 @@ resource "azurerm_linux_web_app" "app_v1" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [local.servers_integration_webapi_identity.id]
+    identity_ids = [local.servers_integration_identity.id]
   }
 
   site_config {
@@ -31,10 +31,10 @@ resource "azurerm_linux_web_app" "app_v1" {
 
   app_settings = {
     "AzureAppConfiguration__Endpoint"                = local.app_configuration_endpoint
-    "AzureAppConfiguration__ManagedIdentityClientId" = local.servers_integration_webapi_identity.client_id
+    "AzureAppConfiguration__ManagedIdentityClientId" = local.servers_integration_identity.client_id
     "AzureAppConfiguration__Environment"             = var.environment
 
-    "AZURE_CLIENT_ID" = local.servers_integration_webapi_identity.client_id
+    "AZURE_CLIENT_ID" = local.servers_integration_identity.client_id
 
     "RepositoryApi__BaseUrl"             = local.repository_api.api_management.endpoint
     "RepositoryApi__ApplicationAudience" = local.repository_api.application.primary_identifier_uri

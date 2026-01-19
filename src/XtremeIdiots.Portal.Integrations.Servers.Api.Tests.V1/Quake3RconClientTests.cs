@@ -302,6 +302,29 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.Contains("kick", result);
         }
 
+        [Fact]
+        public async Task Say_SendsCorrectCommand()
+        {
+            // Arrange
+            var message = "Server announcement";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler($"say \"{message}\"", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response("Message sent to all players");
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            await _rconClient.Say(message);
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+        }
+
         public void Dispose()
         {
             _mockServer?.Dispose();

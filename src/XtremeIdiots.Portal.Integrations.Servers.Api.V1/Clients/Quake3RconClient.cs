@@ -192,6 +192,160 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return Task.FromResult(GetStringFromPackets(packets));
         }
 
+        public Task<string> KickPlayerByName(string name)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to kick player by name {Name} from the server", _serverId, name);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"kick \"{name}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> KickAllPlayers()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to kick all players from the server", _serverId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute kickall command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets("kickall"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> BanPlayerByName(string name)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to ban player by name {Name} from the server", _serverId, name);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"banUser \"{name}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> TempBanPlayerByName(string name)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to temporarily ban player by name {Name} from the server", _serverId, name);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"tempBanUser \"{name}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> TempBanPlayer(int clientId)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to temporarily ban client ID {ClientId} from the server", _serverId, clientId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"tempBanClient {clientId}"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> UnbanPlayer(string name)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to unban player by name {Name} from the server", _serverId, name);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute unban command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"unbanuser \"{name}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> TellPlayer(int clientId, string message)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to send message to client ID {ClientId}", _serverId, clientId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"tell {clientId} \"{message}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> ChangeMap(string mapName)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to change map to {MapName}", _serverId, mapName);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute map change command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"map {mapName}"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> GetServerInfo()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get server info", _serverId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute serverinfo command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets("serverinfo"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> GetSystemInfo()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get system info", _serverId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute systeminfo command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets("systeminfo"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> GetCommandList()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get command list", _serverId);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{ServerName}] Failed to execute cmdlist command - retry count: {Count}", _serverId, retryCount);
+                })
+                .Execute(() => GetCommandPackets("cmdlist"));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
         private string PlayerStatus()
         {
             var packets = Policy.Handle<Exception>()

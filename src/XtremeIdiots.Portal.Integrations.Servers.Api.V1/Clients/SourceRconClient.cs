@@ -126,6 +126,61 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             throw new NotImplementedException("Banning players is not implemented for Source engine games");
         }
 
+        public Task<string> KickPlayerByName(string name)
+        {
+            throw new NotImplementedException("Kicking players by name is not implemented for Source engine games");
+        }
+
+        public Task<string> KickAllPlayers()
+        {
+            throw new NotImplementedException("Kicking all players is not implemented for Source engine games");
+        }
+
+        public Task<string> BanPlayerByName(string name)
+        {
+            throw new NotImplementedException("Banning players by name is not implemented for Source engine games");
+        }
+
+        public Task<string> TempBanPlayerByName(string name)
+        {
+            throw new NotImplementedException("Temporarily banning players by name is not implemented for Source engine games");
+        }
+
+        public Task<string> TempBanPlayer(int clientId)
+        {
+            throw new NotImplementedException("Temporarily banning players is not implemented for Source engine games");
+        }
+
+        public Task<string> UnbanPlayer(string name)
+        {
+            throw new NotImplementedException("Unbanning players is not implemented for Source engine games");
+        }
+
+        public Task<string> TellPlayer(int clientId, string message)
+        {
+            throw new NotImplementedException("Sending messages to specific players is not implemented for Source engine games");
+        }
+
+        public Task<string> ChangeMap(string mapName)
+        {
+            throw new NotImplementedException("Changing maps is not implemented for Source engine games");
+        }
+
+        public Task<string> GetServerInfo()
+        {
+            throw new NotImplementedException("Getting server info is not implemented for Source engine games");
+        }
+
+        public Task<string> GetSystemInfo()
+        {
+            throw new NotImplementedException("Getting system info is not implemented for Source engine games");
+        }
+
+        public Task<string> GetCommandList()
+        {
+            throw new NotImplementedException("Getting command list is not implemented for Source engine games");
+        }
+
         private string PlayerStatus()
         {
             CreateConnection();

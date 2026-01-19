@@ -46,7 +46,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var result = await _udpClient.ReceiveAsync(cancellationToken);
+                    var result = await _udpClient.ReceiveAsync();
+                    if (cancellationToken.IsCancellationRequested) break;
+                    
                     var receivedData = result.Buffer;
                     var remoteEndPoint = result.RemoteEndPoint;
 
@@ -106,7 +108,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         public void Dispose()
         {
             _cancellationTokenSource.Cancel();
-            _listenTask?.Wait(TimeSpan.FromSeconds(2));
+            _listenTask?.Wait(TimeSpan.FromMilliseconds(500));
             _udpClient?.Dispose();
             _cancellationTokenSource?.Dispose();
         }

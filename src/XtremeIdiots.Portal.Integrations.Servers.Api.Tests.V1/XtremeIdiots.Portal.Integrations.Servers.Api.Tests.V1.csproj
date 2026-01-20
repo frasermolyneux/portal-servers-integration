@@ -20,4 +20,8 @@
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Api.V1\XtremeIdiots.Portal.Integrations.Servers.Api.V1.csproj" />
+  </ItemGroup>
+
 </Project>

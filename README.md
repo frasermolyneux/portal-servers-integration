@@ -14,6 +14,10 @@
 
 This repository contains the servers integration API for the XtremeIdiots Portal solution.
 
+### .NET Support
+
+The NuGet packages published by this repository target .NET 9 and .NET 10. See [DOTNET_SUPPORT.md](DOTNET_SUPPORT.md) for details on the multi-targeting strategy and dependency management.
+
 ---
 
 ## Related Projects

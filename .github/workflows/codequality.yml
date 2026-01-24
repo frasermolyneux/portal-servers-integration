@@ -21,7 +21,9 @@ jobs:
       sonar-host-url: https://sonarcloud.io
       build-target: dotnet-web-ci
       dotnet-project: XtremeIdiots.Portal.Integrations.Servers.Api.V1
-      dotnet-version: 9.0.x
+      dotnet-version: |
+        9.0.x
+        10.0.x
       src-folder: src
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

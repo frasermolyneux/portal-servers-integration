@@ -1,0 +1,64 @@
+name: Publish Tagged Build to NuGet
+
+on:
+  workflow_run:
+    workflows:
+      - Main Branch Build and Tag
+    types:
+      - completed
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish-nuget-packages:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: NuGet
+    runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_TAG: 'false'
+      RELEASE_TAG: ''
+
+    steps:
+    - name: Checkout tagged commit
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.workflow_run.head_sha }}
+
+    - name: Detect release tag on commit
+      shell: pwsh
+      run: |
+        git fetch --tags --force
+        $tags = git tag --points-at HEAD | Where-Object { $_ -like 'v*' }
+        if (-not $tags) {
+          Write-Host "No release-tag (v*) found on commit ${{ github.event.workflow_run.head_sha }}. Skipping publish."
+          exit 0
+        }
+
+        $selected = ($tags | Sort-Object | Select-Object -First 1).Trim()
+        Write-Host "Found release tag '$selected'. Preparing publish."
+        "HAS_RELEASE_TAG=true" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        "RELEASE_TAG=$selected" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Publish to NuGet.org
+      if: env.HAS_RELEASE_TAG == 'true'
+      uses: frasermolyneux/actions/publish-nuget-packages@publish-nuget-packages/v1.1
+      with:
+        artifact-name: nuget-packages
+        artifact-run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        artifact-output-path: nuget-packages
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    - name: Create GitHub release
+      if: env.HAS_RELEASE_TAG == 'true'
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ env.RELEASE_TAG }}
+        name: ${{ env.RELEASE_TAG }}
+        generateReleaseNotes: true
+        skipIfReleaseExists: true
+        artifacts: nuget-packages/**/*.nupkg
+        artifactErrorsFailBuild: false
+        token: ${{ secrets.GITHUB_TOKEN }}

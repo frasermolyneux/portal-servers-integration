@@ -1,0 +1,115 @@
+name: Main Branch Build and Tag
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+
+permissions:
+  contents: read
+
+jobs:
+  calculate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      semver: ${{ steps.capture_version.outputs.semver }}
+      nuget_version: ${{ steps.capture_version.outputs.nuget_version }}
+      tag_name: ${{ steps.release_tag.outputs.tag_name }}
+      should_tag: ${{ steps.release_tag.outputs.should_tag }}
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Install Nerdbank.GitVersioning tool
+      run: |
+        dotnet tool install --global nbgv
+        echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Determine version
+      id: capture_version
+      shell: pwsh
+      run: |
+        $versionInfo = nbgv get-version -f json | ConvertFrom-Json
+        $semVer = $versionInfo.SemVer2
+        $nuGetVersion = $versionInfo.NuGetPackageVersion
+        $isPublicRelease = $versionInfo.PublicRelease
+
+        Write-Host "SemVer: $semVer"
+        Write-Host "NuGet version: $nuGetVersion"
+        Write-Host "Public release: $isPublicRelease"
+
+        "semver=$semVer" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "nuget_version=$nuGetVersion" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "public_release=$isPublicRelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+    - name: Decide tag requirement
+      id: release_tag
+      shell: pwsh
+      env:
+        SEMVER: ${{ steps.capture_version.outputs.semver }}
+        PUBLIC_RELEASE: ${{ steps.capture_version.outputs.public_release }}
+      run: |
+        git fetch --tags --force
+        if ($Env:PUBLIC_RELEASE -ne 'True' -and $Env:PUBLIC_RELEASE -ne 'true') {
+          Write-Host 'Current commit is not a public release. No tag will be created.'
+          "should_tag=false" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "tag_name=" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          exit 0
+        }
+        $tagName = "v$Env:SEMVER"
+        $existing = git tag --points-at HEAD | Where-Object { $_ -like 'v*' } | Select-Object -First 1
+        if ($existing) {
+          Write-Host "HEAD already tagged with $existing; skipping tag creation."
+          "should_tag=false" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "tag_name=$existing" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          exit 0
+        }
+        Write-Host "Next release tag: $tagName"
+        "should_tag=true" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "tag_name=$tagName" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+  dotnet-ci:
+    needs: calculate-version
+    runs-on: ubuntu-latest
+    env:
+      BUILD_VERSION_OVERRIDE: ${{ needs.calculate-version.outputs.nuget_version }}
+
+    steps:
+    - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1.1
+      with:
+        dotnet-version: |
+          9.0.x
+          10.0.x-preview
+        src-folder: "src"
+
+  tag-release:
+    needs:
+      - calculate-version
+      - dotnet-ci
+    if: needs.calculate-version.outputs.should_tag == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Create tag
+      shell: pwsh
+      run: |
+        git tag ${{ needs.calculate-version.outputs.tag_name }}
+
+    - name: Push tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
+      run: |
+        git push origin ${{ needs.calculate-version.outputs.tag_name }}

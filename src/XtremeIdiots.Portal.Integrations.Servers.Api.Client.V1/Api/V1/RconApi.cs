@@ -54,5 +54,140 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
             return response.ToApiResult();
         }
+
+        public async Task<ApiResult> Restart(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/restart", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> RestartMap(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/restart-map", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> FastRestartMap(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/fast-restart-map", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> NextMap(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/next-map", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> Say(Guid gameServerId, string message)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/say", Method.Post);
+            request.AddJsonBody(message);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, string message)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tell/{clientId}", Method.Post);
+            request.AddJsonBody(message);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> ChangeMap(Guid gameServerId, string mapName)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/change-map", Method.Post);
+            request.AddJsonBody(mapName);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> KickPlayerByName(Guid gameServerId, string name)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/kick-player-by-name", Method.Post);
+            request.AddJsonBody(name);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> KickAllPlayers(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/kick-all-players", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> BanPlayerByName(Guid gameServerId, string name)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/ban-player-by-name", Method.Post);
+            request.AddJsonBody(name);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> TempBanPlayer(Guid gameServerId, int clientId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tempban/{clientId}", Method.Post);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> TempBanPlayerByName(Guid gameServerId, string name)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tempban-player-by-name", Method.Post);
+            request.AddJsonBody(name);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> UnbanPlayer(Guid gameServerId, string name)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/unban-player", Method.Post);
+            request.AddJsonBody(name);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult<string>> GetServerInfo(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/server-info", Method.Get);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult<string>();
+        }
+
+        public async Task<ApiResult<string>> GetSystemInfo(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/system-info", Method.Get);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult<string>();
+        }
+
+        public async Task<ApiResult<string>> GetCommandList(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/command-list", Method.Get);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult<string>();
+        }
     }
 }

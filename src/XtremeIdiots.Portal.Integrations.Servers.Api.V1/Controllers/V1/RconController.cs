@@ -39,6 +39,36 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             this.telemetryClient = telemetryClient;
         }
 
+        /// <summary>
+        /// Verifies that the player in the specified slot matches the expected player name
+        /// </summary>
+        /// <returns>ApiResponse with error if verification fails, null if verification passes</returns>
+        private ApiResponse? VerifyPlayerInSlot(IRconClient rconClient, int clientId, string expectedPlayerName, Guid gameServerId)
+        {
+            try
+            {
+                var players = rconClient.GetPlayers();
+                var player = players?.FirstOrDefault(p => p.Num == clientId);
+
+                if (player == null)
+                {
+                    return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}."));
+                }
+
+                if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}."));
+                }
+
+                return null; // Verification passed
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to verify player in slot {ClientId} on game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before operation."));
+            }
+        }
+
         [HttpGet]
         [Route("rcon/{gameServerId}/status")]
         public async Task<IActionResult> GetServerStatus(Guid gameServerId)
@@ -1195,25 +1225,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             // Verify player name if provided
             if (!string.IsNullOrWhiteSpace(expectedPlayerName))
             {
-                try
+                var verificationError = VerifyPlayerInSlot(rconClient, clientId, expectedPlayerName, gameServerId);
+                if (verificationError != null)
                 {
-                    var players = rconClient.GetPlayers();
-                    var player = players?.FirstOrDefault(p => p.Num == clientId);
-
-                    if (player == null)
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
-                    }
-
-                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to verify player for kick operation on game server {GameServerId}", gameServerId);
-                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before kick operation.")).ToApiResult();
+                    return verificationError.ToBadRequestResult();
                 }
             }
 
@@ -1283,25 +1298,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             // Verify player name if provided
             if (!string.IsNullOrWhiteSpace(expectedPlayerName))
             {
-                try
+                var verificationError = VerifyPlayerInSlot(rconClient, clientId, expectedPlayerName, gameServerId);
+                if (verificationError != null)
                 {
-                    var players = rconClient.GetPlayers();
-                    var player = players?.FirstOrDefault(p => p.Num == clientId);
-
-                    if (player == null)
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
-                    }
-
-                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to verify player for ban operation on game server {GameServerId}", gameServerId);
-                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before ban operation.")).ToApiResult();
+                    return verificationError.ToBadRequestResult();
                 }
             }
 
@@ -1371,25 +1371,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             // Verify player name if provided
             if (!string.IsNullOrWhiteSpace(expectedPlayerName))
             {
-                try
+                var verificationError = VerifyPlayerInSlot(rconClient, clientId, expectedPlayerName, gameServerId);
+                if (verificationError != null)
                 {
-                    var players = rconClient.GetPlayers();
-                    var player = players?.FirstOrDefault(p => p.Num == clientId);
-
-                    if (player == null)
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
-                    }
-
-                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to verify player for temp ban operation on game server {GameServerId}", gameServerId);
-                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before temp ban operation.")).ToApiResult();
+                    return verificationError.ToBadRequestResult();
                 }
             }
 
@@ -1462,25 +1447,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             // Verify player name if provided
             if (!string.IsNullOrWhiteSpace(expectedPlayerName))
             {
-                try
+                var verificationError = VerifyPlayerInSlot(rconClient, clientId, expectedPlayerName, gameServerId);
+                if (verificationError != null)
                 {
-                    var players = rconClient.GetPlayers();
-                    var player = players?.FirstOrDefault(p => p.Num == clientId);
-
-                    if (player == null)
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
-                    }
-
-                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to verify player for tell operation on game server {GameServerId}", gameServerId);
-                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before tell operation.")).ToApiResult();
+                    return verificationError.ToBadRequestResult();
                 }
             }
 
@@ -1491,6 +1461,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             try
             {
                 await rconClient.TellPlayer(clientId, message);
+
+                telemetryClient.TrackEvent("RconTellPlayerWithVerification", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "ExpectedPlayerName", expectedPlayerName ?? "null" }
+                });
+
                 return new ApiResponse().ToApiResult();
             }
             catch (NotImplementedException ex)

@@ -8,6 +8,9 @@ updates:
     directory: "/src"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     assignees: ["frasermolyneux"]

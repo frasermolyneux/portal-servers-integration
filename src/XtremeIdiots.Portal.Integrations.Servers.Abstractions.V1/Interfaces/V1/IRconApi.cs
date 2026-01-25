@@ -127,5 +127,38 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1
         /// </summary>
         /// <param name="gameServerId">The ID of the game server</param>
         Task<ApiResult<string>> GetCommandList(Guid gameServerId);
+
+        /// <summary>
+        /// Kicks a player from the server by their client ID with optional name verification
+        /// </summary>
+        /// <param name="gameServerId">The ID of the game server</param>
+        /// <param name="clientId">The client ID to kick</param>
+        /// <param name="expectedPlayerName">Optional player name to verify before kicking. If provided and doesn't match, operation will fail.</param>
+        Task<ApiResult> KickPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName);
+
+        /// <summary>
+        /// Bans a player from the server by their client ID with optional name verification
+        /// </summary>
+        /// <param name="gameServerId">The ID of the game server</param>
+        /// <param name="clientId">The client ID to ban</param>
+        /// <param name="expectedPlayerName">Optional player name to verify before banning. If provided and doesn't match, operation will fail.</param>
+        Task<ApiResult> BanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName);
+
+        /// <summary>
+        /// Temporarily bans a player from the server by their client ID with optional name verification
+        /// </summary>
+        /// <param name="gameServerId">The ID of the game server</param>
+        /// <param name="clientId">The client ID to temporarily ban</param>
+        /// <param name="expectedPlayerName">Optional player name to verify before temp banning. If provided and doesn't match, operation will fail.</param>
+        Task<ApiResult> TempBanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName);
+
+        /// <summary>
+        /// Sends a message to a specific player with optional name verification
+        /// </summary>
+        /// <param name="gameServerId">The ID of the game server</param>
+        /// <param name="clientId">The client ID to send message to</param>
+        /// <param name="message">The message to send</param>
+        /// <param name="expectedPlayerName">Optional player name to verify before sending message. If provided and doesn't match, operation will fail.</param>
+        Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName);
     }
 }

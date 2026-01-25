@@ -1170,5 +1170,351 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 telemetryClient.StopOperation(operation);
             }
         }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/kick/{clientId}/verify")]
+        public async Task<IActionResult> KickPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        {
+            var response = await ((IRconApi)this).KickPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.KickPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            // Verify player name if provided
+            if (!string.IsNullOrWhiteSpace(expectedPlayerName))
+            {
+                try
+                {
+                    var players = rconClient.GetPlayers();
+                    var player = players?.FirstOrDefault(p => p.Num == clientId);
+
+                    if (player == null)
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
+                    }
+
+                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to verify player for kick operation on game server {GameServerId}", gameServerId);
+                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before kick operation.")).ToApiResult();
+                }
+            }
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconKickPlayerWithVerification");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.KickPlayer(clientId);
+
+                telemetryClient.TrackEvent("RconKickPlayerWithVerification", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
+                    { "Result", result.ToString() }
+                });
+
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Kick player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The kick player operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to kick player {ClientId} from game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to kick player from the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/ban/{clientId}/verify")]
+        public async Task<IActionResult> BanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        {
+            var response = await ((IRconApi)this).BanPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.BanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            // Verify player name if provided
+            if (!string.IsNullOrWhiteSpace(expectedPlayerName))
+            {
+                try
+                {
+                    var players = rconClient.GetPlayers();
+                    var player = players?.FirstOrDefault(p => p.Num == clientId);
+
+                    if (player == null)
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
+                    }
+
+                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to verify player for ban operation on game server {GameServerId}", gameServerId);
+                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before ban operation.")).ToApiResult();
+                }
+            }
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconBanPlayerWithVerification");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.BanPlayer(clientId);
+
+                telemetryClient.TrackEvent("RconBanPlayerWithVerification", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
+                    { "Result", result.ToString() }
+                });
+
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Ban player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The ban player operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to ban player {ClientId} from game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to ban player from the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/tempban/{clientId}/verify")]
+        public async Task<IActionResult> TempBanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        {
+            var response = await ((IRconApi)this).TempBanPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.TempBanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            // Verify player name if provided
+            if (!string.IsNullOrWhiteSpace(expectedPlayerName))
+            {
+                try
+                {
+                    var players = rconClient.GetPlayers();
+                    var player = players?.FirstOrDefault(p => p.Num == clientId);
+
+                    if (player == null)
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
+                    }
+
+                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to verify player for temp ban operation on game server {GameServerId}", gameServerId);
+                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before temp ban operation.")).ToApiResult();
+                }
+            }
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconTempBanPlayerWithVerification");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.TempBanPlayer(clientId);
+
+                telemetryClient.TrackEvent("RconTempBanPlayerWithVerification", new Dictionary<string, string>
+                {
+                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
+                    { "ClientId", clientId.ToString() },
+                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
+                    { "Result", result.ToString() }
+                });
+
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Temp ban player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The temporary ban player operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to temp ban player {ClientId} from game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to temporarily ban player from the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/tell/{clientId}/verify")]
+        public async Task<IActionResult> TellPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] TellPlayerWithVerificationRequest request)
+        {
+            var response = await ((IRconApi)this).TellPlayerWithVerification(gameServerId, clientId, request.Message, request.ExpectedPlayerName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            // Verify player name if provided
+            if (!string.IsNullOrWhiteSpace(expectedPlayerName))
+            {
+                try
+                {
+                    var players = rconClient.GetPlayers();
+                    var player = players?.FirstOrDefault(p => p.Num == clientId);
+
+                    if (player == null)
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}.")).ToBadRequestResult();
+                    }
+
+                    if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}.")).ToBadRequestResult();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to verify player for tell operation on game server {GameServerId}", gameServerId);
+                    return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before tell operation.")).ToApiResult();
+                }
+            }
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconTellPlayerWithVerification");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                await rconClient.TellPlayer(clientId, message);
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Tell player operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The tell player operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to send message to player {ClientId} on game server {GameServerId}", clientId, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to player on the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
     }
 }

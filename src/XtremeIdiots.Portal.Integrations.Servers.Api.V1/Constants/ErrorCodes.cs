@@ -65,5 +65,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
         /// The requested operation is not implemented for this game server type.
         /// </summary>
         public const string OPERATION_NOT_IMPLEMENTED = "OPERATION_NOT_IMPLEMENTED";
+
+        /// <summary>
+        /// Player verification failed - the player name does not match the player in the specified slot.
+        /// </summary>
+        public const string PLAYER_VERIFICATION_FAILED = "PLAYER_VERIFICATION_FAILED";
     }
 }

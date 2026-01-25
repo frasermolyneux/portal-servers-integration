@@ -513,6 +513,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.Say(Guid gameServerId, string message)
         {
+            if (string.IsNullOrWhiteSpace(message))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -567,6 +570,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.TellPlayer(Guid gameServerId, int clientId, string message)
         {
+            if (string.IsNullOrWhiteSpace(message))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -621,6 +627,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.ChangeMap(Guid gameServerId, string mapName)
         {
+            if (string.IsNullOrWhiteSpace(mapName))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Map name cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -675,6 +684,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.KickPlayerByName(Guid gameServerId, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -783,6 +795,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.BanPlayerByName(Guid gameServerId, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -891,6 +906,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.TempBanPlayerByName(Guid gameServerId, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -945,6 +963,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         async Task<ApiResult> IRconApi.UnbanPlayer(Guid gameServerId, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)

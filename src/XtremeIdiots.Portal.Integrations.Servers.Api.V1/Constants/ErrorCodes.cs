@@ -7,6 +7,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
     public static class ErrorCodes
     {
         /// <summary>
+        /// The request contains invalid or missing required parameters.
+        /// </summary>
+        public const string INVALID_REQUEST = "INVALID_REQUEST";
+
+        /// <summary>
         /// The requested game server was not found.
         /// </summary>
         public const string GAME_SERVER_NOT_FOUND = "GAME_SERVER_NOT_FOUND";

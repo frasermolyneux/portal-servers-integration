@@ -7,6 +7,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
     public static class ErrorCodes
     {
         /// <summary>
+        /// The request contains invalid or missing required parameters.
+        /// </summary>
+        public const string INVALID_REQUEST = "INVALID_REQUEST";
+
+        /// <summary>
         /// The requested game server was not found.
         /// </summary>
         public const string GAME_SERVER_NOT_FOUND = "GAME_SERVER_NOT_FOUND";
@@ -60,5 +65,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
         /// The requested operation is not implemented for this game server type.
         /// </summary>
         public const string OPERATION_NOT_IMPLEMENTED = "OPERATION_NOT_IMPLEMENTED";
+
+        /// <summary>
+        /// Player verification failed - the player name does not match the player in the specified slot.
+        /// </summary>
+        public const string PLAYER_VERIFICATION_FAILED = "PLAYER_VERIFICATION_FAILED";
     }
 }

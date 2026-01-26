@@ -702,7 +702,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/TellPlayerWithVerificationRequest"
               }
             }
           },
@@ -846,6 +846,25 @@
     }
   },
   "components": {
+    "schemas": {
+      "TellPlayerWithVerificationRequest": {
+        "type": "object",
+        "properties": {
+          "Message": {
+            "type": "string",
+            "description": "The message to send to the player"
+          },
+          "ExpectedPlayerName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional player name to verify before sending message"
+          }
+        },
+        "required": [
+          "Message"
+        ]
+      }
+    },
     "securitySchemes": {
       "Bearer": {
         "type": "apiKey",

@@ -581,7 +581,7 @@
         "tags": [
           "Rcon"
         ],
-        "operationId": "GetServerStatus",
+        "operationId": "Rcon_GetServerStatus",
         "parameters": [
           {
             "name": "gameServerId",

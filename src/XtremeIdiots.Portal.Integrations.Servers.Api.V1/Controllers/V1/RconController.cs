@@ -534,9 +534,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/say")]
-        public async Task<IActionResult> Say(Guid gameServerId, [FromBody] string message)
+        public async Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest request)
         {
-            var response = await ((IRconApi)this).Say(gameServerId, message);
+            var response = await ((IRconApi)this).Say(gameServerId, request.Message);
 
             return response.ToHttpResult();
         }
@@ -591,9 +591,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/tell/{clientId}")]
-        public async Task<IActionResult> TellPlayer(Guid gameServerId, int clientId, [FromBody] string message)
+        public async Task<IActionResult> TellPlayer(Guid gameServerId, int clientId, [FromBody] TellPlayerRequest request)
         {
-            var response = await ((IRconApi)this).TellPlayer(gameServerId, clientId, message);
+            var response = await ((IRconApi)this).TellPlayer(gameServerId, clientId, request.Message);
 
             return response.ToHttpResult();
         }
@@ -648,9 +648,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/change-map")]
-        public async Task<IActionResult> ChangeMap(Guid gameServerId, [FromBody] string mapName)
+        public async Task<IActionResult> ChangeMap(Guid gameServerId, [FromBody] ChangeMapRequest request)
         {
-            var response = await ((IRconApi)this).ChangeMap(gameServerId, mapName);
+            var response = await ((IRconApi)this).ChangeMap(gameServerId, request.MapName);
 
             return response.ToHttpResult();
         }
@@ -705,9 +705,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/kick-player-by-name")]
-        public async Task<IActionResult> KickPlayerByName(Guid gameServerId, [FromBody] string name)
+        public async Task<IActionResult> KickPlayerByName(Guid gameServerId, [FromBody] PlayerNameRequest request)
         {
-            var response = await ((IRconApi)this).KickPlayerByName(gameServerId, name);
+            var response = await ((IRconApi)this).KickPlayerByName(gameServerId, request.Name);
 
             return response.ToHttpResult();
         }
@@ -816,9 +816,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/ban-player-by-name")]
-        public async Task<IActionResult> BanPlayerByName(Guid gameServerId, [FromBody] string name)
+        public async Task<IActionResult> BanPlayerByName(Guid gameServerId, [FromBody] PlayerNameRequest request)
         {
-            var response = await ((IRconApi)this).BanPlayerByName(gameServerId, name);
+            var response = await ((IRconApi)this).BanPlayerByName(gameServerId, request.Name);
 
             return response.ToHttpResult();
         }
@@ -927,9 +927,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/tempban-player-by-name")]
-        public async Task<IActionResult> TempBanPlayerByName(Guid gameServerId, [FromBody] string name)
+        public async Task<IActionResult> TempBanPlayerByName(Guid gameServerId, [FromBody] PlayerNameRequest request)
         {
-            var response = await ((IRconApi)this).TempBanPlayerByName(gameServerId, name);
+            var response = await ((IRconApi)this).TempBanPlayerByName(gameServerId, request.Name);
 
             return response.ToHttpResult();
         }
@@ -984,9 +984,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/unban-player")]
-        public async Task<IActionResult> UnbanPlayer(Guid gameServerId, [FromBody] string name)
+        public async Task<IActionResult> UnbanPlayer(Guid gameServerId, [FromBody] PlayerNameRequest request)
         {
-            var response = await ((IRconApi)this).UnbanPlayer(gameServerId, name);
+            var response = await ((IRconApi)this).UnbanPlayer(gameServerId, request.Name);
 
             return response.ToHttpResult();
         }
@@ -1203,9 +1203,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/kick/{clientId}/verify")]
-        public async Task<IActionResult> KickPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        public async Task<IActionResult> KickPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] PlayerVerificationRequest request)
         {
-            var response = await ((IRconApi)this).KickPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+            var response = await ((IRconApi)this).KickPlayerWithVerification(gameServerId, clientId, request.ExpectedPlayerName);
 
             return response.ToHttpResult();
         }
@@ -1276,9 +1276,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/ban/{clientId}/verify")]
-        public async Task<IActionResult> BanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        public async Task<IActionResult> BanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] PlayerVerificationRequest request)
         {
-            var response = await ((IRconApi)this).BanPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+            var response = await ((IRconApi)this).BanPlayerWithVerification(gameServerId, clientId, request.ExpectedPlayerName);
 
             return response.ToHttpResult();
         }
@@ -1349,9 +1349,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/tempban/{clientId}/verify")]
-        public async Task<IActionResult> TempBanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] string? expectedPlayerName)
+        public async Task<IActionResult> TempBanPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] PlayerVerificationRequest request)
         {
-            var response = await ((IRconApi)this).TempBanPlayerWithVerification(gameServerId, clientId, expectedPlayerName);
+            var response = await ((IRconApi)this).TempBanPlayerWithVerification(gameServerId, clientId, request.ExpectedPlayerName);
 
             return response.ToHttpResult();
         }

@@ -142,7 +142,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/PlayerNameRequest"
               }
             }
           },
@@ -213,6 +213,16 @@
           "200": {
             "description": "Success"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerVerificationRequest"
+              }
+            }
+          },
+          "required": true
         }
       }
     },
@@ -242,7 +252,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/ChangeMapRequest"
               }
             }
           },
@@ -348,7 +358,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/PlayerNameRequest"
               }
             }
           },
@@ -419,6 +429,16 @@
           "200": {
             "description": "Success"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerVerificationRequest"
+              }
+            }
+          },
+          "required": true
         }
       }
     },
@@ -544,7 +564,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/SayRequest"
               }
             }
           },
@@ -659,7 +679,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/TellPlayerRequest"
               }
             }
           },
@@ -736,7 +756,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/PlayerNameRequest"
               }
             }
           },
@@ -807,6 +827,16 @@
           "200": {
             "description": "Success"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerVerificationRequest"
+              }
+            }
+          },
+          "required": true
         }
       }
     },
@@ -836,7 +866,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/PlayerNameRequest"
               }
             }
           },
@@ -847,6 +877,64 @@
   },
   "components": {
     "schemas": {
+      "ChangeMapRequest": {
+        "type": "object",
+        "properties": {
+          "MapName": {
+            "type": "string",
+            "description": "The name of the map to change to"
+          }
+        },
+        "required": [
+          "MapName"
+        ]
+      },
+      "SayRequest": {
+        "type": "object",
+        "properties": {
+          "Message": {
+            "type": "string",
+            "description": "The message to broadcast to all players"
+          }
+        },
+        "required": [
+          "Message"
+        ]
+      },
+      "TellPlayerRequest": {
+        "type": "object",
+        "properties": {
+          "Message": {
+            "type": "string",
+            "description": "The message to send to the player"
+          }
+        },
+        "required": [
+          "Message"
+        ]
+      },
+      "PlayerNameRequest": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "The player name"
+          }
+        },
+        "required": [
+          "Name"
+        ]
+      },
+      "PlayerVerificationRequest": {
+        "type": "object",
+        "properties": {
+          "ExpectedPlayerName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional player name to verify before performing action"
+          }
+        }
+      },
       "TellPlayerWithVerificationRequest": {
         "type": "object",
         "properties": {

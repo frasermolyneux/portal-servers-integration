@@ -16,7 +16,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             new Regex(
                 "^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})");
 
-        private readonly Regex _mapRegex = new Regex(@"map\s*:\s*(\S+)");
+        private readonly Regex _mapRegex = new Regex(@"map\s*:\s*(\S+)", RegexOptions.Compiled);
 
         // ReSharper disable once NotAccessedField.Local
         private GameType _gameType;
@@ -101,17 +101,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                 var lines = playerStatus.Split('\n');
                 foreach (var line in lines)
                 {
-                    var trimmedLine = line.Trim();
-                    if (trimmedLine.StartsWith("map"))
+                    var mapMatch = _mapRegex.Match(line);
+                    if (mapMatch.Success)
                     {
-                        // Extract map name from format: "map     :  de_dust2 at: 0 x, 0 y, 0 z"
-                        var mapMatch = _mapRegex.Match(trimmedLine);
-                        if (mapMatch.Success)
-                        {
-                            var mapName = mapMatch.Groups[1].Value;
-                            _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
-                            return Task.FromResult(mapName);
-                        }
+                        var mapName = mapMatch.Groups[1].Value;
+                        _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                        return Task.FromResult(mapName);
                     }
                 }
 

@@ -97,11 +97,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             try
             {
                 var statusResult = rconClient.GetPlayers();
+                var currentMap = rconClient.GetCurrentMap();
 
                 if (statusResult != null)
                 {
                     var dto = new ServerRconStatusResponseDto
                     {
+                        Map = currentMap,
                         Players = statusResult.Select(p => new ServerRconPlayerDto
                         {
                             Num = p.Num,
@@ -117,7 +119,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
                 }
                 else
                 {
-                    return new ApiResponse<ServerRconStatusResponseDto>(new ServerRconStatusResponseDto()).ToApiResult();
+                    return new ApiResponse<ServerRconStatusResponseDto>(new ServerRconStatusResponseDto { Map = currentMap }).ToApiResult();
                 }
             }
             catch (Exception ex)

@@ -86,6 +86,43 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return players;
         }
 
+        public string GetCurrentMap()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+
+            try
+            {
+                var playerStatus = PlayerStatus();
+                
+                // Parse the status output to extract the map
+                // Status format includes: "map     :  de_dust2 at: 0 x, 0 y, 0 z"
+                var lines = playerStatus.Split('\n');
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+                    if (trimmedLine.StartsWith("map"))
+                    {
+                        // Extract map name from format: "map     :  de_dust2 at: 0 x, 0 y, 0 z"
+                        var mapMatch = Regex.Match(trimmedLine, @"map\s*:\s*(\S+)");
+                        if (mapMatch.Success)
+                        {
+                            var mapName = mapMatch.Groups[1].Value;
+                            _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                            return mapName;
+                        }
+                    }
+                }
+
+                _logger.LogWarning("[{GameServerId}] Map name not found in status output", _serverId);
+                return "Unknown";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
+                return "Unknown";
+            }
+        }
+
         public Task Say(string message)
         {
             return Task.CompletedTask;

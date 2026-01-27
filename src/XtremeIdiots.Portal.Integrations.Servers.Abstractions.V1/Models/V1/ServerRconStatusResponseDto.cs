@@ -2,6 +2,7 @@
 {
     public record ServerRconStatusResponseDto
     {
+        public string? Map { get; set; }
         public IList<ServerRconPlayerDto> Players { get; set; } = new List<ServerRconPlayerDto>();
     }
 }

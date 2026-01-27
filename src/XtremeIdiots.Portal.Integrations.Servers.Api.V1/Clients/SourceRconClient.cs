@@ -16,6 +16,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             new Regex(
                 "^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})");
 
+        private readonly Regex _mapRegex = new Regex(@"map\s*:\s*(\S+)");
+
         // ReSharper disable once NotAccessedField.Local
         private GameType _gameType;
         private string _hostname;
@@ -86,7 +88,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return players;
         }
 
-        public string GetCurrentMap()
+        public Task<string> GetCurrentMap()
         {
             _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
 
@@ -103,23 +105,23 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                     if (trimmedLine.StartsWith("map"))
                     {
                         // Extract map name from format: "map     :  de_dust2 at: 0 x, 0 y, 0 z"
-                        var mapMatch = Regex.Match(trimmedLine, @"map\s*:\s*(\S+)");
+                        var mapMatch = _mapRegex.Match(trimmedLine);
                         if (mapMatch.Success)
                         {
                             var mapName = mapMatch.Groups[1].Value;
                             _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
-                            return mapName;
+                            return Task.FromResult(mapName);
                         }
                     }
                 }
 
                 _logger.LogWarning("[{GameServerId}] Map name not found in status output", _serverId);
-                return "Unknown";
+                return Task.FromResult("Unknown");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
-                return "Unknown";
+                return Task.FromResult("Unknown");
             }
         }
 

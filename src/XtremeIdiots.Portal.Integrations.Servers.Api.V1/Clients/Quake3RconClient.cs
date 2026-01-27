@@ -86,13 +86,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return players;
         }
 
-        public string GetCurrentMap()
+        public async Task<string> GetCurrentMap()
         {
             _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
 
             try
             {
-                var serverInfo = GetServerInfo().Result;
+                var serverInfo = await GetServerInfo();
                 
                 // Parse the server info to extract the mapname
                 // Server info format is key-value pairs separated by newlines: "mapname mp_crash\nsv_hostname ..."

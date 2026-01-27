@@ -97,7 +97,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             try
             {
                 var statusResult = rconClient.GetPlayers();
-                var currentMap = rconClient.GetCurrentMap();
+                var currentMap = await rconClient.GetCurrentMap();
 
                 if (statusResult != null)
                 {

@@ -342,7 +342,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             await Task.Delay(100);
 
             // Act
-            var result = _rconClient.GetCurrentMap();
+            var result = await _rconClient.GetCurrentMap();
 
             // Assert
             await Task.Delay(200);
@@ -364,7 +364,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             await Task.Delay(100);
 
             // Act
-            var result = _rconClient.GetCurrentMap();
+            var result = await _rconClient.GetCurrentMap();
 
             // Assert
             await Task.Delay(200);

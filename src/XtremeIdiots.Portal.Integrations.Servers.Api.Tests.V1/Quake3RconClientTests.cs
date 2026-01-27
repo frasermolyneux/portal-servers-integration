@@ -325,6 +325,52 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.True(commandReceived, "Expected command was not received by mock server");
         }
 
+        [Fact]
+        public async Task GetCurrentMap_ReturnsMapName()
+        {
+            // Arrange
+            var expectedMap = "mp_crash";
+            var serverInfoResponse = $"mapname {expectedMap}\nsv_hostname TestServer\ng_gametype dm\nsv_maxclients 32";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler("serverinfo", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response(serverInfoResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = _rconClient.GetCurrentMap();
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+            Assert.Equal(expectedMap, result);
+        }
+
+        [Fact]
+        public async Task GetCurrentMap_ReturnsUnknown_WhenMapNameNotInResponse()
+        {
+            // Arrange
+            var serverInfoResponse = "sv_hostname TestServer\ng_gametype dm\nsv_maxclients 32";
+            
+            _mockServer.RegisterCommandHandler("serverinfo", cmd =>
+            {
+                return MockUdpServer.CreateQuake3Response(serverInfoResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = _rconClient.GetCurrentMap();
+
+            // Assert
+            await Task.Delay(200);
+            Assert.Equal("Unknown", result);
+        }
+
         public void Dispose()
         {
             _mockServer?.Dispose();

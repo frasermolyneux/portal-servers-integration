@@ -34,16 +34,5 @@
     <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
   </ItemGroup>
 
-  <Target Name="GenerateOpenApiFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <PropertyGroup>
-      <OpenApiOutputPath>$(MSBuildProjectDirectory)\..\..\openapi</OpenApiOutputPath>
-      <SwaggerAssembly>$(MSBuildProjectDirectory)\$(OutputPath)$(AssemblyName).dll</SwaggerAssembly>
-    </PropertyGroup>
-    <MakeDir Directories="$(OpenApiOutputPath)" />
-    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildProjectDirectory)\..\..\" />
-    <Exec Command="dotnet swagger tofile --output &quot;$(OpenApiOutputPath)\openapi-v1.json&quot; &quot;$(SwaggerAssembly)&quot; v1" WorkingDirectory="$(MSBuildProjectDirectory)" ContinueOnError="true" />
-    <Exec Command="powershell -Command &quot;(Get-Content '$(OpenApiOutputPath)\openapi-v1.json').replace('/api/v1/', '/').replace('/api/v1', '/') | Set-Content '$(OpenApiOutputPath)\openapi-v1.json'&quot;" ContinueOnError="true" />
-    <Message Text="OpenAPI files generated and processed in $(OpenApiOutputPath)" Importance="high" />
-  </Target>
 
 </Project>

@@ -70,10 +70,16 @@ builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceO
     EnableAdaptiveSampling = false,
 });
 
-builder.Services.AddServiceProfiler();
+if (builder.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    builder.Services.AddServiceProfiler();
+}
 
 // Add services to the container.
-builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+if (builder.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+}
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
@@ -152,7 +158,7 @@ if (isAzureAppConfigurationEnabled)
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "OpenApiGeneration")
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>

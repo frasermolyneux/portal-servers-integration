@@ -18,6 +18,32 @@ This repository contains the servers integration API for the XtremeIdiots Portal
 
 The NuGet packages published by this repository target .NET 9 and .NET 10. See [DOTNET_SUPPORT.md](DOTNET_SUPPORT.md) for details on the multi-targeting strategy and dependency management.
 
+### OpenAPI Specification
+
+The OpenAPI specification is automatically generated and kept up to date. 
+
+#### Generating Locally
+
+To generate the OpenAPI specification locally:
+
+```bash
+./generate-openapi.sh
+```
+
+This script will:
+1. Build the API project
+2. Start the application in `OpenApiGeneration` mode
+3. Fetch the OpenAPI spec from the running application
+4. Save it to `openapi/openapi-v1.json`
+
+#### Automated Updates
+
+The OpenAPI specification is automatically updated via GitHub Actions:
+- **Weekly**: Runs every Monday at 9 AM UTC
+- **Manual**: Can be triggered via workflow dispatch
+
+When changes are detected, a pull request is automatically created for review.
+
 ---
 
 ## Related Projects

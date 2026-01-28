@@ -70,10 +70,16 @@ builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceO
     EnableAdaptiveSampling = false,
 });
 
-builder.Services.AddServiceProfiler();
+if (builder.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    builder.Services.AddServiceProfiler();
+}
 
 // Add services to the container.
-builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+if (builder.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+}
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
@@ -138,9 +144,12 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
 
-builder.Services.AddRepositoryApiClient(options => options
-    .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
-    .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
+if (builder.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    builder.Services.AddRepositoryApiClient(options => options
+        .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
+        .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
+}
 
 builder.Services.AddHealthChecks();
 
@@ -152,7 +161,7 @@ if (isAzureAppConfigurationEnabled)
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "OpenApiGeneration")
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
@@ -170,8 +179,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
+if (app.Environment.EnvironmentName != "OpenApiGeneration")
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 
 app.MapGet("/", () => Results.Ok("OK"))
    .WithName("Root")

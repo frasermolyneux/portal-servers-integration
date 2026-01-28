@@ -86,6 +86,38 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return players;
         }
 
+        public async Task<string> GetCurrentMap()
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+
+            try
+            {
+                var serverInfo = await GetServerInfo();
+                
+                // Parse the server info to extract the mapname
+                // Server info format is key-value pairs separated by newlines: "mapname mp_crash\nsv_hostname ..."
+                var lines = serverInfo.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+                    if (trimmedLine.StartsWith("mapname "))
+                    {
+                        var mapName = trimmedLine.Substring("mapname ".Length).Trim();
+                        _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                        return mapName;
+                    }
+                }
+
+                _logger.LogWarning("[{GameServerId}] Map name not found in server info", _serverId);
+                return "Unknown";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
+                return "Unknown";
+            }
+        }
+
         public Task Say(string message)
         {
             _logger.LogDebug("[{GameServerId}] Attempting to send '{message}' to the server", _serverId, message);
@@ -106,7 +138,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             // gametype {gameType} map {mapName}
             // or in the format map {mapName}
             // The game type is optional
-            var mapRegex = new Regex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)");
+            var mapRegex = new Regex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, TimeSpan.FromSeconds(1));
 
             var matches = mapRegex.Matches(maps);
             foreach (Match match in matches)
@@ -389,13 +421,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             {
                 case GameType.CallOfDuty2:
                     return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$");
+                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
                 case GameType.CallOfDuty4:
                     return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9a-f]{32})\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$");
+                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9a-f]{32})\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
                 case GameType.CallOfDuty5:
                     return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$");
+                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
                 default:
                     throw new Exception("Unsupported game type");
             }

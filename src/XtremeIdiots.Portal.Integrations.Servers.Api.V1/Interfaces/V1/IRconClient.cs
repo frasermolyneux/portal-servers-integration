@@ -7,6 +7,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
     {
         void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword);
         List<IRconPlayer> GetPlayers();
+        Task<string> GetCurrentMap();
         Task Say(string message);
         Task<List<Quake3QueryMap>> GetMaps();
         Task<string> Restart();

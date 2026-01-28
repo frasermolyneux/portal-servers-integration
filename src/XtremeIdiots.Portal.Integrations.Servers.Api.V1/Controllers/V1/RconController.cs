@@ -192,6 +192,53 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             }
         }
 
+        [HttpGet]
+        [Route("rcon/{gameServerId}/current-map")]
+        public async Task<IActionResult> GetCurrentMap(Guid gameServerId)
+        {
+            var response = await ((IRconApi)this).GetCurrentMap(gameServerId);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult<RconCurrentMapDto>> IRconApi.GetCurrentMap(Guid gameServerId)
+        {
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse<RconCurrentMapDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse<RconCurrentMapDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconCurrentMap");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var currentMap = await rconClient.GetCurrentMap();
+                var data = new RconCurrentMapDto(currentMap);
+
+                return new ApiResponse<RconCurrentMapDto>(data).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to get current map for game server {GameServerId}", gameServerId);
+                return new ApiResponse<RconCurrentMapDto>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to retrieve current map from the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
         [HttpPost]
         [Route("rcon/{gameServerId}/kick/{clientId}")]
         public async Task<IActionResult> KickPlayer(Guid gameServerId, int clientId)

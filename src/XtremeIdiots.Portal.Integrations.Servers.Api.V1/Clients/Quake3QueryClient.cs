@@ -65,7 +65,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
 
         private static IQueryPlayer ParsePlayer(string playerInfo)
         {
-            var regPattern = new Regex(PlayerRegex);
+            var regPattern = new Regex(PlayerRegex, RegexOptions.None, TimeSpan.FromSeconds(1));
             var regMatch = regPattern.Match(playerInfo);
 
             var player = new Quake3QueryPlayer

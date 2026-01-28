@@ -40,6 +40,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult<RconMapCollectionDto>();
         }
 
+        public async Task<ApiResult<RconCurrentMapDto>> GetCurrentMap(Guid gameServerId)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/current-map", Method.Get);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult<RconCurrentMapDto>();
+        }
+
         public async Task<ApiResult> KickPlayer(Guid gameServerId, int clientId)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/kick/{clientId}", Method.Post);

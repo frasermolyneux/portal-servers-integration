@@ -8,6 +8,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1
     {
         Task<ApiResult<ServerRconStatusResponseDto>> GetServerStatus(Guid gameServerId);
         Task<ApiResult<RconMapCollectionDto>> GetServerMaps(Guid gameServerId);
+        Task<ApiResult<RconCurrentMapDto>> GetCurrentMap(Guid gameServerId);
 
         /// <summary>
         /// Kicks a player from the server by their client ID

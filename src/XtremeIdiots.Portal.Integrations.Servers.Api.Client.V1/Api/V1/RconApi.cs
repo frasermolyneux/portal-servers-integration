@@ -99,7 +99,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> Say(Guid gameServerId, string message)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/say", Method.Post);
-            request.AddJsonBody(message);
+            request.AddJsonBody(new SayRequest { Message = message });
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();
@@ -117,7 +117,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> ChangeMap(Guid gameServerId, string mapName)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/change-map", Method.Post);
-            request.AddJsonBody(mapName);
+            request.AddJsonBody(new ChangeMapRequest { MapName = mapName });
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();

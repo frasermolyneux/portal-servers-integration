@@ -581,8 +581,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/say")]
-        public async Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest request)
+        public async Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest? request)
         {
+            if (request == null)
+            {
+                return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            }
+
             var response = await ((IRconApi)this).Say(gameServerId, request.Message);
 
             return response.ToHttpResult();
@@ -695,8 +700,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
 
         [HttpPost]
         [Route("rcon/{gameServerId}/change-map")]
-        public async Task<IActionResult> ChangeMap(Guid gameServerId, [FromBody] ChangeMapRequest request)
+        public async Task<IActionResult> ChangeMap(Guid gameServerId, [FromBody] ChangeMapRequest? request)
         {
+            if (request == null)
+            {
+                return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            }
+
             var response = await ((IRconApi)this).ChangeMap(gameServerId, request.MapName);
 
             return response.ToHttpResult();

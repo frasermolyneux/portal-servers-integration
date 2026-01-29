@@ -11,6 +11,7 @@
         "tags": [
           "Maps"
         ],
+        "operationId": "GetLoadedServerMapsFromHost",
         "parameters": [
           {
             "name": "gameServerId",
@@ -24,7 +25,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -34,6 +35,7 @@
         "tags": [
           "Maps"
         ],
+        "operationId": "PushServerMapToHost",
         "parameters": [
           {
             "name": "gameServerId",
@@ -55,7 +57,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       },
@@ -63,6 +65,7 @@
         "tags": [
           "Maps"
         ],
+        "operationId": "DeleteServerMapFromHost",
         "parameters": [
           {
             "name": "gameServerId",
@@ -84,7 +87,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -94,6 +97,7 @@
         "tags": [
           "Query"
         ],
+        "operationId": "GetServerStatus",
         "parameters": [
           {
             "name": "gameServerId",
@@ -107,452 +111,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/status": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/maps": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/current-map": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/kick/{clientId}": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/ban/{clientId}": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/restart": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/restart-map": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/fast-restart-map": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/next-map": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/say": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/SayRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SayRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SayRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/SayRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/tell/{clientId}": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/change-map": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeMapRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeMapRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeMapRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangeMapRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/kick-player-by-name": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/kick-all-players": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -562,6 +121,7 @@
         "tags": [
           "Rcon"
         ],
+        "operationId": "BanPlayerByName",
         "parameters": [
           {
             "name": "gameServerId",
@@ -573,42 +133,29 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
             "application/json": {
               "schema": {
                 "type": "string"
               }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
             }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
+          },
+          "required": true
         }
       }
     },
-    "/rcon/{gameServerId}/tempban/{clientId}": {
+    "/rcon/{gameServerId}/ban/{clientId}": {
       "post": {
         "tags": [
           "Rcon"
         ],
+        "operationId": "BanPlayer",
         "parameters": [
           {
             "name": "gameServerId",
@@ -631,226 +178,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/tempban-player-by-name": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/unban-player": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/server-info": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/system-info": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/command-list": {
-      "get": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/rcon/{gameServerId}/kick/{clientId}/verify": {
-      "post": {
-        "tags": [
-          "Rcon"
-        ],
-        "parameters": [
-          {
-            "name": "gameServerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -860,6 +188,7 @@
         "tags": [
           "Rcon"
         ],
+        "operationId": "BanPlayerWithVerification",
         "parameters": [
           {
             "name": "gameServerId",
@@ -880,33 +209,594 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/change-map": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "ChangeMap",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
         "requestBody": {
           "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
             "application/json": {
               "schema": {
                 "type": "string"
               }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/command-list": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "GetCommandList",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/current-map": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "GetCurrentMap",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/fast-restart-map": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "FastRestartMap",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/kick-all-players": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "KickAllPlayers",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/kick-player-by-name": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "KickPlayerByName",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
               "schema": {
                 "type": "string"
               }
             }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/kick/{clientId}": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "KickPlayer",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/kick/{clientId}/verify": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "KickPlayerWithVerification",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/maps": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "GetServerMaps",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/next-map": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "NextMap",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/restart": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "Restart",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/restart-map": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "RestartMap",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/say": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "Say",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/server-info": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "GetServerInfo",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/status": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "Rcon_GetServerStatus",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/system-info": {
+      "get": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "GetSystemInfo",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/rcon/{gameServerId}/tell/{clientId}": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "TellPlayer",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/tell/{clientId}/verify": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "TellPlayerWithVerification",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/tempban-player-by-name": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "TempBanPlayerByName",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/rcon/{gameServerId}/tempban/{clientId}": {
+      "post": {
+        "tags": [
+          "Rcon"
+        ],
+        "operationId": "TempBanPlayer",
+        "parameters": [
+          {
+            "name": "gameServerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -916,6 +806,7 @@
         "tags": [
           "Rcon"
         ],
+        "operationId": "TempBanPlayerWithVerification",
         "parameters": [
           {
             "name": "gameServerId",
@@ -936,42 +827,19 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/rcon/{gameServerId}/tell/{clientId}/verify": {
+    "/rcon/{gameServerId}/unban-player": {
       "post": {
         "tags": [
           "Rcon"
         ],
+        "operationId": "UnbanPlayer",
         "parameters": [
           {
             "name": "gameServerId",
@@ -981,108 +849,27 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "clientId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TellPlayerWithVerificationRequest"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TellPlayerWithVerificationRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TellPlayerWithVerificationRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TellPlayerWithVerificationRequest"
-              }
-            }
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/": {
-      "get": {
-        "tags": [
-          "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
-        ],
-        "operationId": "Root",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "ChangeMapRequest": {
-        "required": [
-          "mapName"
-        ],
-        "type": "object",
-        "properties": {
-          "mapName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "SayRequest": {
-        "required": [
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "TellPlayerWithVerificationRequest": {
-        "required": [
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "expectedPlayerName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      }
-    },
     "securitySchemes": {
       "Bearer": {
         "type": "apiKey",
@@ -1094,7 +881,7 @@
   },
   "security": [
     {
-      "Bearer": [ ]
+      "Bearer": []
     }
   ]
 }

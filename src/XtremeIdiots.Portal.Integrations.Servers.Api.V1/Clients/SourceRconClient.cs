@@ -10,7 +10,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public partial class SourceRconClient(ILogger logger) : IRconClient
 {
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger _logger = logger;
 
     [GeneratedRegex("^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})", RegexOptions.None, 1000)]
     private static partial Regex PlayerRegex();
@@ -28,8 +28,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
     private Guid _serverId;
     private TcpClient? _tcpClient;
 
-        public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
-        {
+    public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
             _logger.LogDebug("[{GameServerId}] Configuring Source rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
             _gameType = gameType;

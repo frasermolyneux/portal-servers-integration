@@ -9,15 +9,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public class SourceQueryClient(ILogger logger) : IQueryClient
 {
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger _logger = logger;
 
     private string? Hostname { get; set; }
     private int QueryPort { get; set; }
 
     public void Configure(string hostname, int queryPort)
     {
-        if (string.IsNullOrWhiteSpace(hostname))
-            throw new ArgumentNullException(nameof(hostname));
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hostname);
 
         if (queryPort == 0)
             throw new ArgumentNullException(nameof(queryPort));

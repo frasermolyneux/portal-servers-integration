@@ -13,7 +13,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public partial class Quake3RconClient(ILogger logger) : IRconClient
 {
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ILogger _logger = logger;
 
     [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
     private static partial Regex MapRegex();
@@ -27,6 +27,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
     public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger.LogDebug("[{GameServerId}] Configuring Quake3 rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
         _gameType = gameType;

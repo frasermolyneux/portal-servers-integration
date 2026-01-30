@@ -18,6 +18,15 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
     private static partial Regex MapRegex();
 
+    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    private static partial Regex CallOfDuty2PlayerRegex();
+
+    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9a-f]{32})\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    private static partial Regex CallOfDuty4PlayerRegex();
+
+    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    private static partial Regex CallOfDuty5PlayerRegex();
+
     private GameType _gameType;
     private string? _hostname;
     private int _queryPort;
@@ -95,7 +104,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             
             // Parse the server info to extract the mapname
             // Server info format is key-value pairs separated by newlines: "mapname mp_crash\nsv_hostname ..."
-            var lines = serverInfo.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            var lines = serverInfo.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
             foreach (var line in lines)
             {
                 var trimmedLine = line.Trim();
@@ -415,20 +424,13 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         private static Regex GameTypeRegex(GameType gameType)
         {
-            switch (gameType)
+            return gameType switch
             {
-                case GameType.CallOfDuty2:
-                    return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
-                case GameType.CallOfDuty4:
-                    return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9a-f]{32})\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
-                case GameType.CallOfDuty5:
-                    return new Regex(
-                        "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
-                default:
-                    throw new NotSupportedException($"Game type {gameType} is not supported");
-            }
+                GameType.CallOfDuty2 => CallOfDuty2PlayerRegex(),
+                GameType.CallOfDuty4 => CallOfDuty4PlayerRegex(),
+                GameType.CallOfDuty5 => CallOfDuty5PlayerRegex(),
+                _ => throw new NotSupportedException($"Game type {gameType} is not supported")
+            };
         }
 
         private static byte[] ExecuteCommandPacket(string rconPassword, string command)

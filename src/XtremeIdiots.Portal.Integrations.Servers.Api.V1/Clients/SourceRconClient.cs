@@ -251,9 +251,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 _tcpClient = new TcpClient(_hostname, _queryPort) { ReceiveTimeout = 5000 };
 
                 var authPackets = GetAuthPackets(_rconPassword);
-                var authResultPacket = authPackets.SingleOrDefault(packet => packet.Type == 2);
+                var authResultPacket = authPackets.Find(packet => packet.Type == 2);
 
-                _logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count());
+                _logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count);
 
                 if (authResultPacket == null)
                 {

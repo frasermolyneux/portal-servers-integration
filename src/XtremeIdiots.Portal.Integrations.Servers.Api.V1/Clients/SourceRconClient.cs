@@ -257,7 +257,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 if (authResultPacket == null)
                 {
                     _logger.LogError("[{GameServerId}] Could not establish authenticated session with server", _serverId);
-                    throw new Exception("Could not establish authenticated session with server");
+                    throw new InvalidOperationException("Could not establish authenticated session with server");
                 }
             }
             catch (Exception ex)
@@ -353,9 +353,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                     packets.Add(packet);
                 } while (true);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e);
+                // Error parsing packet structure - rethrow to be handled by caller
                 throw;
             }
 

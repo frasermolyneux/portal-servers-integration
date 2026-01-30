@@ -35,7 +35,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
     {
         var queryResult = Query(GetStatusPacket());
 
-        var lines = queryResult.Substring(3).Split('\n');
+        var lines = queryResult[3..].Split('\n');
         if (lines.Length < 2) return null;
 
         var serverParams = GetParams(lines[1].Split('\\'));
@@ -125,7 +125,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
             foreach (var datagram in datagrams)
             {
                 var text = datagram;
-                if (text.IndexOf("print", StringComparison.Ordinal) == 4) text = text.Substring(10);
+                if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print")) text = text[10..];
 
                 responseText.Append(text);
             }

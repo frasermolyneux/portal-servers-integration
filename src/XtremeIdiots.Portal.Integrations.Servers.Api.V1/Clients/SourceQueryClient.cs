@@ -40,7 +40,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
         }
 
         if (infoQueryBytes == null)
-            throw new Exception("Failed to query source server");
+            throw new InvalidOperationException("Failed to query source server");
 
         var serverParams = GetParams(infoQueryBytes);
 
@@ -134,7 +134,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
     private static string ReadNextParam(byte[] responseBytes, int offset, out int newOffset)
     {
-        var temp = "";
+        var startOffset = offset;
         for (; offset < responseBytes.Length; offset++)
         {
             if (responseBytes[offset] == 0)
@@ -142,16 +142,14 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
                 offset++;
                 break;
             }
-
-            temp += (char)responseBytes[offset];
         }
 
         newOffset = offset;
-        return temp;
+        return Encoding.UTF8.GetString(responseBytes, startOffset, offset - startOffset - 1);
     }
 
 
-    private Tuple<string, byte[]?> Query(byte[] commandBytes)
+    private (string responseText, byte[]? responseBytes) Query(byte[] commandBytes)
     {
         var command = Encoding.UTF8.GetString(commandBytes);
         _logger.LogInformation($"Executing command '{command}' against server");
@@ -181,14 +179,11 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
             foreach (var datagram in datagrams)
             {
-                var datagramBytes = datagram;
-                var datagramText = Encoding.Default.GetString(datagram);
-
-                responseBytes = responseBytes == null ? datagramBytes : responseBytes.Concat(datagramBytes).ToArray();
-                responseText.Append(datagramText);
+                responseBytes = responseBytes == null ? datagram : [.. responseBytes, .. datagram];
+                responseText.Append(Encoding.Default.GetString(datagram));
             }
 
-            return new Tuple<string, byte[]?>(responseText.ToString(), responseBytes);
+            return (responseText.ToString(), responseBytes);
         }
         catch (Exception ex)
         {

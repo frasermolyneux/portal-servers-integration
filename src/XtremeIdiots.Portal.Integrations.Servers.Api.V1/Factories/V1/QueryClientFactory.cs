@@ -30,7 +30,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1
                     queryClient = new SourceQueryClient(_logger);
                     break;
                 default:
-                    throw new Exception("Unsupported game type");
+                    throw new NotSupportedException($"Game type {gameType} is not supported for query operations");
             }
 
             queryClient.Configure(hostname, queryPort);

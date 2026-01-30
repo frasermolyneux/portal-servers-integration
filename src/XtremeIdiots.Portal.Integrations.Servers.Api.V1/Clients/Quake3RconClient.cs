@@ -100,7 +100,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                 var trimmedLine = line.Trim();
                 if (trimmedLine.StartsWith("mapname "))
                 {
-                    var mapName = trimmedLine.Substring("mapname ".Length).Trim();
+                    var mapName = trimmedLine["mapname ".Length..].Trim();
                     _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
                     return mapName;
                 }
@@ -404,7 +404,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             foreach (var packet in packets)
             {
                 var text = Encoding.Default.GetString(packet);
-                if (text.IndexOf("print", StringComparison.Ordinal) == 4) text = text.Substring(10);
+                if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print")) text = text[10..];
 
                 responseText.Append(text);
             }
@@ -426,7 +426,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                     return new Regex(
                         "^\\s*([0-9]+)\\s+([0-9-]+)\\s+([0-9]+)\\s+([0-9]+)\\s+(.*?)\\s+([0-9]+?)\\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\\s*(-?[0-9]{1,5})\\s+([0-9]+)$", RegexOptions.None, TimeSpan.FromSeconds(1));
                 default:
-                    throw new Exception("Unsupported game type");
+                    throw new NotSupportedException($"Game type {gameType} is not supported");
             }
         }
 

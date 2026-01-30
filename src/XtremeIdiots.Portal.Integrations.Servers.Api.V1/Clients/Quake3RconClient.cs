@@ -431,7 +431,7 @@ public class Quake3RconClient(ILogger logger) : IRconClient
         private static byte[] ExecuteCommandPacket(string rconPassword, string command)
         {
             //ÿÿÿÿrcon {rconPassword} {command}
-            var prefix = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
+            byte[] prefix = [0xFF, 0xFF, 0xFF, 0xFF];
             var commandText = $"rcon {rconPassword} {command}";
             var commandBytes = Encoding.Default.GetBytes(commandText);
 

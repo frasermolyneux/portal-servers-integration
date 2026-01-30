@@ -275,15 +275,15 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             _tcpClient.Client.Send(authPacket.PacketBytes);
 
             var responsePackets = new List<SourceRconPacket>();
-            byte[] leftoverBytes = null;
+            byte[]? leftoverBytes = null;
             do
             {
                 var tempBuffer = new byte[8192];
                 var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
 
-                var bytesToProcess = tempBuffer.Take(bytesRead).ToArray();
+                var bytesToProcess = tempBuffer[..bytesRead];
 
-                if (leftoverBytes != null) bytesToProcess = leftoverBytes.Concat(bytesToProcess).ToArray();
+                if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
 
                 var (packets, leftover) = BytesIntoPackets(bytesToProcess);
                 responsePackets.AddRange(packets);
@@ -304,15 +304,15 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             _tcpClient.Client.Send(emptyResponsePacket.PacketBytes);
 
             var responsePackets = new List<SourceRconPacket>();
-            byte[] leftoverBytes = null;
+            byte[]? leftoverBytes = null;
             do
             {
                 var tempBuffer = new byte[8192];
                 var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
 
-                var bytesToProcess = tempBuffer.Take(bytesRead).ToArray();
+                var bytesToProcess = tempBuffer[..bytesRead];
 
-                if (leftoverBytes != null) bytesToProcess = leftoverBytes.Concat(bytesToProcess).ToArray();
+                if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
 
                 var (packets, leftover) = BytesIntoPackets(bytesToProcess);
                 responsePackets.AddRange(packets);
@@ -345,7 +345,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
                     var id = BitConverter.ToInt32(bytes, offset + 4);
                     var type = BitConverter.ToInt32(bytes, offset + 8);
-                    var body = Encoding.ASCII.GetString(bytes.Skip(offset + 12).Take(size - 6).ToArray()).Trim();
+                    var body = Encoding.ASCII.GetString(bytes, offset + 12, size - 6).Trim();
 
                     offset += 4 + size;
 
@@ -359,7 +359,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 throw;
             }
 
-            var leftover = offset == bytes.Length ? null : bytes.Skip(offset).Take(bytes.Length - offset).ToArray();
+            var leftover = offset == bytes.Length ? null : bytes[offset..];
             return (packets, leftover);
         }
     }

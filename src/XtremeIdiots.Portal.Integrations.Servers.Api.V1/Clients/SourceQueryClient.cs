@@ -32,7 +32,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
         if (infoQueryBytes?.Length == 9) // Challenge received from server
         {
-            byte[] challenge = [infoQueryBytes[5], infoQueryBytes[6], infoQueryBytes[7], infoQueryBytes[8]];
+            byte[] challenge = infoQueryBytes[5..9];
             var infoAndChallenge = A2S_INFO().Concat(challenge).ToArray();
 
             var (_, fullInfoQueryBytes) = Query(infoAndChallenge);
@@ -45,7 +45,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
         var serverParams = GetParams(infoQueryBytes);
 
         var (_, playersPreQueryBytes) = Query(A2S_PLAYERS_PRE());
-        var challengeResponse = playersPreQueryBytes?.Skip(5).ToArray();
+        var challengeResponse = playersPreQueryBytes?[5..];
         var (_, playersQueryBytes) = Query(A2S_PLAYERS(challengeResponse));
 
         var players = ParsePlayers(playersQueryBytes);

@@ -11,9 +11,12 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
-public class Quake3RconClient(ILogger logger) : IRconClient
+public partial class Quake3RconClient(ILogger logger) : IRconClient
 {
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
+    private static partial Regex MapRegex();
 
     private GameType _gameType;
     private string? _hostname;
@@ -49,14 +52,14 @@ public class Quake3RconClient(ILogger logger) : IRconClient
             if (!match.Success)
                 continue;
 
-            var num = match.Groups[1].ToString();
-            var score = match.Groups[2].ToString();
-            var ping = match.Groups[3].ToString();
-            var guid = match.Groups[4].ToString();
-            var name = match.Groups[5].ToString().Trim();
-            var ipAddress = match.Groups[7].ToString();
-            var qPort = match.Groups[9].ToString();
-            var rate = match.Groups[10].ToString();
+            var num = match.Groups[1].Value;
+            var score = match.Groups[2].Value;
+            var ping = match.Groups[3].Value;
+            var guid = match.Groups[4].Value;
+            var name = match.Groups[5].Value.Trim();
+            var ipAddress = match.Groups[7].Value;
+            var qPort = match.Groups[9].Value;
+            var rate = match.Groups[10].Value;
 
             int.TryParse(num, out int numInt);
             int.TryParse(score, out int scoreInt);
@@ -133,13 +136,12 @@ public class Quake3RconClient(ILogger logger) : IRconClient
             // gametype {gameType} map {mapName}
             // or in the format map {mapName}
             // The game type is optional
-            var mapRegex = new Regex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, TimeSpan.FromSeconds(1));
 
-            var matches = mapRegex.Matches(maps);
+            var matches = MapRegex().Matches(maps);
             foreach (Match match in matches)
             {
-                var gameType = match.Groups[1].Success ? match.Groups[1].ToString() : "";
-                var mapName = match.Groups[2].ToString();
+                var gameType = match.Groups[1].Success ? match.Groups[1].Value : "";
+                var mapName = match.Groups[2].Value;
 
                 mapList.Add(new Quake3QueryMap { GameType = gameType, MapName = mapName });
             }

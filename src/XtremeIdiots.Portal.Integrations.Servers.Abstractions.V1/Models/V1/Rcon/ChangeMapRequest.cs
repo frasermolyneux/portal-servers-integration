@@ -1,7 +1,6 @@
-namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon
+namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
+
+public record ChangeMapRequest
 {
-    public record ChangeMapRequest
-    {
-        public required string MapName { get; init; }
-    }
+    public required string MapName { get; init; }
 }

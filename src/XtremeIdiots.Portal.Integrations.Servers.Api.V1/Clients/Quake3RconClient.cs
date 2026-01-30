@@ -9,114 +9,109 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
+
+public class Quake3RconClient(ILogger logger) : IRconClient
 {
-    public class Quake3RconClient : IRconClient
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private GameType _gameType;
+    private string? _hostname;
+    private int _queryPort;
+    private string? _rconPassword;
+
+    private Guid _serverId;
+
+    public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
-        private readonly ILogger _logger;
+        _logger.LogDebug("[{GameServerId}] Configuring Quake3 rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
-        private GameType _gameType;
-        private string _hostname;
-        private int _queryPort;
-        private string _rconPassword;
+        _gameType = gameType;
+        _serverId = gameServerId;
+        _hostname = hostname;
+        _queryPort = queryPort;
+        _rconPassword = rconPassword;
+    }
 
-        private Guid _serverId;
+    public List<IRconPlayer> GetPlayers()
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
 
-        public Quake3RconClient(ILogger logger)
+        var players = new List<IRconPlayer>();
+
+        var playerStatus = PlayerStatus();
+        var lines = playerStatus.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
+        for (var i = 3; i < lines.Count; i++)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+            var line = lines[i];
+            var match = GameTypeRegex(_gameType).Match(line);
 
-        public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
-        {
-            _logger.LogDebug("[{GameServerId}] Configuring Quake3 rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
+            if (!match.Success)
+                continue;
 
-            _gameType = gameType;
-            _serverId = gameServerId;
-            _hostname = hostname;
-            _queryPort = queryPort;
-            _rconPassword = rconPassword;
-        }
+            var num = match.Groups[1].ToString();
+            var score = match.Groups[2].ToString();
+            var ping = match.Groups[3].ToString();
+            var guid = match.Groups[4].ToString();
+            var name = match.Groups[5].ToString().Trim();
+            var ipAddress = match.Groups[7].ToString();
+            var qPort = match.Groups[9].ToString();
+            var rate = match.Groups[10].ToString();
 
-        public List<IRconPlayer> GetPlayers()
-        {
-            _logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
+            int.TryParse(num, out int numInt);
+            int.TryParse(score, out int scoreInt);
+            int.TryParse(ping, out int pingInt);
+            int.TryParse(rate, out int rateInt);
 
-            var players = new List<IRconPlayer>();
+            _logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
 
-            var playerStatus = PlayerStatus();
-            var lines = playerStatus.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-            for (var i = 3; i < lines.Count; i++)
+            players.Add(new Quake3RconPlayer
             {
-                var line = lines[i];
-                var match = GameTypeRegex(_gameType).Match(line);
-
-                if (!match.Success)
-                    continue;
-
-                var num = match.Groups[1].ToString();
-                var score = match.Groups[2].ToString();
-                var ping = match.Groups[3].ToString();
-                var guid = match.Groups[4].ToString();
-                var name = match.Groups[5].ToString().Trim();
-                var ipAddress = match.Groups[7].ToString();
-                var qPort = match.Groups[9].ToString();
-                var rate = match.Groups[10].ToString();
-
-                int.TryParse(num, out int numInt);
-                int.TryParse(score, out int scoreInt);
-                int.TryParse(ping, out int pingInt);
-                int.TryParse(rate, out int rateInt);
-
-                _logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
-
-                players.Add(new Quake3RconPlayer
-                {
-                    Num = numInt,
-                    Score = scoreInt,
-                    Ping = pingInt,
-                    Guid = guid,
-                    Name = name,
-                    IpAddress = ipAddress,
-                    QPort = qPort,
-                    Rate = rateInt
-                });
-            }
-
-            return players;
+                Num = numInt,
+                Score = scoreInt,
+                Ping = pingInt,
+                Guid = guid,
+                Name = name,
+                IpAddress = ipAddress,
+                QPort = qPort,
+                Rate = rateInt
+            });
         }
 
-        public async Task<string> GetCurrentMap()
-        {
-            _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+        return players;
+    }
 
-            try
+    public async Task<string> GetCurrentMap()
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+
+        try
+        {
+            var serverInfo = await GetServerInfo();
+            
+            // Parse the server info to extract the mapname
+            // Server info format is key-value pairs separated by newlines: "mapname mp_crash\nsv_hostname ..."
+            var lines = serverInfo.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
             {
-                var serverInfo = await GetServerInfo();
-                
-                // Parse the server info to extract the mapname
-                // Server info format is key-value pairs separated by newlines: "mapname mp_crash\nsv_hostname ..."
-                var lines = serverInfo.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("mapname "))
                 {
-                    var trimmedLine = line.Trim();
-                    if (trimmedLine.StartsWith("mapname "))
-                    {
-                        var mapName = trimmedLine.Substring("mapname ".Length).Trim();
-                        _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
-                        return mapName;
-                    }
+                    var mapName = trimmedLine.Substring("mapname ".Length).Trim();
+                    _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                    return mapName;
                 }
+            }
 
-                _logger.LogWarning("[{GameServerId}] Map name not found in server info", _serverId);
-                return "Unknown";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
-                return "Unknown";
-            }
+            _logger.LogWarning("[{GameServerId}] Map name not found in server info", _serverId);
+            return "Unknown";
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
+            return "Unknown";
+        }
+    }
 
         public Task Say(string message)
         {
@@ -465,7 +460,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                         datagrams.Add(datagramBytes);
 
                         if (udpClient.Available == 0)
-                            Thread.Sleep(500);
+                            Task.Delay(500).Wait();
                     } while (udpClient.Available > 0);
                 }
 
@@ -482,16 +477,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             }
         }
 
-        private static IEnumerable<TimeSpan> GetRetryTimeSpans()
-        {
-            var random = new Random();
+    private static IEnumerable<TimeSpan> GetRetryTimeSpans()
+    {
+        var random = new Random();
 
-            return new[]
-            {
-                TimeSpan.FromSeconds(random.Next(1)),
-                TimeSpan.FromSeconds(random.Next(3)),
-                TimeSpan.FromSeconds(random.Next(5))
-            };
-        }
+        return new[]
+        {
+            TimeSpan.FromSeconds(random.Next(1)),
+            TimeSpan.FromSeconds(random.Next(3)),
+            TimeSpan.FromSeconds(random.Next(5))
+        };
     }
 }

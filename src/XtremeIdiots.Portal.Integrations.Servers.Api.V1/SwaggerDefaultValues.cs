@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Text.Json;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Configuration;
 

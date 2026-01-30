@@ -7,144 +7,139 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 
 // ReSharper disable StringLiteralTypo
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
+
+public partial class Quake3QueryClient(ILogger logger) : IQueryClient
 {
-    public class Quake3QueryClient : IQueryClient
+    [GeneratedRegex("(?<score>.+) (?<ping>.+) \\\"(?<name>.+)\\\"")]
+    private static partial Regex PlayerRegexPattern();
+
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private string? Hostname { get; set; }
+    private int QueryPort { get; set; }
+
+    public void Configure(string hostname, int queryPort)
     {
-        private const string PlayerRegex = "(?<score>.+) (?<ping>.+) \\\"(?<name>.+)\\\"";
+        if (string.IsNullOrWhiteSpace(hostname))
+            throw new ArgumentNullException(nameof(hostname));
 
-        private readonly ILogger _logger;
+        if (queryPort == 0)
+            throw new ArgumentNullException(nameof(queryPort));
 
-        public Quake3QueryClient(ILogger logger)
+        Hostname = hostname;
+        QueryPort = queryPort;
+    }
+
+    public Task<IQueryResponse> GetServerStatus()
+    {
+        var queryResult = Query(GetStatusPacket());
+
+        var lines = queryResult.Substring(3).Split('\n');
+        if (lines.Length < 2) return null;
+
+        var serverParams = GetParams(lines[1].Split('\\'));
+
+        if (lines.Length <= 2)
+            return Task.FromResult((IQueryResponse)new Quake3QueryResponse(serverParams, new List<IQueryPlayer>()));
+
+        var players = new List<IQueryPlayer>();
+        for (var i = 2; i < lines.Length; i++)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            if (lines[i].Length == 0) continue;
+            players.Add(ParsePlayer(lines[i]));
         }
 
-        private string Hostname { get; set; }
-        private int QueryPort { get; set; }
+        return Task.FromResult((IQueryResponse)new Quake3QueryResponse(serverParams, players));
+    }
 
-        public void Configure(string hostname, int queryPort)
+    private static byte[] GetStatusPacket()
+    {
+        //ÿÿÿÿgetstatus
+        return new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x67, 0x65, 0x74, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73 };
+    }
+
+    private static IQueryPlayer ParsePlayer(string playerInfo)
+    {
+        var regPattern = PlayerRegexPattern();
+        var regMatch = regPattern.Match(playerInfo);
+
+        var player = new Quake3QueryPlayer
         {
-            if (string.IsNullOrWhiteSpace(hostname))
-                throw new ArgumentNullException(nameof(hostname));
+            Name = regMatch.Groups["name"].Value,
+            Score = int.Parse(regMatch.Groups["score"].Value),
+            Ping = int.Parse(regMatch.Groups["ping"].Value)
+        };
 
-            if (queryPort == 0)
-                throw new ArgumentNullException(nameof(queryPort));
+        return player;
+    }
 
-            Hostname = hostname;
-            QueryPort = queryPort;
+    private static Dictionary<string, string> GetParams(IReadOnlyList<string> parts)
+    {
+        var serverParams = new Dictionary<string, string>();
+
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (parts[i].Length == 0) continue;
+            var key = parts[i++];
+            var val = parts[i];
+
+            if (key == "final") break;
+            if (key == "querid") continue;
+
+            serverParams[key] = val;
         }
 
-        public Task<IQueryResponse> GetServerStatus()
+        return serverParams;
+    }
+
+    private string Query(byte[] commandBytes)
+    {
+        var commandAsString = Encoding.UTF8.GetString(commandBytes);
+        _logger.LogInformation("Executing {command} command against {hostname}:{port}", commandAsString, Hostname, QueryPort);
+
+        UdpClient? udpClient = null;
+
+        try
         {
-            var queryResult = Query(GetStatusPacket());
+            var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-            var lines = queryResult.Substring(3).Split('\n');
-            if (lines.Length < 2) return null;
+            udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
+            udpClient.Connect(Hostname, QueryPort);
+            udpClient.Send(commandBytes, commandBytes.Length);
 
-            var serverParams = GetParams(lines[1].Split('\\'));
-
-            if (lines.Length <= 2)
-                return Task.FromResult((IQueryResponse)new Quake3QueryResponse(serverParams, new List<IQueryPlayer>()));
-
-            var players = new List<IQueryPlayer>();
-            for (var i = 2; i < lines.Length; i++)
+            var datagrams = new List<string>();
+            do
             {
-                if (lines[i].Length == 0) continue;
-                players.Add(ParsePlayer(lines[i]));
+                var datagramBytes = udpClient.Receive(ref remoteIpEndPoint);
+                var datagramText = Encoding.Default.GetString(datagramBytes);
+
+                datagrams.Add(datagramText);
+
+                if (udpClient.Available == 0)
+                    Task.Delay(500).Wait();
+            } while (udpClient.Available > 0);
+
+            var responseText = new StringBuilder();
+
+            foreach (var datagram in datagrams)
+            {
+                var text = datagram;
+                if (text.IndexOf("print", StringComparison.Ordinal) == 4) text = text.Substring(10);
+
+                responseText.Append(text);
             }
 
-            return Task.FromResult((IQueryResponse)new Quake3QueryResponse(serverParams, players));
+            return responseText.ToString();
         }
-
-        private static byte[] GetStatusPacket()
+        catch (Exception ex)
         {
-            //ÿÿÿÿgetstatus
-            return new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x67, 0x65, 0x74, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73 };
+            _logger.LogError(ex, "Failed to execute {command} against {hostname}:{port}", commandAsString, Hostname, QueryPort);
+            throw;
         }
-
-        private static IQueryPlayer ParsePlayer(string playerInfo)
+        finally
         {
-            var regPattern = new Regex(PlayerRegex, RegexOptions.None, TimeSpan.FromSeconds(1));
-            var regMatch = regPattern.Match(playerInfo);
-
-            var player = new Quake3QueryPlayer
-            {
-                Name = regMatch.Groups["name"].Value,
-                Score = int.Parse(regMatch.Groups["score"].Value),
-                Ping = int.Parse(regMatch.Groups["ping"].Value)
-            };
-
-            return player;
-        }
-
-        private static Dictionary<string, string> GetParams(IReadOnlyList<string> parts)
-        {
-            var serverParams = new Dictionary<string, string>();
-
-            for (var i = 0; i < parts.Count; i++)
-            {
-                if (parts[i].Length == 0) continue;
-                var key = parts[i++];
-                var val = parts[i];
-
-                if (key == "final") break;
-                if (key == "querid") continue;
-
-                serverParams[key] = val;
-            }
-
-            return serverParams;
-        }
-
-        private string Query(byte[] commandBytes)
-        {
-            var commandAsString = Encoding.UTF8.GetString(commandBytes);
-            _logger.LogInformation("Executing {command} command against {hostname}:{port}", commandAsString, Hostname, QueryPort);
-
-            UdpClient udpClient = null;
-
-            try
-            {
-                var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
-                udpClient.Connect(Hostname, QueryPort);
-                udpClient.Send(commandBytes, commandBytes.Length);
-
-                var datagrams = new List<string>();
-                do
-                {
-                    var datagramBytes = udpClient.Receive(ref remoteIpEndPoint);
-                    var datagramText = Encoding.Default.GetString(datagramBytes);
-
-                    datagrams.Add(datagramText);
-
-                    if (udpClient.Available == 0)
-                        Thread.Sleep(500);
-                } while (udpClient.Available > 0);
-
-                var responseText = new StringBuilder();
-
-                foreach (var datagram in datagrams)
-                {
-                    var text = datagram;
-                    if (text.IndexOf("print", StringComparison.Ordinal) == 4) text = text.Substring(10);
-
-                    responseText.Append(text);
-                }
-
-                return responseText.ToString();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to execute {command} against {hostname}:{port}", commandAsString, Hostname, QueryPort);
-                throw;
-            }
-            finally
-            {
-                udpClient?.Dispose();
-            }
+            udpClient?.Dispose();
         }
     }
 }

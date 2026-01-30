@@ -23,9 +23,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentException.ThrowIfNullOrWhiteSpace(hostname);
-
-        if (queryPort == 0)
-            throw new ArgumentNullException(nameof(queryPort));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(queryPort);
 
         Hostname = hostname;
         QueryPort = queryPort;

@@ -8,7 +8,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
 
-public class BaseApiTests
+public class BaseApiTests : IAsyncLifetime
 {
     protected IServersApiClient serversApiClient;
 
@@ -69,8 +69,16 @@ public class BaseApiTests
 
         var serviceProvider = services.BuildServiceProvider();
         serversApiClient = serviceProvider.GetRequiredService<IServersApiClient>();
+    }
 
-        WarmUp().Wait();
+    public async Task InitializeAsync()
+    {
+        await WarmUp();
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
     }
 
     private async Task WarmUp()
@@ -89,7 +97,7 @@ public class BaseApiTests
                 Console.WriteLine(ex);
 
                 // Sleep for five seconds before trying again.
-                Task.Delay(5000).Wait();
+                await Task.Delay(5000);
             }
         }
     }

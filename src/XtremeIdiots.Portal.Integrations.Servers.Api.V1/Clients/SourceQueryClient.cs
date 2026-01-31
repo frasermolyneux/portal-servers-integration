@@ -169,7 +169,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
                 datagrams.Add(datagramBytes);
 
                 if (udpClient.Available == 0)
-                    Task.Delay(500).Wait();
+                    Thread.Sleep(500);
             } while (udpClient.Available > 0);
 
             var responseText = new StringBuilder();

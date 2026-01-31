@@ -465,7 +465,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                         datagrams.Add(datagramBytes);
 
                         if (udpClient.Available == 0)
-                            Task.Delay(500).Wait();
+                            Thread.Sleep(500);
                     } while (udpClient.Available > 0);
                 }
 

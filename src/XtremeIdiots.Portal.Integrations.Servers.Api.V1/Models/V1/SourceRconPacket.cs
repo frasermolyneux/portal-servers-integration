@@ -20,7 +20,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
                 // At least 1 byte for Body (including null terminator)
                 // 1 byte for null terminator
 
-                var bodySize = Encoding.Default.GetBytes(Body).Length + 1;
+                var bodySize = Encoding.ASCII.GetBytes(Body).Length + 1;
                 return 4 + 4 + bodySize + 1;
             }
         }

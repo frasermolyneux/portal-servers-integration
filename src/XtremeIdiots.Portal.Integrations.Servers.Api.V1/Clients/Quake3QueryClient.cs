@@ -110,7 +110,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
             do
             {
                 var datagramBytes = udpClient.Receive(ref remoteIpEndPoint);
-                var datagramText = Encoding.Default.GetString(datagramBytes);
+                var datagramText = Encoding.ASCII.GetString(datagramBytes);
 
                 datagrams.Add(datagramText);
 

@@ -14,33 +14,19 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
-{
-    [ApiController]
-    [Authorize(Roles = "ServiceAccount")]
-    [ApiVersion(ApiVersions.V1)]
-    [Route("api/v{version:apiVersion}")]
-    public class QueryController : Controller, IQueryApi
-    {
-        private readonly ILogger<QueryController> logger;
-        private readonly IRepositoryApiClient repositoryApiClient;
-        private readonly IQueryClientFactory queryClientFactory;
-        private readonly TelemetryClient telemetryClient;
-        private readonly IMemoryCache memoryCache;
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
-        public QueryController(
-            ILogger<QueryController> logger,
-            IRepositoryApiClient repositoryApiClient,
-            IQueryClientFactory queryClientFactory,
-            TelemetryClient telemetryClient,
-            IMemoryCache memoryCache)
-        {
-            this.logger = logger;
-            this.repositoryApiClient = repositoryApiClient;
-            this.queryClientFactory = queryClientFactory;
-            this.telemetryClient = telemetryClient;
-            this.memoryCache = memoryCache;
-        }
+[ApiController]
+[Authorize(Roles = "ServiceAccount")]
+[ApiVersion(ApiVersions.V1)]
+[Route("api/v{version:apiVersion}")]
+public class QueryController(
+    ILogger<QueryController> logger,
+    IRepositoryApiClient repositoryApiClient,
+    IQueryClientFactory queryClientFactory,
+    TelemetryClient telemetryClient,
+    IMemoryCache memoryCache) : Controller, IQueryApi
+{
 
         [HttpGet]
         [Route("query/{gameServerId}/status")]
@@ -115,4 +101,3 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             }
         }
     }
-}

@@ -14,30 +14,18 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
-{
-    [ApiController]
-    [Authorize(Roles = "ServiceAccount")]
-    [ApiVersion(ApiVersions.V1)]
-    [Route("api/v{version:apiVersion}")]
-    public class RconController : Controller, IRconApi
-    {
-        private readonly ILogger<RconController> logger;
-        private readonly IRepositoryApiClient repositoryApiClient;
-        private readonly IRconClientFactory rconClientFactory;
-        private readonly TelemetryClient telemetryClient;
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
-        public RconController(
-            ILogger<RconController> logger,
-            IRepositoryApiClient repositoryApiClient,
-            IRconClientFactory rconClientFactory,
-            TelemetryClient telemetryClient)
-        {
-            this.logger = logger;
-            this.repositoryApiClient = repositoryApiClient;
-            this.rconClientFactory = rconClientFactory;
-            this.telemetryClient = telemetryClient;
-        }
+[ApiController]
+[Authorize(Roles = "ServiceAccount")]
+[ApiVersion(ApiVersions.V1)]
+[Route("api/v{version:apiVersion}")]
+public class RconController(
+    ILogger<RconController> logger,
+    IRepositoryApiClient repositoryApiClient,
+    IRconClientFactory rconClientFactory,
+    TelemetryClient telemetryClient) : Controller, IRconApi
+{
 
         /// <summary>
         /// Verifies that the player in the specified slot matches the expected player name
@@ -1552,4 +1540,3 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             }
         }
     }
-}

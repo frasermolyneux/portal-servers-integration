@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>13.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.V1</RootNamespace>

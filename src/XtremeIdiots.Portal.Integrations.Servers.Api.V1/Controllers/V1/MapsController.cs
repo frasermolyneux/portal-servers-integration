@@ -14,30 +14,18 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
-{
-    [ApiController]
-    [Authorize(Roles = "ServiceAccount")]
-    [ApiVersion(ApiVersions.V1)]
-    [Route("api/v{version:apiVersion}")]
-    public class MapsController : Controller, IMapsApi
-    {
-        private readonly ILogger<MapsController> logger;
-        private readonly IRepositoryApiClient repositoryApiClient;
-        private readonly TelemetryClient telemetryClient;
-        private readonly IConfiguration configuration;
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
-        public MapsController(
-            ILogger<MapsController> logger,
-            IRepositoryApiClient repositoryApiClient,
-            TelemetryClient telemetryClient,
-            IConfiguration configuration)
-        {
-            this.logger = logger;
-            this.repositoryApiClient = repositoryApiClient;
-            this.telemetryClient = telemetryClient;
-            this.configuration = configuration;
-        }
+[ApiController]
+[Authorize(Roles = "ServiceAccount")]
+[ApiVersion(ApiVersions.V1)]
+[Route("api/v{version:apiVersion}")]
+public class MapsController(
+    ILogger<MapsController> logger,
+    IRepositoryApiClient repositoryApiClient,
+    TelemetryClient telemetryClient,
+    IConfiguration configuration) : Controller, IMapsApi
+{
 
         [HttpGet]
         [Route("maps/{gameServerId}/host/loaded")]
@@ -233,4 +221,3 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1
             }
         }
     }
-}

@@ -2,39 +2,24 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
+
+public class RconClientFactory(ILogger<RconClientFactory> logger) : IRconClientFactory
 {
-    public class RconClientFactory : IRconClientFactory
+    private readonly ILogger<RconClientFactory> _logger = logger;
+
+    public IRconClient CreateInstance(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
-        private readonly ILogger<RconClientFactory> _logger;
+        ArgumentNullException.ThrowIfNull(logger);
 
-        public RconClientFactory(ILogger<RconClientFactory> logger)
+        IRconClient rconClient = gameType switch
         {
-            _logger = logger;
-        }
+            GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty5 => new Quake3RconClient(_logger),
+            GameType.Insurgency or GameType.Rust or GameType.Left4Dead2 => new SourceRconClient(_logger),
+            _ => throw new NotSupportedException($"Game type {gameType} is not supported for RCON operations")
+        };
 
-        public IRconClient CreateInstance(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
-        {
-            IRconClient rconClient;
-
-            switch (gameType)
-            {
-                case GameType.CallOfDuty2:
-                case GameType.CallOfDuty4:
-                case GameType.CallOfDuty5:
-                    rconClient = new Quake3RconClient(_logger);
-                    break;
-                case GameType.Insurgency:
-                case GameType.Rust:
-                case GameType.Left4Dead2:
-                    rconClient = new SourceRconClient(_logger);
-                    break;
-                default:
-                    throw new Exception("Unsupported game type");
-            }
-
-            rconClient.Configure(gameType, gameServerId, hostname, queryPort, rconPassword);
-            return rconClient;
-        }
+        rconClient.Configure(gameType, gameServerId, hostname, queryPort, rconPassword);
+        return rconClient;
     }
 }

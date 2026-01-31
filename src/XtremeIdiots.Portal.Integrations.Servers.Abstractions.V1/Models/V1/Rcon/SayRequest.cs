@@ -1,7 +1,6 @@
-namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon
+namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
+
+public record SayRequest
 {
-    public record SayRequest
-    {
-        public required string Message { get; init; }
-    }
+    public required string Message { get; init; }
 }

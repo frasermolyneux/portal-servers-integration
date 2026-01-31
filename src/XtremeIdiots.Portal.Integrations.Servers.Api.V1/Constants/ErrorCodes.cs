@@ -1,11 +1,11 @@
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
+
+/// <summary>
+/// Defines standardized error codes for the Portal Servers Integration API.
+/// Error codes follow the pattern: CATEGORY_SPECIFIC_DESCRIPTION
+/// </summary>
+public static class ErrorCodes
 {
-    /// <summary>
-    /// Defines standardized error codes for the Portal Servers Integration API.
-    /// Error codes follow the pattern: CATEGORY_SPECIFIC_DESCRIPTION
-    /// </summary>
-    public static class ErrorCodes
-    {
         /// <summary>
         /// The request contains invalid or missing required parameters.
         /// </summary>
@@ -71,4 +71,3 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants
         /// </summary>
         public const string PLAYER_VERIFICATION_FAILED = "PLAYER_VERIFICATION_FAILED";
     }
-}

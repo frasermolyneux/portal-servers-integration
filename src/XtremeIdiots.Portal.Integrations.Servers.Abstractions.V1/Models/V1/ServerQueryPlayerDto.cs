@@ -1,8 +1,7 @@
-﻿namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1
+﻿namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
+
+public record ServerQueryPlayerDto
 {
-    public record ServerQueryPlayerDto
-    {
-        public string? Name { get; set; }
-        public int Score { get; set; }
-    }
+    public string? Name { get; set; }
+    public int Score { get; set; }
 }

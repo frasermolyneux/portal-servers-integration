@@ -5,205 +5,192 @@ using System.Text;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
+
+public class SourceQueryClient(ILogger logger) : IQueryClient
 {
-    public class SourceQueryClient : IQueryClient
+    private readonly ILogger _logger = logger;
+
+    private string? Hostname { get; set; }
+    private int QueryPort { get; set; }
+
+    public void Configure(string hostname, int queryPort)
     {
-        private readonly ILogger _logger;
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hostname);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(queryPort);
 
-        public SourceQueryClient(ILogger logger)
+        Hostname = hostname;
+        QueryPort = queryPort;
+    }
+
+    public Task<IQueryResponse> GetServerStatus()
+    {
+        var (_, infoQueryBytes) = Query(A2S_INFO());
+
+        if (infoQueryBytes?.Length == 9) // Challenge received from server
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            byte[] challenge = infoQueryBytes[5..9];
+            var infoAndChallenge = A2S_INFO().Concat(challenge).ToArray();
+
+            var (_, fullInfoQueryBytes) = Query(infoAndChallenge);
+            infoQueryBytes = fullInfoQueryBytes;
         }
 
-        private string Hostname { get; set; }
-        private int QueryPort { get; set; }
+        if (infoQueryBytes == null)
+            throw new InvalidOperationException("Failed to query source server");
 
-        public void Configure(string hostname, int queryPort)
+        var serverParams = GetParams(infoQueryBytes);
+
+        var (_, playersPreQueryBytes) = Query(A2S_PLAYERS_PRE());
+        var challengeResponse = playersPreQueryBytes?[5..];
+        var (_, playersQueryBytes) = Query(A2S_PLAYERS(challengeResponse));
+
+        var players = ParsePlayers(playersQueryBytes);
+
+        return Task.FromResult((IQueryResponse)new SourceQueryResponse(serverParams, players));
+    }
+
+    private static byte[] A2S_INFO()
+    {
+        //ÿÿÿÿTSource Engine Query
+        return [0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00];
+    }
+
+    private static byte[] A2S_PLAYERS_PRE()
+    {
+        return [0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF];
+    }
+
+    private static byte[] A2S_PLAYERS(IEnumerable<byte> challengeResponse)
+    {
+        byte[] start = [0xFF, 0xFF, 0xFF, 0xFF, 0x55];
+        return start.Concat(challengeResponse).ToArray();
+    }
+
+    private static List<IQueryPlayer> ParsePlayers(byte[] responseBytes)
+    {
+        var players = new List<IQueryPlayer>();
+        var numPlayers = responseBytes[5];
+        var i = 6;
+
+        for (var ii = 0; ii < numPlayers; ii++)
         {
-            if (string.IsNullOrWhiteSpace(hostname))
-                throw new ArgumentNullException(nameof(hostname));
+            var newPlayer = new SourceQueryPlayer();
 
-            if (queryPort == 0)
-                throw new ArgumentNullException(nameof(queryPort));
+            // ReSharper disable once UnusedVariable
+            var index = responseBytes[i++];
 
-            Hostname = hostname;
-            QueryPort = queryPort;
+            var playerNameArr = new List<byte>();
+
+            while (responseBytes[i] != 0x00) playerNameArr.Add(responseBytes[i++]);
+
+            i++;
+
+            newPlayer.Name = Encoding.UTF8.GetString(playerNameArr.ToArray());
+            newPlayer.Score = BitConverter.ToInt32(responseBytes, i);
+
+            i += 4;
+
+            newPlayer.Time = new TimeSpan(0, 0, (int)BitConverter.ToSingle(responseBytes, i));
+
+            i += 4;
+
+            players.Add(newPlayer);
         }
 
-        public Task<IQueryResponse> GetServerStatus()
-        {
-            var (_, infoQueryBytes) = Query(A2S_INFO());
+        return players;
+    }
 
-            if (infoQueryBytes?.Length == 9) // Challenge received from server
+    private Dictionary<string, string> GetParams(byte[] responseBytes)
+    {
+        var serverParams = new Dictionary<string, string>();
+
+        serverParams["protocolver"] = responseBytes[5].ToString();
+        var offset = 6;
+        serverParams["hostname"] = ReadNextParam(responseBytes, offset, out offset);
+        serverParams["mapname"] = ReadNextParam(responseBytes, offset, out offset);
+        serverParams["mod"] = ReadNextParam(responseBytes, offset, out offset);
+        serverParams["modname"] = ReadNextParam(responseBytes, offset, out offset);
+
+        var appid = new byte[2];
+        Array.Copy(responseBytes, offset++, appid, 0, 2);
+        serverParams["appid"] = BitConverter.ToInt16(appid, 0).ToString();
+        offset++;
+
+        serverParams["numplayers"] = responseBytes[offset++].ToString();
+        serverParams["maxplayers"] = responseBytes[offset++].ToString();
+        serverParams["botcount"] = responseBytes[offset++].ToString();
+        serverParams["servertype"] = responseBytes[offset++].ToString();
+        serverParams["serveros"] = responseBytes[offset++].ToString();
+        serverParams["passworded"] = responseBytes[offset++].ToString();
+        serverParams["secureserver"] = responseBytes[offset++].ToString();
+        serverParams["version"] = ReadNextParam(responseBytes, offset, out offset);
+
+        return serverParams;
+    }
+
+    private static string ReadNextParam(byte[] responseBytes, int offset, out int newOffset)
+    {
+        var startOffset = offset;
+        for (; offset < responseBytes.Length; offset++)
+        {
+            if (responseBytes[offset] == 0)
             {
-                var challenge = new[] { infoQueryBytes[5], infoQueryBytes[6], infoQueryBytes[7], infoQueryBytes[8] };
-                var infoAndChallenge = A2S_INFO().Concat(challenge).ToArray();
+                offset++;
+                break;
+            }
+        }
 
-                var (_, fullInfoQueryBytes) = Query(infoAndChallenge);
-                infoQueryBytes = fullInfoQueryBytes;
+        newOffset = offset;
+        return Encoding.UTF8.GetString(responseBytes, startOffset, offset - startOffset - 1);
+    }
+
+
+    private (string responseText, byte[]? responseBytes) Query(byte[] commandBytes)
+    {
+        var command = Encoding.UTF8.GetString(commandBytes);
+        _logger.LogInformation($"Executing command '{command}' against server");
+
+        UdpClient? udpClient = null;
+
+        try
+        {
+            var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+
+            udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
+            udpClient.Connect(Hostname, QueryPort);
+            udpClient.Send(commandBytes, commandBytes.Length);
+
+            var datagrams = new List<byte[]>();
+            do
+            {
+                var datagramBytes = udpClient.Receive(ref remoteIpEndPoint);
+                datagrams.Add(datagramBytes);
+
+                if (udpClient.Available == 0)
+                    Task.Delay(500).Wait();
+            } while (udpClient.Available > 0);
+
+            var responseText = new StringBuilder();
+            byte[]? responseBytes = null;
+
+            foreach (var datagram in datagrams)
+            {
+                responseBytes = responseBytes == null ? datagram : [.. responseBytes, .. datagram];
+                responseText.Append(Encoding.Default.GetString(datagram));
             }
 
-            if (infoQueryBytes == null)
-                throw new Exception("Failed to query source server");
-
-            var serverParams = GetParams(infoQueryBytes);
-
-            var (_, playersPreQueryBytes) = Query(A2S_PLAYERS_PRE());
-            var challengeResponse = playersPreQueryBytes?.Skip(5).ToArray();
-            var (_, playersQueryBytes) = Query(A2S_PLAYERS(challengeResponse));
-
-            var players = ParsePlayers(playersQueryBytes);
-
-            return Task.FromResult((IQueryResponse)new SourceQueryResponse(serverParams, players));
+            return (responseText.ToString(), responseBytes);
         }
-
-        private static byte[] A2S_INFO()
+        catch (Exception ex)
         {
-            //ÿÿÿÿTSource Engine Query
-            return new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00 };
+            _logger.LogError(ex, "Failed to execute command");
+            throw;
         }
-
-        private static byte[] A2S_PLAYERS_PRE()
+        finally
         {
-            return new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF };
-        }
-
-        private static byte[] A2S_PLAYERS(IEnumerable<byte> challengeResponse)
-        {
-            var start = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x55 };
-            return start.Concat(challengeResponse).ToArray();
-        }
-
-        private static List<IQueryPlayer> ParsePlayers(byte[] responseBytes)
-        {
-            var players = new List<IQueryPlayer>();
-            var numPlayers = responseBytes[5];
-            var i = 6;
-
-            for (var ii = 0; ii < numPlayers; ii++)
-            {
-                var newPlayer = new SourceQueryPlayer();
-
-                // ReSharper disable once UnusedVariable
-                var index = responseBytes[i++];
-
-                var playerNameArr = new List<byte>();
-
-                while (responseBytes[i] != 0x00) playerNameArr.Add(responseBytes[i++]);
-
-                i++;
-
-                newPlayer.Name = Encoding.UTF8.GetString(playerNameArr.ToArray());
-                newPlayer.Score = BitConverter.ToInt32(responseBytes, i);
-
-                i += 4;
-
-                newPlayer.Time = new TimeSpan(0, 0, (int)BitConverter.ToSingle(responseBytes, i));
-
-                i += 4;
-
-                players.Add(newPlayer);
-            }
-
-            return players;
-        }
-
-        private Dictionary<string, string> GetParams(byte[] responseBytes)
-        {
-            var serverParams = new Dictionary<string, string>();
-
-            serverParams["protocolver"] = responseBytes[5].ToString();
-            var offset = 6;
-            serverParams["hostname"] = ReadNextParam(responseBytes, offset, out offset);
-            serverParams["mapname"] = ReadNextParam(responseBytes, offset, out offset);
-            serverParams["mod"] = ReadNextParam(responseBytes, offset, out offset);
-            serverParams["modname"] = ReadNextParam(responseBytes, offset, out offset);
-
-            var appid = new byte[2];
-            Array.Copy(responseBytes, offset++, appid, 0, 2);
-            serverParams["appid"] = BitConverter.ToInt16(appid, 0).ToString();
-            offset++;
-
-            serverParams["numplayers"] = responseBytes[offset++].ToString();
-            serverParams["maxplayers"] = responseBytes[offset++].ToString();
-            serverParams["botcount"] = responseBytes[offset++].ToString();
-            serverParams["servertype"] = responseBytes[offset++].ToString();
-            serverParams["serveros"] = responseBytes[offset++].ToString();
-            serverParams["passworded"] = responseBytes[offset++].ToString();
-            serverParams["secureserver"] = responseBytes[offset++].ToString();
-            serverParams["version"] = ReadNextParam(responseBytes, offset, out offset);
-
-            return serverParams;
-        }
-
-        private static string ReadNextParam(byte[] responseBytes, int offset, out int newOffset)
-        {
-            var temp = "";
-            for (; offset < responseBytes.Length; offset++)
-            {
-                if (responseBytes[offset] == 0)
-                {
-                    offset++;
-                    break;
-                }
-
-                temp += (char)responseBytes[offset];
-            }
-
-            newOffset = offset;
-            return temp;
-        }
-
-
-        private Tuple<string, byte[]?> Query(byte[] commandBytes)
-        {
-            var command = Encoding.UTF8.GetString(commandBytes);
-            _logger.LogInformation($"Executing command '{command}' against server");
-
-            UdpClient? udpClient = null;
-
-            try
-            {
-                var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
-                udpClient.Connect(Hostname, QueryPort);
-                udpClient.Send(commandBytes, commandBytes.Length);
-
-                var datagrams = new List<byte[]>();
-                do
-                {
-                    var datagramBytes = udpClient.Receive(ref remoteIpEndPoint);
-                    datagrams.Add(datagramBytes);
-
-                    if (udpClient.Available == 0)
-                        Thread.Sleep(500);
-                } while (udpClient.Available > 0);
-
-                var responseText = new StringBuilder();
-                byte[]? responseBytes = null;
-
-                foreach (var datagram in datagrams)
-                {
-                    var datagramBytes = datagram;
-                    var datagramText = Encoding.Default.GetString(datagram);
-
-                    responseBytes = responseBytes == null ? datagramBytes : responseBytes.Concat(datagramBytes).ToArray();
-                    responseText.Append(datagramText);
-                }
-
-                return new Tuple<string, byte[]?>(responseText.ToString(), responseBytes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to execute command");
-                throw;
-            }
-            finally
-            {
-                udpClient?.Dispose();
-            }
+            udpClient?.Dispose();
         }
     }
 }

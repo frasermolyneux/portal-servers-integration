@@ -8,15 +8,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Configuration;
 /// <summary>
 /// Configures the Swagger generation options for API versioning.
 /// </summary>
-public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
+/// <param name="provider">The <see cref="IApiVersionDescriptionProvider">provider</see> used to generate Swagger documents.</param>
+public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider) : IConfigureOptions<SwaggerGenOptions>
 {
-    private readonly IApiVersionDescriptionProvider provider;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConfigureSwaggerOptions"/> class.
-    /// </summary>
-    /// <param name="provider">The <see cref="IApiVersionDescriptionProvider">provider</see> used to generate Swagger documents.</param>
-    public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider) => this.provider = provider;
 
     /// <inheritdoc />
     public void Configure(SwaggerGenOptions options)

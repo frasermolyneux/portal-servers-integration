@@ -6,36 +6,31 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
-namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
+
+public partial class SourceRconClient(ILogger logger) : IRconClient
 {
-    public class SourceRconClient : IRconClient
+    private readonly ILogger _logger = logger;
+
+    [GeneratedRegex("^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})", RegexOptions.None, 1000)]
+    private static partial Regex PlayerRegex();
+
+    [GeneratedRegex(@"map\s*:\s*(\S+)", RegexOptions.Compiled, 1000)]
+    private static partial Regex MapRegex();
+
+    private GameType _gameType;
+    private string? _hostname;
+    private int _queryPort;
+    private string? _rconPassword;
+
+    private int _sequenceId = 1;
+
+    private Guid _serverId;
+    private TcpClient? _tcpClient;
+
+    public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
-        private readonly ILogger _logger;
-
-        private readonly Regex _playerRegex =
-            new Regex(
-                "^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})", RegexOptions.None, TimeSpan.FromSeconds(1));
-
-        private readonly Regex _mapRegex = new Regex(@"map\s*:\s*(\S+)", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-
-        // ReSharper disable once NotAccessedField.Local
-        private GameType _gameType;
-        private string _hostname;
-        private int _queryPort;
-        private string _rconPassword;
-
-        private int _sequenceId = 1;
-
-        private Guid _serverId;
-        private TcpClient _tcpClient;
-
-        public SourceRconClient(ILogger logger)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
-        {
+        ArgumentNullException.ThrowIfNull(logger);
             _logger.LogDebug("[{GameServerId}] Configuring Source rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
             _gameType = gameType;
@@ -56,17 +51,17 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             for (var i = 3; i < lines.Count; i++)
             {
                 var line = lines[i];
-                var match = _playerRegex.Match(line);
+                var match = PlayerRegex().Match(line);
 
                 if (!match.Success)
                     continue;
 
-                var num = match.Groups[1].ToString();
-                var name = match.Groups[3].ToString();
-                var guid = match.Groups[4].ToString();
-                var ping = match.Groups[6].ToString();
-                var rate = match.Groups[9].ToString();
-                var ipAddress = match.Groups[10].ToString();
+                var num = match.Groups[1].Value;
+                var name = match.Groups[3].Value;
+                var guid = match.Groups[4].Value;
+                var ping = match.Groups[6].Value;
+                var rate = match.Groups[9].Value;
+                var ipAddress = match.Groups[10].Value;
 
                 int.TryParse(num, out int numInt);
                 int.TryParse(ping, out int pingInt);
@@ -101,7 +96,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                 var lines = playerStatus.Split('\n');
                 foreach (var line in lines)
                 {
-                    var mapMatch = _mapRegex.Match(line);
+                    var mapMatch = MapRegex().Match(line);
                     if (mapMatch.Success)
                     {
                         var mapName = mapMatch.Groups[1].Value;
@@ -256,14 +251,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                 _tcpClient = new TcpClient(_hostname, _queryPort) { ReceiveTimeout = 5000 };
 
                 var authPackets = GetAuthPackets(_rconPassword);
-                var authResultPacket = authPackets.SingleOrDefault(packet => packet.Type == 2);
+                var authResultPacket = authPackets.Find(packet => packet.Type == 2);
 
-                _logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count());
+                _logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count);
 
                 if (authResultPacket == null)
                 {
                     _logger.LogError("[{GameServerId}] Could not establish authenticated session with server", _serverId);
-                    throw new Exception("Could not establish authenticated session with server");
+                    throw new InvalidOperationException("Could not establish authenticated session with server");
                 }
             }
             catch (Exception ex)
@@ -281,15 +276,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             _tcpClient.Client.Send(authPacket.PacketBytes);
 
             var responsePackets = new List<SourceRconPacket>();
-            byte[] leftoverBytes = null;
+            byte[]? leftoverBytes = null;
             do
             {
                 var tempBuffer = new byte[8192];
                 var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
 
-                var bytesToProcess = tempBuffer.Take(bytesRead).ToArray();
+                var bytesToProcess = tempBuffer[..bytesRead];
 
-                if (leftoverBytes != null) bytesToProcess = leftoverBytes.Concat(bytesToProcess).ToArray();
+                if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
 
                 var (packets, leftover) = BytesIntoPackets(bytesToProcess);
                 responsePackets.AddRange(packets);
@@ -310,15 +305,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             _tcpClient.Client.Send(emptyResponsePacket.PacketBytes);
 
             var responsePackets = new List<SourceRconPacket>();
-            byte[] leftoverBytes = null;
+            byte[]? leftoverBytes = null;
             do
             {
                 var tempBuffer = new byte[8192];
                 var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
 
-                var bytesToProcess = tempBuffer.Take(bytesRead).ToArray();
+                var bytesToProcess = tempBuffer[..bytesRead];
 
-                if (leftoverBytes != null) bytesToProcess = leftoverBytes.Concat(bytesToProcess).ToArray();
+                if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
 
                 var (packets, leftover) = BytesIntoPackets(bytesToProcess);
                 responsePackets.AddRange(packets);
@@ -329,7 +324,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
             return responsePackets.Where(packet => packet.Id == executeCommandPacket.Id).ToList();
         }
 
-        private static Tuple<List<SourceRconPacket>, byte[]> BytesIntoPackets(byte[] bytes)
+        private static (List<SourceRconPacket> packets, byte[]? leftover) BytesIntoPackets(byte[] bytes)
         {
             var packets = new List<SourceRconPacket>();
             var offset = 0;
@@ -351,7 +346,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
 
                     var id = BitConverter.ToInt32(bytes, offset + 4);
                     var type = BitConverter.ToInt32(bytes, offset + 8);
-                    var body = Encoding.ASCII.GetString(bytes.Skip(offset + 12).Take(size - 6).ToArray()).Trim();
+                    var body = Encoding.ASCII.GetString(bytes, offset + 12, size - 6).Trim();
 
                     offset += 4 + size;
 
@@ -359,14 +354,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients
                     packets.Add(packet);
                 } while (true);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e);
+                // Error parsing packet structure - rethrow to be handled by caller
                 throw;
             }
 
-            var leftover = offset == bytes.Length ? null : bytes.Skip(offset).Take(bytes.Length - offset).ToArray();
-            return new Tuple<List<SourceRconPacket>, byte[]>(packets, leftover);
+            var leftover = offset == bytes.Length ? null : bytes[offset..];
+            return (packets, leftover);
         }
     }
-}

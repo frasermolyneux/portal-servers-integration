@@ -37,7 +37,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         /// </summary>
         public void Start()
         {
-            _listenTask = Task.Run(async () => await ListenAsync(_cancellationTokenSource.Token));
+            _listenTask = Task.Run(() => ListenAsync(_cancellationTokenSource.Token));
         }
 
         private async Task ListenAsync(CancellationToken cancellationToken)
@@ -98,7 +98,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         /// </summary>
         public static byte[] CreateQuake3Response(string content)
         {
-            var prefix = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
+            byte[] prefix = [0xFF, 0xFF, 0xFF, 0xFF];
             var printCommand = Encoding.Default.GetBytes("print\n");
             var contentBytes = Encoding.Default.GetBytes(content);
             

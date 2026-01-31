@@ -21,7 +21,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
             _udpClient = new UdpClient(port);
             Port = ((IPEndPoint)_udpClient.Client.LocalEndPoint!).Port;
             _cancellationTokenSource = new CancellationTokenSource();
-            _commandHandlers = new Dictionary<string, Func<string, byte[]>>();
+            _commandHandlers = [];
         }
 
         /// <summary>

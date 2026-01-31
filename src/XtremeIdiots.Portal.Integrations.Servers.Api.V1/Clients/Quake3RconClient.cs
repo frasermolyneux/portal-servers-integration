@@ -486,11 +486,11 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         var random = new Random();
 
-        return new[]
-        {
+        return
+        [
             TimeSpan.FromSeconds(random.Next(1)),
             TimeSpan.FromSeconds(random.Next(3)),
             TimeSpan.FromSeconds(random.Next(5))
-        };
+        ];
     }
 }

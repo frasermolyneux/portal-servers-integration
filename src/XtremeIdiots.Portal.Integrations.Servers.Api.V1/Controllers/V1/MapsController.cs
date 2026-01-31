@@ -24,7 +24,8 @@ public class MapsController(
     ILogger<MapsController> logger,
     IRepositoryApiClient repositoryApiClient,
     TelemetryClient telemetryClient,
-    IConfiguration configuration) : Controller, IMapsApi
+    IConfiguration configuration,
+    IHttpClientFactory httpClientFactory) : Controller, IMapsApi
 {
 
         [HttpGet]
@@ -47,11 +48,9 @@ public class MapsController(
             operation.Telemetry.Type = $"FTP";
             operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.FtpHostname}:{gameServerApiResponse.Result.Data.FtpPort}";
 
-            AsyncFtpClient? ftpClient = null;
-
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
+                await using var ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -82,7 +81,6 @@ public class MapsController(
             finally
             {
                 telemetryClient.StopOperation(operation);
-                ftpClient?.Dispose();
             }
         }
 
@@ -110,11 +108,9 @@ public class MapsController(
             if (mapApiResponse.Result.Data.MapFiles.Count == 0)
                 return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' does not have any files associated with it.")).ToBadRequestResult();
 
-            AsyncFtpClient? ftpClient = null;
-
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
+                await using var ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -136,16 +132,16 @@ public class MapsController(
                 {
                     await ftpClient.CreateDirectory(mapDirectoryPath);
 
+                    var httpClient = httpClientFactory.CreateClient();
                     foreach (var file in mapApiResponse.Result.Data.MapFiles)
                     {
-                        using (var httpClient = new HttpClient())
+                        var filePath = Path.Join(Path.GetTempPath(), file.FileName);
+                        await using (var stream = System.IO.File.Create(filePath))
                         {
-                            var filePath = Path.Join(Path.GetTempPath(), file.FileName);
-                            using (var stream = System.IO.File.Create(filePath))
-                                await (await httpClient.GetStreamAsync(file.Url)).CopyToAsync(stream);
-
-                            await ftpClient.UploadFile(filePath, $"{mapDirectoryPath}/{file.FileName}");
+                            await (await httpClient.GetStreamAsync(file.Url)).CopyToAsync(stream);
                         }
+
+                        await ftpClient.UploadFile(filePath, $"{mapDirectoryPath}/{file.FileName}");
                     }
 
                     return new ApiResponse().ToApiResult();
@@ -157,10 +153,6 @@ public class MapsController(
                 telemetryClient.TrackException(ex);
                 logger.LogError(ex, "Failed to push map {MapName} to game server {GameServerId}", mapName, gameServerId);
                 return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to push map files to the game server's FTP host.")).ToApiResult();
-            }
-            finally
-            {
-                ftpClient?.Dispose();
             }
         }
 
@@ -180,11 +172,9 @@ public class MapsController(
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            AsyncFtpClient? ftpClient = null;
-
             try
             {
-                ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
+                await using var ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
                 ftpClient.ValidateCertificate += (control, e) =>
                 {
                     if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
@@ -214,10 +204,6 @@ public class MapsController(
                 telemetryClient.TrackException(ex);
                 logger.LogError(ex, "Failed to delete map {MapName} from game server {GameServerId}", mapName, gameServerId);
                 return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to delete map directory from the game server's FTP host.")).ToApiResult();
-            }
-            finally
-            {
-                ftpClient?.Dispose();
             }
         }
     }

@@ -115,7 +115,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
                 datagrams.Add(datagramText);
 
                 if (udpClient.Available == 0)
-                    Task.Delay(500).Wait();
+                    Thread.Sleep(500);
             } while (udpClient.Available > 0);
 
             var responseText = new StringBuilder();

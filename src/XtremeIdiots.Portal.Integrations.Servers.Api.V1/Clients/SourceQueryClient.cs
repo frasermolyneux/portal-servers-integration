@@ -31,7 +31,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
         if (infoQueryBytes?.Length == 9) // Challenge received from server
         {
             byte[] challenge = infoQueryBytes[5..9];
-            var infoAndChallenge = A2S_INFO().Concat(challenge).ToArray();
+            byte[] infoAndChallenge = [..A2S_INFO(), ..challenge];
 
             var (_, fullInfoQueryBytes) = Query(infoAndChallenge);
             infoQueryBytes = fullInfoQueryBytes;
@@ -65,7 +65,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
     private static byte[] A2S_PLAYERS(IEnumerable<byte> challengeResponse)
     {
         byte[] start = [0xFF, 0xFF, 0xFF, 0xFF, 0x55];
-        return start.Concat(challengeResponse).ToArray();
+        return [..start, ..challengeResponse];
     }
 
     private static List<IQueryPlayer> ParsePlayers(byte[] responseBytes)
@@ -87,7 +87,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
             i++;
 
-            newPlayer.Name = Encoding.UTF8.GetString(playerNameArr.ToArray());
+            newPlayer.Name = Encoding.UTF8.GetString([..playerNameArr]);
             newPlayer.Score = BitConverter.ToInt32(responseBytes, i);
 
             i += 4;
@@ -178,7 +178,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
             foreach (var datagram in datagrams)
             {
                 responseBytes = responseBytes == null ? datagram : [.. responseBytes, .. datagram];
-                responseText.Append(Encoding.Default.GetString(datagram));
+                responseText.Append(Encoding.ASCII.GetString(datagram));
             }
 
             return (responseText.ToString(), responseBytes);

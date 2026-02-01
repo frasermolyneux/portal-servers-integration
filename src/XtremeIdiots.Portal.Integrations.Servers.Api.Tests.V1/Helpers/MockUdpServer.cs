@@ -21,7 +21,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
             _udpClient = new UdpClient(port);
             Port = ((IPEndPoint)_udpClient.Client.LocalEndPoint!).Port;
             _cancellationTokenSource = new CancellationTokenSource();
-            _commandHandlers = new Dictionary<string, Func<string, byte[]>>();
+            _commandHandlers = [];
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         /// </summary>
         public void Start()
         {
-            _listenTask = Task.Run(async () => await ListenAsync(_cancellationTokenSource.Token));
+            _listenTask = Task.Run(() => ListenAsync(_cancellationTokenSource.Token));
         }
 
         private async Task ListenAsync(CancellationToken cancellationToken)
@@ -54,14 +54,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
 
                     // Parse the RCON command
                     // Format: ÿÿÿÿrcon {password} {command}
-                    var dataString = Encoding.Default.GetString(receivedData);
+                    var dataString = Encoding.ASCII.GetString(receivedData);
                     
                     // Check for RCON prefix (4 bytes of 0xFF)
                     if (receivedData.Length > 4 && 
                         receivedData[0] == 0xFF && receivedData[1] == 0xFF && 
                         receivedData[2] == 0xFF && receivedData[3] == 0xFF)
                     {
-                        var commandText = dataString.Substring(4);
+                        var commandText = dataString[4..];
                         
                         // Extract the actual command (skip "rcon password ")
                         var parts = commandText.Split(' ', 3);
@@ -98,11 +98,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         /// </summary>
         public static byte[] CreateQuake3Response(string content)
         {
-            var prefix = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF };
-            var printCommand = Encoding.Default.GetBytes("print\n");
-            var contentBytes = Encoding.Default.GetBytes(content);
+            byte[] prefix = [0xFF, 0xFF, 0xFF, 0xFF];
+            var printCommand = Encoding.ASCII.GetBytes("print\n");
+            var contentBytes = Encoding.ASCII.GetBytes(content);
             
-            return prefix.Concat(printCommand).Concat(contentBytes).ToArray();
+            return [..prefix, ..printCommand, ..contentBytes];
         }
 
         public void Dispose()

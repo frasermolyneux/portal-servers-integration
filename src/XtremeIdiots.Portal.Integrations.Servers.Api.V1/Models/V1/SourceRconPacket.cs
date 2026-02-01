@@ -20,7 +20,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
                 // At least 1 byte for Body (including null terminator)
                 // 1 byte for null terminator
 
-                var bodySize = Encoding.Default.GetBytes(Body).Length + 1;
+                var bodySize = Encoding.ASCII.GetBytes(Body).Length + 1;
                 return 4 + 4 + bodySize + 1;
             }
         }
@@ -37,7 +37,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
                 var id = BitConverter.GetBytes(Id);
                 var type = BitConverter.GetBytes(Type);
                 var body = Encoding.ASCII.GetBytes(Body);
-                var terminator = new byte[] { 0x00 };
+                byte[] terminator = [0x00];
 
                 var packet = new byte[4 + Size];
 

@@ -413,7 +413,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
             foreach (var packet in packets)
             {
-                var text = Encoding.Default.GetString(packet);
+                var text = Encoding.ASCII.GetString(packet);
                 if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print")) text = text[10..];
 
                 responseText.Append(text);
@@ -438,9 +438,9 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             //ÿÿÿÿrcon {rconPassword} {command}
             byte[] prefix = [0xFF, 0xFF, 0xFF, 0xFF];
             var commandText = $"rcon {rconPassword} {command}";
-            var commandBytes = Encoding.Default.GetBytes(commandText);
+            var commandBytes = Encoding.ASCII.GetBytes(commandText);
 
-            return prefix.Concat(commandBytes).ToArray();
+            return [..prefix, ..commandBytes];
         }
 
         private List<byte[]> GetCommandPackets(string command, bool skipReceive = false)
@@ -486,11 +486,11 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         var random = new Random();
 
-        return new[]
-        {
+        return
+        [
             TimeSpan.FromSeconds(random.Next(1)),
             TimeSpan.FromSeconds(random.Next(3)),
             TimeSpan.FromSeconds(random.Next(5))
-        };
+        ];
     }
 }

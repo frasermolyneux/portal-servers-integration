@@ -13,6 +13,8 @@ on:
           - prd
 
   
+permissions: read-all
+
 jobs:
   terraform-destroy:
     permissions:

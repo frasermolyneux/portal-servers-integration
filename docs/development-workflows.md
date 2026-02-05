@@ -11,7 +11,7 @@
   - Purpose: Fast feedback loop for WIP changes
 
 ### Pull Requests → main
-- **pr-verify.yml**: Validation pipeline (runs when PR is marked ready for review)
+- **pr-verify.yml**: Validation pipeline (runs on PR open, updates, reopen, and ready for review)
   - Build and test
   - Terraform plan for dev (skips for dependabot and copilot/* unless labeled)
   - Terraform plan for prd (requires `run-prd-plan` label; copilot branches also require `run-dev-plan`)

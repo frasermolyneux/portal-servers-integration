@@ -6,12 +6,12 @@
 
 ### Feature Development (feature/*, bugfix/*, hotfix/*)
 - **build-and-test.yml**: Runs on push to feature/bugfix/hotfix branches
-  - Build and test via `dotnet-web-ci` composite action (multi-targets .NET 9 and 10)
+  - Build and test via `dotnet-ci` composite action (multi-targets .NET 9 and 10)
   - No deployments
   - Purpose: Fast feedback loop for WIP changes
 
 ### Pull Requests → main
-- **pr-verify.yml**: Validation pipeline
+- **pr-verify.yml**: Validation pipeline (runs on PR open, updates, reopen, and ready for review)
   - Build and test
   - Terraform plan for dev (skips for dependabot and copilot/* unless labeled)
   - Terraform plan for prd (requires `run-prd-plan` label; copilot branches also require `run-dev-plan`)
@@ -25,7 +25,7 @@
   - Workflow-level concurrency serializes runs
 
 ### Scheduled & On-Demand
-- **codequality.yml**: Weekly Monday 3am UTC + on PR/push to main (skips dependabot)
+- **codequality.yml**: Weekly Monday 3am UTC + on PR/push to main
   - SonarCloud analysis
 - **deploy-dev.yml**: Manual dispatch
   - Refresh dev environment without merging to main

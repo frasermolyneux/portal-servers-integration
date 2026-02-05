@@ -12,12 +12,12 @@ on:
           - dev
           - prd
 
-permissions:
-  contents: read
-  id-token: write # This is required for Az CLI Login
   
 jobs:
   terraform-destroy:
+    permissions:
+      contents: read
+      id-token: write # This is required for Az CLI Login
     environment: ${{ inputs.environment == 'prd' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
 

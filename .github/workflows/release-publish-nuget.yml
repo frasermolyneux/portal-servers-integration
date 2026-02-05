@@ -1,9 +1,9 @@
-name: Publish Tagged Build to NuGet
+name: Release - Publish NuGet
 
 on:
   workflow_run:
     workflows:
-      - Main Branch Build and Tag
+      - Release - Version and Tag
     types:
       - completed
 

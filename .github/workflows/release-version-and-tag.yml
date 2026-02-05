@@ -1,4 +1,4 @@
-name: Main Branch Build and Tag
+name: Release - Version and Tag
 
 on:
   workflow_dispatch:

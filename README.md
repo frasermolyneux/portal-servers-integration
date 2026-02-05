@@ -1,18 +1,27 @@
 # XtremeIdiots Portal - Servers Integration
 
-| Stage                   | Status                                                                                                                                                                                                                                                         |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DevOps Secure Scanning  | [![DevOps Secure Scanning](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/devops-secure-scanning.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/devops-secure-scanning.yml)    |
-| Code Quality            | [![Code Quality](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml)                                    |
-| Feature Development     | [![Feature Development](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/feature-development.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/feature-development.yml)             |
-| Pull Request Validation | [![Pull Request Validation](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pull-request-validation.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pull-request-validation.yml) |
-| Release to Production   | [![Release to Production](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-to-production.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-to-production.yml)       |
+| Workflow        | Status                                                                                                                                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code Quality    | [![Code Quality](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/codequality.yml) |
+| PR Verification | [![PR Verify](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pr-verify.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/pr-verify.yml)        |
+| Deploy to Dev   | [![Deploy Dev](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/deploy-dev.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/deploy-dev.yml)     |
+| Deploy to Prd   | [![Deploy PRD](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/deploy-prd.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/deploy-prd.yml)     |
+
+| NuGet Workflow            | Status                                                                                                                                                                                                                                                           |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Release - Version and Tag | [![Release - Version and Tag](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-version-and-tag.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-version-and-tag.yml) |
+| Release - Publish NuGet   | [![Release - Publish NuGet](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-publish-nuget.yml/badge.svg)](https://github.com/frasermolyneux/portal-servers-integration/actions/workflows/release-publish-nuget.yml)       |
 
 ---
 
 ## Overview
 
 This repository contains the servers integration API for the XtremeIdiots Portal solution.
+
+## Documentation
+
+* [Development Workflows](docs/development-workflows.md) - Branch strategy, CI/CD triggers, NuGet publishing, and development flows
+* [Manual Steps](docs/manual-steps.md) - Post-deployment configuration steps
 
 ### .NET Support
 

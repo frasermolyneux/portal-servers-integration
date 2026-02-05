@@ -1,0 +1,73 @@
+name: PR Verify
+
+# Label-based workflow control:
+# - 'run-dev-plan': Enables dev Terraform plan for copilot/* branches (always runs for other branches)
+# - 'run-prd-plan': Enables prd Terraform plan for any branch
+# - copilot/* branches: Require 'run-dev-plan' label to run dev plan, and both 'run-dev-plan' + 'run-prd-plan' labels to run prd plan
+# - Non-copilot branches: Dev plan runs automatically, prd plan requires 'run-prd-plan' label
+# - dependabot PRs: Terraform plans are always skipped
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1.1
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+          src-folder: "src"
+
+  # Dev Terraform Plan:
+  # - Runs automatically for feature/bugfix/hotfix branches (non-copilot, non-dependabot)
+  # - Skipped for copilot/* branches unless 'run-dev-plan' label is added
+  # - Always skipped for dependabot PRs
+  terraform-plan-dev:
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]' && (!startsWith(github.head_ref, 'copilot/') || contains(github.event.pull_request.labels.*.name, 'run-dev-plan'))
+    needs: build-and-test
+    environment: Development
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository }}-dev
+    steps:
+      - uses: frasermolyneux/actions/terraform-plan@main
+        with:
+          terraform-folder: "terraform"
+          terraform-var-file: "tfvars/dev.tfvars"
+          terraform-backend-file: "backends/dev.backend.hcl"
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+  # Prd Terraform Plan:
+  # Label requirements for this job:
+  # - Non-copilot branches: require 'run-prd-plan' label only
+  # - copilot/* branches: require both 'run-dev-plan' and 'run-prd-plan' labels
+  # - Always skipped for dependabot PRs
+  terraform-plan-prd:
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]' && contains(github.event.pull_request.labels.*.name, 'run-prd-plan') && (!startsWith(github.head_ref, 'copilot/') || contains(github.event.pull_request.labels.*.name, 'run-dev-plan'))
+    needs: terraform-plan-dev
+    environment: Production
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository }}-prd
+    steps:
+      - uses: frasermolyneux/actions/terraform-plan@main
+        with:
+          terraform-folder: "terraform"
+          terraform-var-file: "tfvars/prd.tfvars"
+          terraform-backend-file: "backends/prd.backend.hcl"
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

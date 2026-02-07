@@ -5,12 +5,14 @@ on:
   #schedule:
   #  - cron: "20 0 * * *"
 
-permissions:
-  id-token: write # This is required for Az CLI Login
-  contents: read # This is required for actions/checkout
+
+permissions: read-all
 
 jobs:
   terraform-destroy-dev:
+    permissions:
+      id-token: write # This is required for Az CLI Login
+      contents: read # This is required for actions/checkout
     environment: Development
     runs-on: ubuntu-latest
 

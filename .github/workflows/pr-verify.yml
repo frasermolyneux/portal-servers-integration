@@ -28,6 +28,14 @@ jobs:
             10.0.x
           src-folder: "src"
 
+      - uses: frasermolyneux/actions/dotnet-web-ci@main
+        with:
+          dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
+          dotnet-version: |
+            9.0.x
+            10.0.x
+          src-folder: "src"
+
   # Dev Terraform Plan:
   # - Runs automatically for feature/bugfix/hotfix branches (non-copilot, non-dependabot)
   # - Skipped for copilot/* branches unless 'run-dev-plan' label is added

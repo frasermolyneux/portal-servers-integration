@@ -8,8 +8,7 @@ on:
     paths:
       - 'src/**'
 
-
-permissions: read-all
+permissions: {}
 
 jobs:
   calculate-version:

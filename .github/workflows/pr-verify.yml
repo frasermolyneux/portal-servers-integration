@@ -27,7 +27,7 @@ jobs:
             9.0.x
             10.0.x
           src-folder: "src"
-          skip-artifact-upload: "true"
+          skip-nuget-artifact-upload: "true"
 
       - uses: frasermolyneux/actions/dotnet-web-ci@main
         with:
@@ -36,6 +36,7 @@ jobs:
             9.0.x
             10.0.x
           src-folder: "src"
+          skip-nuget-artifact-upload: "true"
 
   # Dev Terraform Plan:
   # - Runs automatically for feature/bugfix/hotfix branches (non-copilot, non-dependabot)

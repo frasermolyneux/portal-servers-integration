@@ -27,6 +27,7 @@ jobs:
             9.0.x
             10.0.x
           src-folder: "src"
+          skip-nuget-artifact-upload: "true"
 
   terraform-plan-and-apply-dev:
     permissions:

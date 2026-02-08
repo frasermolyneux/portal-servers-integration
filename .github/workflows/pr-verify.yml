@@ -21,7 +21,7 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1.1
+      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1
         with:
           dotnet-version: |
             9.0.x

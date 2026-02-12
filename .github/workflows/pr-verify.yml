@@ -21,22 +21,12 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1
+      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v1.3
         with:
           dotnet-version: |
             9.0.x
             10.0.x
           src-folder: "src"
-          skip-nuget-artifact-upload: "true"
-
-      - uses: frasermolyneux/actions/dotnet-web-ci@main
-        with:
-          dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
-          dotnet-version: |
-            9.0.x
-            10.0.x
-          src-folder: "src"
-          skip-nuget-artifact-upload: "true"
 
   # Dev Terraform Plan:
   # - Runs automatically for feature/bugfix/hotfix branches (non-copilot, non-dependabot)

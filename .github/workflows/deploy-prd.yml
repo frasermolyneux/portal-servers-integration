@@ -1,4 +1,4 @@
-name: Deploy PRD
+name: Deploy Prd
 
 on:
   push:
@@ -23,11 +23,8 @@ jobs:
       - uses: frasermolyneux/actions/dotnet-web-ci@main
         with:
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
-          dotnet-version: |
-            9.0.x
-            10.0.x
+          dotnet-version: 9.0.x
           src-folder: "src"
-          skip-nuget-artifact-upload: "true"
 
   terraform-plan-and-apply-dev:
     permissions:

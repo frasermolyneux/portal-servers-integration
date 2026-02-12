@@ -1,6 +1,3 @@
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
   - package-ecosystem: "nuget"
@@ -8,17 +5,14 @@ updates:
     directory: "/src"
     schedule:
       interval: "daily"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
 
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: "terraform"
     assignees: ["frasermolyneux"]
-    directory: "/"
+    directory: "/terraform"
     schedule:
       interval: "daily"
 
-  - package-ecosystem: "npm"
+  - package-ecosystem: "github-actions"
     assignees: ["frasermolyneux"]
     directory: "/"
     schedule:
@@ -28,4 +22,4 @@ updates:
     assignees: ["frasermolyneux"]
     directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"

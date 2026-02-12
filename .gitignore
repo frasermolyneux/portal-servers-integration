@@ -402,3 +402,6 @@ __azurite*
 __blobstorage__/
 __queuestorage__/
 __tablestorage__/
+
+# Shared Copilot configuration checked out during copilot-setup-steps
+.github-copilot/

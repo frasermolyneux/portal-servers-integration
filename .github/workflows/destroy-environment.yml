@@ -26,10 +26,10 @@ jobs:
 
     steps:
       - uses: frasermolyneux/actions/terraform-destroy@main
-      with:
-        terraform-folder: "terraform"
-        terraform-var-file: ${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}
-        terraform-backend-file: ${{ inputs.environment == 'prd' && 'backends/prd.backend.hcl' || 'backends/dev.backend.hcl' }}
-        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        with:
+          terraform-folder: "terraform"
+          terraform-var-file: ${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}
+          terraform-backend-file: ${{ inputs.environment == 'prd' && 'backends/prd.backend.hcl' || 'backends/dev.backend.hcl' }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

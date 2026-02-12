@@ -3,29 +3,27 @@ name: Destroy Development
 on:
   workflow_dispatch:
   #schedule:
-  #  - cron: "20 0 * * *"
+  #  - cron: "0 1 * * *"
 
 permissions: {}
 
 jobs:
   terraform-destroy-dev:
     permissions:
-      id-token: write # This is required for Az CLI Login
-      contents: read # This is required for actions/checkout
+      id-token: write
+      contents: read
     environment: Development
     runs-on: ubuntu-latest
-
-    concurrency: # # This is required to prevent multiple GitHub Actions invocations against stateful resources. e.g. Terraform state file / Database / Deployed Apps
+    concurrency:
       group: ${{ github.repository }}-dev
-
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-    - uses: frasermolyneux/actions/terraform-destroy@main
-      with:
-        terraform-folder: "terraform"
-        terraform-var-file: "tfvars/dev.tfvars"
-        terraform-backend-file: "backends/dev.backend.hcl"
-        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: frasermolyneux/actions/terraform-destroy@main
+        with:
+          terraform-folder: "terraform"
+          terraform-var-file: "tfvars/dev.tfvars"
+          terraform-backend-file: "backends/dev.backend.hcl"
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

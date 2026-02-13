@@ -10,10 +10,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
             Players = players;
         }
 
-        public string ServerName => ServerParams.ContainsKey("hostname") ? ServerParams["hostname"] : null;
+        public string ServerName => ServerParams.ContainsKey("hostname") ? ServerParams["hostname"] : string.Empty;
 
-        public string Map => ServerParams.ContainsKey("mapname") ? ServerParams["mapname"] : null;
-        public string Mod => ServerParams.ContainsKey("modname") ? ServerParams["modname"] : null;
+        public string Map => ServerParams.ContainsKey("mapname") ? ServerParams["mapname"] : string.Empty;
+        public string Mod => ServerParams.ContainsKey("modname") ? ServerParams["modname"] : string.Empty;
         public int MaxPlayers => ServerParams.ContainsKey("maxplayers") ? Convert.ToInt32(ServerParams["maxplayers"]) : 0;
 
         public int PlayerCount => Players.Count;

@@ -13,8 +13,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public partial class Quake3RconClient(ILogger logger) : IRconClient
 {
-    private readonly ILogger _logger = logger;
-
     [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
     private static partial Regex MapRegex();
 
@@ -37,7 +35,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        _logger.LogDebug("[{GameServerId}] Configuring Quake3 rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
+        logger.LogDebug("[{GameServerId}] Configuring Quake3 rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
         _gameType = gameType;
         _serverId = gameServerId;
@@ -48,7 +46,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
     public List<IRconPlayer> GetPlayers()
     {
-        _logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
+        logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
 
         var players = new List<IRconPlayer>();
 
@@ -76,7 +74,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             int.TryParse(ping, out int pingInt);
             int.TryParse(rate, out int rateInt);
 
-            _logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
+            logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
 
             players.Add(new Quake3RconPlayer
             {
@@ -96,7 +94,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
     public async Task<string> GetCurrentMap()
     {
-        _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+        logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
 
         try
         {
@@ -111,27 +109,27 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                 if (trimmedLine.StartsWith("mapname "))
                 {
                     var mapName = trimmedLine["mapname ".Length..].Trim();
-                    _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                    logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
                     return mapName;
                 }
             }
 
-            _logger.LogWarning("[{GameServerId}] Map name not found in server info", _serverId);
+            logger.LogWarning("[{GameServerId}] Map name not found in server info", _serverId);
             return "Unknown";
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
+            logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
             return "Unknown";
         }
     }
 
         public Task Say(string message)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to send '{message}' to the server", _serverId, message);
+            logger.LogDebug("[{GameServerId}] Attempting to send '{message}' to the server", _serverId, message);
 
             Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets($"say \"{message}\""));
 
             return Task.CompletedTask;
@@ -161,10 +159,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> Restart()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to send restart the server", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to send restart the server", _serverId);
 
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("quit", true));
 
             return Task.FromResult("Restart command sent to the server");
@@ -172,10 +170,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> RestartMap()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to restart the current map", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to restart the current map", _serverId);
 
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("map_restart"));
 
             return Task.FromResult(GetStringFromPackets(packets));
@@ -183,10 +181,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> FastRestartMap()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to fast restart the current map", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to fast restart the current map", _serverId);
 
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("fast_restart"));
 
             return Task.FromResult(GetStringFromPackets(packets));
@@ -194,10 +192,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> NextMap()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to rotate to the next map", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to rotate to the next map", _serverId);
 
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("map_rotate"));
 
             return Task.FromResult(GetStringFromPackets(packets));
@@ -205,12 +203,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> KickPlayer(int clientId)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to kick client ID {ClientId} from the server", _serverId, clientId);
+            logger.LogDebug("[{GameServerId}] Attempting to kick client ID {ClientId} from the server", _serverId, clientId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"clientkick {clientId}"));
 
@@ -219,12 +217,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> BanPlayer(int clientId)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to ban client ID {ClientId} from the server", _serverId, clientId);
+            logger.LogDebug("[{GameServerId}] Attempting to ban client ID {ClientId} from the server", _serverId, clientId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"banClient {clientId}"));
 
@@ -233,12 +231,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> KickPlayerByName(string name)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to kick player by name {Name} from the server", _serverId, name);
+            logger.LogDebug("[{GameServerId}] Attempting to kick player by name {Name} from the server", _serverId, name);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute kick command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"kick \"{name}\""));
 
@@ -247,12 +245,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> KickAllPlayers()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to kick all players from the server", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to kick all players from the server", _serverId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute kickall command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute kickall command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets("kickall"));
 
@@ -261,12 +259,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> BanPlayerByName(string name)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to ban player by name {Name} from the server", _serverId, name);
+            logger.LogDebug("[{GameServerId}] Attempting to ban player by name {Name} from the server", _serverId, name);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute ban command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"banUser \"{name}\""));
 
@@ -275,12 +273,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> TempBanPlayerByName(string name)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to temporarily ban player by name {Name} from the server", _serverId, name);
+            logger.LogDebug("[{GameServerId}] Attempting to temporarily ban player by name {Name} from the server", _serverId, name);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"tempBanUser \"{name}\""));
 
@@ -289,12 +287,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> TempBanPlayer(int clientId)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to temporarily ban client ID {ClientId} from the server", _serverId, clientId);
+            logger.LogDebug("[{GameServerId}] Attempting to temporarily ban client ID {ClientId} from the server", _serverId, clientId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute tempban command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"tempBanClient {clientId}"));
 
@@ -303,12 +301,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> UnbanPlayer(string name)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to unban player by name {Name} from the server", _serverId, name);
+            logger.LogDebug("[{GameServerId}] Attempting to unban player by name {Name} from the server", _serverId, name);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute unban command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute unban command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"unbanuser \"{name}\""));
 
@@ -317,12 +315,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> TellPlayer(int clientId, string message)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to send message to client ID {ClientId}", _serverId, clientId);
+            logger.LogDebug("[{GameServerId}] Attempting to send message to client ID {ClientId}", _serverId, clientId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"tell {clientId} \"{message}\""));
 
@@ -331,12 +329,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> ChangeMap(string mapName)
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to change map to {MapName}", _serverId, mapName);
+            logger.LogDebug("[{GameServerId}] Attempting to change map to {MapName}", _serverId, mapName);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute map change command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute map change command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets($"map {mapName}"));
 
@@ -345,12 +343,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> GetServerInfo()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to get server info", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to get server info", _serverId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute serverinfo command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute serverinfo command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets("serverinfo"));
 
@@ -359,12 +357,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> GetSystemInfo()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to get system info", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to get system info", _serverId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute systeminfo command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute systeminfo command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets("systeminfo"));
 
@@ -373,12 +371,12 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         public Task<string> GetCommandList()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to get command list", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to get command list", _serverId);
 
             var packets = Policy.Handle<Exception>()
                 .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("[{ServerName}] Failed to execute cmdlist command - retry count: {Count}", _serverId, retryCount);
+                    logger.LogWarning("[{ServerName}] Failed to execute cmdlist command - retry count: {Count}", _serverId, retryCount);
                 })
                 .Execute(() => GetCommandPackets("cmdlist"));
 
@@ -388,10 +386,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         private string PlayerStatus()
         {
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("status"));
 
-            _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
+            logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
 
             return GetStringFromPackets(packets);
         }
@@ -399,10 +397,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         private string MapRotation()
         {
             var packets = Policy.Handle<Exception>()
-                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
                 .Execute(() => GetCommandPackets("sv_mapRotation"));
 
-            _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
+            logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, packets.Count);
 
             return GetStringFromPackets(packets);
         }
@@ -445,15 +443,15 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 
         private List<byte[]> GetCommandPackets(string command, bool skipReceive = false)
         {
-            UdpClient udpClient = null;
+            UdpClient? udpClient = null;
 
             try
             {
-                var commandBytes = ExecuteCommandPacket(_rconPassword, command);
+                var commandBytes = ExecuteCommandPacket(_rconPassword!, command);
                 var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
                 udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
-                udpClient.Connect(_hostname, _queryPort);
+                udpClient.Connect(_hostname!, _queryPort);
                 udpClient.Send(commandBytes, commandBytes.Length);
 
                 var datagrams = new List<byte[]>();
@@ -473,7 +471,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{serverName}] Failed to execute rcon command", _serverId);
+                logger.LogError(ex, "[{serverName}] Failed to execute rcon command", _serverId);
                 throw;
             }
             finally

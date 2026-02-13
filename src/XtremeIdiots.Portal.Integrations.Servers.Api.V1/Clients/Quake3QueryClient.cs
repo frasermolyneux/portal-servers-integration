@@ -14,8 +14,6 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
     [GeneratedRegex("(?<score>.+) (?<ping>.+) \\\"(?<name>.+)\\\"")]
     private static partial Regex PlayerRegexPattern();
 
-    private readonly ILogger _logger = logger;
-
     private string? Hostname { get; set; }
     private int QueryPort { get; set; }
 
@@ -34,7 +32,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
         var queryResult = Query(GetStatusPacket());
 
         var lines = queryResult[3..].Split('\n');
-        if (lines.Length < 2) return null;
+        if (lines.Length < 2) return Task.FromResult<IQueryResponse>(new Quake3QueryResponse(new Dictionary<string, string>(), new List<IQueryPlayer>()));
 
         var serverParams = GetParams(lines[1].Split('\\'));
 
@@ -94,7 +92,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
     private string Query(byte[] commandBytes)
     {
         var commandAsString = Encoding.UTF8.GetString(commandBytes);
-        _logger.LogInformation("Executing {command} command against {hostname}:{port}", commandAsString, Hostname, QueryPort);
+        logger.LogInformation("Executing {command} command against {hostname}:{port}", commandAsString, Hostname, QueryPort);
 
         UdpClient? udpClient = null;
 
@@ -103,7 +101,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
             var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
-            udpClient.Connect(Hostname, QueryPort);
+            udpClient.Connect(Hostname!, QueryPort);
             udpClient.Send(commandBytes, commandBytes.Length);
 
             var datagrams = new List<string>();
@@ -132,7 +130,7 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to execute {command} against {hostname}:{port}", commandAsString, Hostname, QueryPort);
+            logger.LogError(ex, "Failed to execute {command} against {hostname}:{port}", commandAsString, Hostname, QueryPort);
             throw;
         }
         finally

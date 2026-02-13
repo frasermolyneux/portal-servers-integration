@@ -202,7 +202,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> KickPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/kick/{clientId}/verify", Method.Post);
-            request.AddJsonBody(expectedPlayerName);
+            request.AddJsonBody(expectedPlayerName ?? string.Empty);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();
@@ -211,7 +211,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> BanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/ban/{clientId}/verify", Method.Post);
-            request.AddJsonBody(expectedPlayerName);
+            request.AddJsonBody(expectedPlayerName ?? string.Empty);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();
@@ -220,7 +220,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> TempBanPlayerWithVerification(Guid gameServerId, int clientId, string? expectedPlayerName)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tempban/{clientId}/verify", Method.Post);
-            request.AddJsonBody(expectedPlayerName);
+            request.AddJsonBody(expectedPlayerName ?? string.Empty);
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();

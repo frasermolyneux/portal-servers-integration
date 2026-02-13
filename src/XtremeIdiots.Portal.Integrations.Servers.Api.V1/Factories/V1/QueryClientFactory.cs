@@ -6,16 +6,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
 
 public class QueryClientFactory(ILogger<QueryClientFactory> logger) : IQueryClientFactory
 {
-    private readonly ILogger<QueryClientFactory> _logger = logger;
-
     public IQueryClient CreateInstance(GameType gameType, string hostname, int queryPort)
     {
         ArgumentNullException.ThrowIfNull(logger);
 
         IQueryClient queryClient = gameType switch
         {
-            GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty5 => new Quake3QueryClient(_logger),
-            GameType.Insurgency or GameType.Rust or GameType.Left4Dead2 => new SourceQueryClient(_logger),
+            GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty5 => new Quake3QueryClient(logger),
+            GameType.Insurgency or GameType.Rust or GameType.Left4Dead2 => new SourceQueryClient(logger),
             _ => throw new NotSupportedException($"Game type {gameType} is not supported for query operations")
         };
 

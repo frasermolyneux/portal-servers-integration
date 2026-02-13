@@ -9,8 +9,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public class SourceQueryClient(ILogger logger) : IQueryClient
 {
-    private readonly ILogger _logger = logger;
-
     private string? Hostname { get; set; }
     private int QueryPort { get; set; }
 
@@ -44,9 +42,9 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
         var (_, playersPreQueryBytes) = Query(A2S_PLAYERS_PRE());
         var challengeResponse = playersPreQueryBytes?[5..];
-        var (_, playersQueryBytes) = Query(A2S_PLAYERS(challengeResponse));
+        var (_, playersQueryBytes) = Query(A2S_PLAYERS(challengeResponse!));
 
-        var players = ParsePlayers(playersQueryBytes);
+        var players = ParsePlayers(playersQueryBytes!);
 
         return Task.FromResult((IQueryResponse)new SourceQueryResponse(serverParams, players));
     }
@@ -150,7 +148,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
     private (string responseText, byte[]? responseBytes) Query(byte[] commandBytes)
     {
         var command = Encoding.UTF8.GetString(commandBytes);
-        _logger.LogInformation($"Executing command '{command}' against server");
+        logger.LogInformation($"Executing command '{command}' against server");
 
         UdpClient? udpClient = null;
 
@@ -159,7 +157,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
             var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
-            udpClient.Connect(Hostname, QueryPort);
+            udpClient.Connect(Hostname!, QueryPort);
             udpClient.Send(commandBytes, commandBytes.Length);
 
             var datagrams = new List<byte[]>();
@@ -185,7 +183,7 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to execute command");
+            logger.LogError(ex, "Failed to execute command");
             throw;
         }
         finally

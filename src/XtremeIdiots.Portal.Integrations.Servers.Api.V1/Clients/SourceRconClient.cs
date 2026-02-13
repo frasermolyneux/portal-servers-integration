@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,8 +11,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
 public partial class SourceRconClient(ILogger logger) : IRconClient
 {
-    private readonly ILogger _logger = logger;
-
     [GeneratedRegex("^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})", RegexOptions.None, 1000)]
     private static partial Regex PlayerRegex();
 
@@ -31,7 +30,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
     public void Configure(GameType gameType, Guid gameServerId, string hostname, int queryPort, string rconPassword)
     {
         ArgumentNullException.ThrowIfNull(logger);
-            _logger.LogDebug("[{GameServerId}] Configuring Source rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
+            logger.LogDebug("[{GameServerId}] Configuring Source rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
             _gameType = gameType;
             _serverId = gameServerId;
@@ -42,7 +41,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
         public List<IRconPlayer> GetPlayers()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", _serverId);
 
             var players = new List<IRconPlayer>();
 
@@ -67,7 +66,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 int.TryParse(ping, out int pingInt);
                 int.TryParse(rate, out int rateInt);
 
-                _logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
+                logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", _serverId, name, guid, ipAddress);
 
                 players.Add(new SourceRconPlayer
                 {
@@ -85,7 +84,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
         public Task<string> GetCurrentMap()
         {
-            _logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
+            logger.LogDebug("[{GameServerId}] Attempting to get current map from the server", _serverId);
 
             try
             {
@@ -100,17 +99,17 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                     if (mapMatch.Success)
                     {
                         var mapName = mapMatch.Groups[1].Value;
-                        _logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
+                        logger.LogDebug("[{GameServerId}] Current map is {MapName}", _serverId, mapName);
                         return Task.FromResult(mapName);
                     }
                 }
 
-                _logger.LogWarning("[{GameServerId}] Map name not found in status output", _serverId);
+                logger.LogWarning("[{GameServerId}] Map name not found in status output", _serverId);
                 return Task.FromResult("Unknown");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
+                logger.LogWarning(ex, "[{GameServerId}] Failed to get current map from server", _serverId);
                 return Task.FromResult("Unknown");
             }
         }
@@ -216,7 +215,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
             var statusPackets = GetCommandPackets("status");
 
-            _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, statusPackets.Count);
+            logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, statusPackets.Count);
 
             var response = new StringBuilder();
             foreach (var packet in statusPackets) response.Append(packet.Body.Trim());
@@ -246,31 +245,31 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 if (_tcpClient != null && _tcpClient.Connected)
                     return;
 
-                _logger.LogDebug("[{GameServerId}] Creating a new TcpClient and attempting to authenticate", _serverId);
+                logger.LogDebug("[{GameServerId}] Creating a new TcpClient and attempting to authenticate", _serverId);
 
-                _tcpClient = new TcpClient(_hostname, _queryPort) { ReceiveTimeout = 5000 };
+                _tcpClient = new TcpClient(_hostname!, _queryPort) { ReceiveTimeout = 5000 };
 
-                var authPackets = GetAuthPackets(_rconPassword);
+                var authPackets = GetAuthPackets(_rconPassword!);
                 var authResultPacket = authPackets.Find(packet => packet.Type == 2);
 
-                _logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count);
+                logger.LogDebug("[{GameServerId}] Total auth packets retrieved from server: {Count}", _serverId, authPackets.Count);
 
                 if (authResultPacket == null)
                 {
-                    _logger.LogError("[{GameServerId}] Could not establish authenticated session with server", _serverId);
+                    logger.LogError("[{GameServerId}] Could not establish authenticated session with server", _serverId);
                     throw new InvalidOperationException("Could not establish authenticated session with server");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[{GameServerId}] Could not establish TCP connection to server", _serverId);
+                logger.LogError(ex, "[{GameServerId}] Could not establish TCP connection to server", _serverId);
                 throw;
             }
         }
 
         private List<SourceRconPacket> GetAuthPackets(string rconPassword)
         {
-            var endpoint = _tcpClient.Client.RemoteEndPoint;
+            EndPoint endpoint = _tcpClient!.Client.RemoteEndPoint!;
 
             var authPacket = AuthPacket(rconPassword);
             _tcpClient.Client.Send(authPacket.PacketBytes);
@@ -297,7 +296,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
         private List<SourceRconPacket> GetCommandPackets(string command)
         {
-            var endpoint = _tcpClient.Client.RemoteEndPoint;
+            EndPoint endpoint = _tcpClient!.Client.RemoteEndPoint!;
 
             var executeCommandPacket = ExecuteCommandPacket(command);
             _tcpClient.Client.Send(executeCommandPacket.PacketBytes);

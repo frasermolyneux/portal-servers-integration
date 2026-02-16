@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
-	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.3" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.3" />
 	<PackageReference Include="MX.Api.Abstractions" Version="2.2.40" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>

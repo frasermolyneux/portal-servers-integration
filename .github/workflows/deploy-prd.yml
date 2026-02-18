@@ -20,11 +20,15 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: frasermolyneux/actions/dotnet-web-ci@main
+      - id: v1-ci
+        uses: frasermolyneux/actions/dotnet-web-ci@main
         with:
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           dotnet-version: 9.0.x
           src-folder: "src"
+
+    outputs:
+      build_version: ${{ steps.v1-ci.outputs.build_version }}
 
   terraform-plan-and-apply-dev:
     permissions:
@@ -51,6 +55,10 @@ jobs:
           cd terraform
           echo "web_app_name_v1=$(terraform output -raw web_app_name_v1)" >> $GITHUB_OUTPUT
           echo "web_app_resource_group_v1=$(terraform output -raw web_app_resource_group_v1)" >> $GITHUB_OUTPUT
+          echo "api_management_name=$(terraform output -raw api_management_name)" >> $GITHUB_OUTPUT
+          echo "api_management_resource_group_name=$(terraform output -raw api_management_resource_group_name)" >> $GITHUB_OUTPUT
+          echo "api_management_product_id=$(terraform output -raw api_management_product_id)" >> $GITHUB_OUTPUT
+          echo "api_version_set_id=$(terraform output -raw api_version_set_id)" >> $GITHUB_OUTPUT
         env:
           ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -61,6 +69,10 @@ jobs:
     outputs:
       web_app_name_v1: ${{ steps.terraform-output-dev.outputs.web_app_name_v1 }}
       web_app_resource_group_v1: ${{ steps.terraform-output-dev.outputs.web_app_resource_group_v1 }}
+      api_management_name: ${{ steps.terraform-output-dev.outputs.api_management_name }}
+      api_management_resource_group_name: ${{ steps.terraform-output-dev.outputs.api_management_resource_group_name }}
+      api_management_product_id: ${{ steps.terraform-output-dev.outputs.api_management_product_id }}
+      api_version_set_id: ${{ steps.terraform-output-dev.outputs.api_version_set_id }}
 
   app-service-deploy-dev:
     permissions:
@@ -81,12 +93,74 @@ jobs:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+  apim-api-import-dev:
+    permissions:
+      contents: read
+      id-token: write
+    environment: Development
+    needs: [build-and-test, terraform-plan-and-apply-dev, app-service-deploy-dev]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository }}-dev
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Wait for V1 API version ${{ needs.build-and-test.outputs.build_version }}
+        shell: bash
+        run: |
+          EXPECTED_VERSION="${{ needs.build-and-test.outputs.build_version }}"
+          INFO_URL="https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
+          echo "Waiting for $INFO_URL to report version '$EXPECTED_VERSION'..."
+          for i in $(seq 1 30); do
+            RESPONSE=$(curl -s "$INFO_URL" || true)
+            CURRENT_VERSION=$(echo "$RESPONSE" | jq -r '.buildVersion // empty' 2>/dev/null || true)
+            if [ "$CURRENT_VERSION" = "$EXPECTED_VERSION" ]; then
+              echo "V1 API is running expected version '$EXPECTED_VERSION' (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: got version '$CURRENT_VERSION' - waiting 10s..."
+            sleep 10
+          done
+          echo "V1 API did not report expected version '$EXPECTED_VERSION' in time (last seen: '$CURRENT_VERSION')"
+          exit 1
+
+      - name: Import OpenAPI v1 spec into APIM
+        shell: bash
+        run: |
+          az apim api import \
+            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
+            --api-id servers-integration-api-v1 \
+            --display-name "Servers Integration API" \
+            --path servers-integration \
+            --api-version v1 \
+            --api-version-set-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_version_set_id }}" \
+            --protocols https \
+            --specification-format OpenApiJson \
+            --specification-url "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json" \
+            --service-url "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
+            --subscription-required false
+
+      - name: Add v1 API to product
+        shell: bash
+        run: |
+          az apim product api add \
+            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
+            --product-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_product_id }}" \
+            --api-id servers-integration-api-v1 || true
+
   terraform-plan-and-apply-prd:
     permissions:
       contents: read
       id-token: write
     environment: Production
-    needs: app-service-deploy-dev
+    needs: apim-api-import-dev
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.repository }}-prd
@@ -106,6 +180,10 @@ jobs:
           cd terraform
           echo "web_app_name_v1=$(terraform output -raw web_app_name_v1)" >> $GITHUB_OUTPUT
           echo "web_app_resource_group_v1=$(terraform output -raw web_app_resource_group_v1)" >> $GITHUB_OUTPUT
+          echo "api_management_name=$(terraform output -raw api_management_name)" >> $GITHUB_OUTPUT
+          echo "api_management_resource_group_name=$(terraform output -raw api_management_resource_group_name)" >> $GITHUB_OUTPUT
+          echo "api_management_product_id=$(terraform output -raw api_management_product_id)" >> $GITHUB_OUTPUT
+          echo "api_version_set_id=$(terraform output -raw api_version_set_id)" >> $GITHUB_OUTPUT
         env:
           ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -116,6 +194,10 @@ jobs:
     outputs:
       web_app_name_v1: ${{ steps.terraform-output-prd.outputs.web_app_name_v1 }}
       web_app_resource_group_v1: ${{ steps.terraform-output-prd.outputs.web_app_resource_group_v1 }}
+      api_management_name: ${{ steps.terraform-output-prd.outputs.api_management_name }}
+      api_management_resource_group_name: ${{ steps.terraform-output-prd.outputs.api_management_resource_group_name }}
+      api_management_product_id: ${{ steps.terraform-output-prd.outputs.api_management_product_id }}
+      api_version_set_id: ${{ steps.terraform-output-prd.outputs.api_version_set_id }}
 
   app-service-deploy-prd:
     permissions:
@@ -135,3 +217,65 @@ jobs:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+  apim-api-import-prd:
+    permissions:
+      contents: read
+      id-token: write
+    environment: Production
+    needs: [build-and-test, terraform-plan-and-apply-prd, app-service-deploy-prd]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.repository }}-prd
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Wait for V1 API version ${{ needs.build-and-test.outputs.build_version }}
+        shell: bash
+        run: |
+          EXPECTED_VERSION="${{ needs.build-and-test.outputs.build_version }}"
+          INFO_URL="https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
+          echo "Waiting for $INFO_URL to report version '$EXPECTED_VERSION'..."
+          for i in $(seq 1 30); do
+            RESPONSE=$(curl -s "$INFO_URL" || true)
+            CURRENT_VERSION=$(echo "$RESPONSE" | jq -r '.buildVersion // empty' 2>/dev/null || true)
+            if [ "$CURRENT_VERSION" = "$EXPECTED_VERSION" ]; then
+              echo "V1 API is running expected version '$EXPECTED_VERSION' (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: got version '$CURRENT_VERSION' - waiting 10s..."
+            sleep 10
+          done
+          echo "V1 API did not report expected version '$EXPECTED_VERSION' in time (last seen: '$CURRENT_VERSION')"
+          exit 1
+
+      - name: Import OpenAPI v1 spec into APIM
+        shell: bash
+        run: |
+          az apim api import \
+            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
+            --api-id servers-integration-api-v1 \
+            --display-name "Servers Integration API" \
+            --path servers-integration \
+            --api-version v1 \
+            --api-version-set-id "${{ needs.terraform-plan-and-apply-prd.outputs.api_version_set_id }}" \
+            --protocols https \
+            --specification-format OpenApiJson \
+            --specification-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json" \
+            --service-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
+            --subscription-required false
+
+      - name: Add v1 API to product
+        shell: bash
+        run: |
+          az apim product api add \
+            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
+            --product-id "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_product_id }}" \
+            --api-id servers-integration-api-v1 || true

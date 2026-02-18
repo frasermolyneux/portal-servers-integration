@@ -1,4 +1,4 @@
-﻿
+
 using System.Net;
 using Asp.Versioning;
 using FluentFTP;
@@ -19,7 +19,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 [ApiController]
 [Authorize(Roles = "ServiceAccount")]
 [ApiVersion(ApiVersions.V1)]
-[Route("api/v{version:apiVersion}")]
+[Route("v{version:apiVersion}")]
 public class MapsController(
     ILogger<MapsController> logger,
     IRepositoryApiClient repositoryApiClient,

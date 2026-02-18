@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Asp.Versioning;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
@@ -19,7 +19,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 [ApiController]
 [Authorize(Roles = "ServiceAccount")]
 [ApiVersion(ApiVersions.V1)]
-[Route("api/v{version:apiVersion}")]
+[Route("v{version:apiVersion}")]
 public class QueryController(
     ILogger<QueryController> logger,
     IRepositoryApiClient repositoryApiClient,

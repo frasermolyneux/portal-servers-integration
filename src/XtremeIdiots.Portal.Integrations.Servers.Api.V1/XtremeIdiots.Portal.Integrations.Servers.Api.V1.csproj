@@ -20,7 +20,8 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.3" />
     <PackageReference Include="MX.Api.Client" Version="2.2.40" />
     <PackageReference Include="MX.Api.Web.Extensions" Version="2.2.40" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.13" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.12.41" />
     <PackageReference Include="FluentFTP" Version="53.0.2" />
     <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.13" />
@@ -34,17 +35,5 @@
   <ItemGroup>
     <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
   </ItemGroup>
-
-  <Target Name="GenerateOpenApiFiles" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <PropertyGroup>
-      <OpenApiOutputPath>$(MSBuildProjectDirectory)\..\..\openapi</OpenApiOutputPath>
-      <SwaggerAssembly>$(MSBuildProjectDirectory)\$(OutputPath)$(AssemblyName).dll</SwaggerAssembly>
-    </PropertyGroup>
-    <MakeDir Directories="$(OpenApiOutputPath)" />
-    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildProjectDirectory)\..\..\" />
-    <Exec Command="dotnet swagger tofile --output &quot;$(OpenApiOutputPath)\openapi-v1.json&quot; &quot;$(SwaggerAssembly)&quot; v1" WorkingDirectory="$(MSBuildProjectDirectory)" ContinueOnError="true" />
-    <Exec Command="powershell -Command &quot;(Get-Content '$(OpenApiOutputPath)\openapi-v1.json').replace('/api/v1/', '/').replace('/api/v1', '/') | Set-Content '$(OpenApiOutputPath)\openapi-v1.json'&quot;" ContinueOnError="true" />
-    <Message Text="OpenAPI files generated and processed in $(OpenApiOutputPath)" Importance="high" />
-  </Target>
 
 </Project>

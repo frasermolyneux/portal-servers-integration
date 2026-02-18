@@ -1,8 +1,8 @@
 # Copilot Instructions
 
-- **Architecture**: ASP.NET Core 9 API with Entra ID auth via Microsoft.Identity.Web. API startup lives in [src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs); controllers are versioned using Asp.Versioning and routed as `api/v{version}`.
+- **Architecture**: ASP.NET Core 9 API with Entra ID auth via Microsoft.Identity.Web. API startup lives in [src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs); controllers are versioned using Asp.Versioning and routed as `v{version:apiVersion}`.
 - **Projects**: Solution [src/XtremeIdiots.Portal.Integrations.Servers.sln](src/XtremeIdiots.Portal.Integrations.Servers.sln) includes Abstractions DTOs/interfaces, API, generated API client, and unit/integration tests.
-- **Authentication/Authorization**: Controllers are `[Authorize(Roles = "ServiceAccount")]`; only root and `/api/health` allow anonymous. Ensure Entra audience/authority is configured in appsettings or environment.
+- **Authentication/Authorization**: Controllers are `[Authorize(Roles = "ServiceAccount")]`; ApiInfoController (`/v1.0/info`) and HealthController (`/v1.0/health`) allow anonymous. Ensure Entra audience/authority is configured in appsettings or environment.
 - **Configuration**: Optional Azure App Configuration load (key prefix `XtremeIdiots.Portal.Integrations.Servers.Api.V1:`) and Key Vault credential in [Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs). Repository API client requires `RepositoryApi:BaseUrl` and `RepositoryApi:ApplicationAudience`.
 - **Telemetry**: Application Insights wired with adaptive sampling; `TelemetryInitializer` sets role name in [src/.../TelemetryInitializer.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/TelemetryInitializer.cs). Dependency telemetry is created around RCON/query/FTP calls.
 - **HTTP surface**: Controllers under [src/.../Controllers/V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Controllers/V1) expose query, RCON, and map-sync endpoints. Responses use MX.Api `ApiResponse`/`ApiResult` helpers and `ToHttpResult()` extension.
@@ -17,6 +17,6 @@
 - **Environment secrets**: OIDC vars `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` are defined at the GitHub environment level; app settings should prefer managed identity for App Config/Key Vault when available.
 - **Docs**: See [docs/development-workflows.md](docs/development-workflows.md) for branch/CI rules and [docs/manual-steps.md](docs/manual-steps.md) for any post-deploy actions.
 - **Patterns**: Prefer factories (`IQueryClientFactory`, `IRconClientFactory`) over direct client instantiation to keep protocol handling testable. Cache expensive query calls via `IMemoryCache` with short TTLs. Wrap external calls with telemetry operations and track exceptions/events consistently.
-- **Swagger**: Swagger is enabled only in development; versioned docs are built per API version via [ConfigureSwaggerOptions](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Configuration/ConfigureSwaggerOptions.cs).
-- **Health**: `/api/health` is anonymous; use for liveness probes. Root `/` returns `OK` for simple diagnostics.
+- **OpenAPI**: Runtime-generated OpenAPI specs via ASP.NET Core native OpenAPI (`AddOpenApi`) with Scalar UI. Specs served at `/openapi/v1.0.json`. `StripVersionPrefixTransformer` removes version prefix from paths; `BearerSecuritySchemeTransformer` adds JWT security scheme. No build-time spec generation.
+- **Health**: `/v1.0/health` is anonymous via versioned HealthController; includes Repository API connectivity check. `ApiInfoController` at `/v1.0/info` returns build version for deployment verification.
 - **NuGet**: Abstractions and API client projects are packaged and published by the release workflows; avoid breaking contracts without bumping versions accordingly.

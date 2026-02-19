@@ -16,8 +16,11 @@ jobs:
         uses: frasermolyneux/actions/dotnet-web-ci@main
         with:
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
-          dotnet-version: 9.0.x
+          dotnet-version: |
+            9.0.x
+            10.0.x
           src-folder: "src"
+          skip-nuget-artifact-upload: "true"
 
     outputs:
       build_version: ${{ steps.v1-ci.outputs.build_version }}

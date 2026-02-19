@@ -1,104 +1,96 @@
-using System.Reflection;
-using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using MX.Api.Client.Extensions;
-using MX.Api.Client.Configuration;
-using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
+using Microsoft.Extensions.Options;
+using Moq;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
 
-public class BaseApiTests : IAsyncLifetime
+/// <summary>
+/// Custom WebApplicationFactory that replaces external dependencies with mocks
+/// and bypasses authentication for in-process integration testing.
+/// </summary>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
-    protected IServersApiClient serversApiClient;
+    public Mock<IQueryClientFactory> MockQueryClientFactory { get; } = new();
+    public Mock<IRconClientFactory> MockRconClientFactory { get; } = new();
+    public Mock<IRepositoryApiClient> MockRepositoryApiClient { get; } = new();
 
-    public BaseApiTests()
+    public void ResetMocks()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
-            .AddEnvironmentVariables()
-            .Build();
+        MockQueryClientFactory.Reset();
+        MockRconClientFactory.Reset();
+        MockRepositoryApiClient.Reset();
+    }
 
-        Console.WriteLine($"Using API Base URL: {configuration["api_base_url"]}");
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
 
-        string baseUrl = configuration["api_base_url"] ?? throw new Exception("Environment variable 'api_base_url' is null - this needs to be set to invoke tests");
-        string apiKey = configuration["api_key"] ?? throw new Exception("Environment variable 'api_key' is null - this needs to be set to invoke tests");
-        string apiAudience = configuration["api_audience"] ?? throw new Exception("Environment variable 'api_audience' is null - this needs to be set to invoke tests");
+        builder.UseSetting("RepositoryApi:BaseUrl", "https://localhost");
+        builder.UseSetting("RepositoryApi:ApplicationAudience", "api://test");
+        builder.UseSetting("ApplicationInsights:ConnectionString", "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://localhost/;LiveEndpoint=https://localhost/");
 
-        // Set up dependency injection using the service collection extension
-        var services = new ServiceCollection();
-
-        // Add console logging
-        services.AddLogging(loggingBuilder =>
+        builder.ConfigureTestServices(services =>
         {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(LogLevel.Debug);
-            loggingBuilder.AddProvider(new ConsoleLoggerProvider());
+            // Remove real factory and client registrations
+            services.RemoveAll<IQueryClientFactory>();
+            services.RemoveAll<IRconClientFactory>();
+            services.RemoveAll<IRepositoryApiClient>();
+
+            // Register mocks
+            services.AddSingleton(MockQueryClientFactory.Object);
+            services.AddSingleton(MockRconClientFactory.Object);
+            services.AddSingleton(MockRepositoryApiClient.Object);
+
+            // Replace authentication with a test scheme that always authenticates
+            services.AddAuthentication("Test")
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+
+            // Override the default authentication scheme
+            services.PostConfigure<AuthenticationOptions>(options =>
+            {
+                options.DefaultAuthenticateScheme = "Test";
+                options.DefaultChallengeScheme = "Test";
+            });
         });
-
-        // Add ServersApiClient with conditional authentication
-        services.AddServersApiClient(options =>
-        {
-            options.WithBaseUrl(baseUrl);
-
-            // Check if running in GitHub Actions workflow
-            if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
-            {
-                Console.WriteLine("Detected GitHub Actions environment - using client credentials authentication");
-
-                string tenantId = configuration["tenant_id"] ?? throw new Exception("Environment variable 'tenant_id' is null - this needs to be set for GitHub Actions authentication");
-                string clientId = configuration["client_id"] ?? throw new Exception("Environment variable 'client_id' is null - this needs to be set for GitHub Actions authentication");
-                string clientSecret = configuration["client_secret"] ?? throw new Exception("Environment variable 'client_secret' is null - this needs to be set for GitHub Actions authentication");
-
-                // Create client credential authentication options
-                var clientCredOptions = new ClientCredentialAuthenticationOptions
-                {
-                    ApiAudience = apiAudience,
-                    TenantId = tenantId,
-                    ClientId = clientId
-                };
-                clientCredOptions.SetClientSecret(clientSecret);
-                options.WithAuthentication(clientCredOptions);
-            }
-            else
-            {
-                Console.WriteLine("Detected local environment - using Azure credentials authentication");
-                options.WithEntraIdAuthentication(apiAudience);
-            }
-        });
-
-        var serviceProvider = services.BuildServiceProvider();
-        serversApiClient = serviceProvider.GetRequiredService<IServersApiClient>();
-    }
-
-    public async Task InitializeAsync()
-    {
-        await WarmUp();
-    }
-
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
-    }
-
-    private async Task WarmUp()
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            try
-            {
-                _ = await serversApiClient.Root.V1.GetRoot();
-                // Successfully warmed up, break out of the loop
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error performing warmup request");
-                Console.WriteLine(ex);
-
-                // Sleep for five seconds before trying again.
-                await Task.Delay(5000);
-            }
-        }
     }
 }
+
+/// <summary>
+/// Test authentication handler that creates an authenticated user with the ServiceAccount role.
+/// </summary>
+public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public TestAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
+    {
+    }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, "TestUser"),
+            new Claim(ClaimTypes.Role, "ServiceAccount")
+        };
+
+        var identity = new ClaimsIdentity(claims, "Test");
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, "Test");
+
+        return Task.FromResult(AuthenticateResult.Success(ticket));
+    }
+}
+

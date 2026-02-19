@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 
@@ -11,12 +11,12 @@ public record ServerMapDto
         Modified = modified;
     }
 
-    [JsonProperty]
+    [JsonInclude]
     public string Name { get; internal set; }
 
-    [JsonProperty]
+    [JsonInclude]
     public string FullName { get; internal set; }
 
-    [JsonProperty]
+    [JsonInclude]
     public DateTime Modified { get; internal set; }
 }

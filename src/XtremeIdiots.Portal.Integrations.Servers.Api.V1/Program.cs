@@ -4,7 +4,7 @@ using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Identity.Web;
 
-using Newtonsoft.Json.Converters;
+using System.Text.Json.Serialization;
 
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
@@ -74,10 +74,10 @@ builder.Services.AddServiceProfiler();
 // Add services to the container.
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
-builder.Services.AddControllers().AddNewtonsoftJson(options =>
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.SerializerSettings.Converters.Add(new StringEnumConverter());
-    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
 // Configure API versioning

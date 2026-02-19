@@ -4,7 +4,6 @@ using MX.Api.Client;
 using MX.Api.Client.Auth;
 using MX.Api.Client.Configuration;
 using MX.Api.Client.Extensions;
-using Newtonsoft.Json;
 using RestSharp;
 
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;

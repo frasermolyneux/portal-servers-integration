@@ -157,6 +157,15 @@ jobs:
             --value '<policies><inbound><base/></inbound><backend><base/></backend><outbound><base/></outbound><on-error><base/></on-error></policies>'
 
       - name: Add v1 API to product
+        shell: bash
+        run: |
+          az apim product api add \
+            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
+            --product-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_product_id }}" \
+            --api-id servers-integration-api-v1 || true
+
+  terraform-plan-and-apply-prd:
     permissions:
       contents: read
       id-token: write

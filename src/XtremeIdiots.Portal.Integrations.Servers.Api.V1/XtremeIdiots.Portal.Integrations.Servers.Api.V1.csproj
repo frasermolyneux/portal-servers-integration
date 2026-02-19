@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Polly" Version="8.6.5" />
-    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="2.1.85" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="2.1.126" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,19 @@
 <Project>
   <PropertyGroup>
     <LangVersion>13</LangVersion>
+
+    <!-- NuGet package metadata -->
+    <Authors>Fraser Molyneux</Authors>
+    <Company>XtremeIdiots</Company>
+    <Copyright>Copyright © Fraser Molyneux</Copyright>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- SourceLink / symbols -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
   
   <ItemGroup>

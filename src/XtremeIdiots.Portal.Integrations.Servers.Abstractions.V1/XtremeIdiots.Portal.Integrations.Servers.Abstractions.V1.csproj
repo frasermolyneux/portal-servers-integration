@@ -8,15 +8,12 @@
 	<Nullable>enable</Nullable>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<PackageId>XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1</PackageId>
-	<Authors>Fraser Molyneux</Authors>
-	<Company>XtremeIdiots</Company>
 	<Product>XtremeIdiots Portal</Product>
 	<Title>XtremeIdiots Portal Servers API Abstractions</Title>
 	<Description>Abstractions for the XtremeIdiots Portal Servers API.</Description>
 	<PackageProjectUrl>https://github.com/frasermolyneux/portal-servers-integration</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/frasermolyneux/portal-servers-integration</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +26,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.3" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.3" />
 	<PackageReference Include="MX.Api.Abstractions" Version="2.2.40" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 	
 </Project>

@@ -8,15 +8,12 @@
 	<Nullable>enable</Nullable>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<PackageId>XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1</PackageId>
-	<Authors>Fraser Molyneux</Authors>
-	<Company>XtremeIdiots</Company>
 	<Product>XtremeIdiots Portal</Product>
 	<Title>XtremeIdiots Portal Servers API Client</Title>
 	<Description>Client for the XtremeIdiots Portal Servers API.</Description>
 	<PackageProjectUrl>https://github.com/frasermolyneux/portal-servers-integration</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/frasermolyneux/portal-servers-integration</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +29,10 @@
 	<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />
 	<PackageReference Include="MX.Api.Client" Version="2.2.40" />
 	<PackageReference Include="RestSharp" Version="113.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

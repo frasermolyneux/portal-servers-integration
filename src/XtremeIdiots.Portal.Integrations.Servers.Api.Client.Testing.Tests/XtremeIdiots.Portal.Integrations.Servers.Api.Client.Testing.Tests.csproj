@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <LangVersion>13.0</LangVersion>
-    <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1</RootNamespace>
+    <RootNamespace>XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -22,8 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1\XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1.csproj" />
-    <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
+    <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing\XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.csproj" />
   </ItemGroup>
 
 </Project>

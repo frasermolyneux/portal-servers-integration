@@ -1,5 +1,6 @@
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1;
 
+[Trait("Category", "Integration")]
 public class RootApiTestsV1 : BaseApiTests
 {
     [Fact]

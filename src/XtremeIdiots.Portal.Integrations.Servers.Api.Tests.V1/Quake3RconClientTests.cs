@@ -6,6 +6,7 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
 {
+    [Trait("Category", "Unit")]
     public class Quake3RconClientTests : IDisposable
     {
         private readonly Mock<ILogger<Quake3RconClient>> _loggerMock;

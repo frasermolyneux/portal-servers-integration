@@ -18,6 +18,10 @@ output "api_management_product_id" {
   value = azurerm_api_management_product.api_product.product_id
 }
 
+output "apim_base_url" {
+  value = data.azurerm_api_management.api_management.gateway_url
+}
+
 output "api_version_set_id" {
   value = azurerm_api_management_api_version_set.api_version_set.name
 }

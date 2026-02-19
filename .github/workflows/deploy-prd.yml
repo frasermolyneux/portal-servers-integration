@@ -146,16 +146,17 @@ jobs:
             --service-url "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
             --subscription-required false
 
-      - name: Add v1 API to product
+      - name: Reset v1 API policy (dev)
         shell: bash
         run: |
-          az apim product api add \
+          az apim api policy import \
             --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
             --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
-            --product-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_product_id }}" \
-            --api-id servers-integration-api-v1 || true
+            --api-id servers-integration-api-v1 \
+            --format xml \
+            --value '<policies><inbound><base/></inbound><backend><base/></backend><outbound><base/></outbound><on-error><base/></on-error></policies>'
 
-  terraform-plan-and-apply-prd:
+      - name: Add v1 API to product
     permissions:
       contents: read
       id-token: write
@@ -270,6 +271,16 @@ jobs:
             --specification-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json" \
             --service-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
             --subscription-required false
+
+      - name: Reset v1 API policy (prd)
+        shell: bash
+        run: |
+          az apim api policy import \
+            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
+            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
+            --api-id servers-integration-api-v1 \
+            --format xml \
+            --value '<policies><inbound><base/></inbound><backend><base/></backend><outbound><base/></outbound><on-error><base/></on-error></policies>'
 
       - name: Add v1 API to product
         shell: bash

@@ -129,27 +129,6 @@ jobs:
           echo "V1 API did not report expected version '$EXPECTED_VERSION' in time (last seen: '$CURRENT_VERSION')"
           exit 1
 
-      # One-time migration cleanup: delete stale API (with old policies/backend refs)
-      # and old backend left behind by Terraform removed blocks. Safe to remove after first successful deploy.
-      - name: Delete stale API from APIM (dev)
-        shell: bash
-        run: |
-          az apim api delete \
-            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
-            --api-id servers-integration-api-v1 \
-            --delete-revisions true \
-            --yes || true
-
-      - name: Delete old backend from APIM (dev)
-        shell: bash
-        run: |
-          az apim backend delete \
-            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
-            --backend-id "${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}" \
-            --yes || true
-
       - name: Import OpenAPI v1 spec into APIM
         shell: bash
         run: |
@@ -274,27 +253,6 @@ jobs:
           done
           echo "V1 API did not report expected version '$EXPECTED_VERSION' in time (last seen: '$CURRENT_VERSION')"
           exit 1
-
-      # One-time migration cleanup: delete stale API (with old policies/backend refs)
-      # and old backend left behind by Terraform removed blocks. Safe to remove after first successful deploy.
-      - name: Delete stale API from APIM (prd)
-        shell: bash
-        run: |
-          az apim api delete \
-            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
-            --api-id servers-integration-api-v1 \
-            --delete-revisions true \
-            --yes || true
-
-      - name: Delete old backend from APIM (prd)
-        shell: bash
-        run: |
-          az apim backend delete \
-            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
-            --backend-id "${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}" \
-            --yes || true
 
       - name: Import OpenAPI v1 spec into APIM
         shell: bash

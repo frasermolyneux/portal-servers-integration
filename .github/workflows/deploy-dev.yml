@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: v1-ci
-        uses: frasermolyneux/actions/dotnet-web-ci@main
+        uses: frasermolyneux/actions/dotnet-web-ci@dotnet-web-ci/v1.3.1
         with:
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           dotnet-version: |
@@ -35,7 +35,7 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/terraform-plan-and-apply@main
+      - uses: frasermolyneux/actions/terraform-plan-and-apply@terraform-plan-and-apply/v1.3.1
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -79,7 +79,7 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/deploy-app-service@main
+      - uses: frasermolyneux/actions/deploy-app-service@deploy-app-service/v1.1.3
         with:
           web-artifact-name: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           web-app-name: ${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}

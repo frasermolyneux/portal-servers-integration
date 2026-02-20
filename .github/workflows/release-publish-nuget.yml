@@ -44,7 +44,7 @@ jobs:
 
     - name: Publish to NuGet.org
       if: env.HAS_RELEASE_TAG == 'true'
-      uses: frasermolyneux/actions/publish-nuget-packages@publish-nuget-packages/v1.2
+      uses: frasermolyneux/actions/publish-nuget-packages@publish-nuget-packages/v1.2.1
       with:
         artifact-name: nuget-packages
         artifact-run-id: ${{ github.event.workflow_run.id }}

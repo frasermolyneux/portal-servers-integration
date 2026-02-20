@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MX.Api.Abstractions" Version="2.2.40" />
+    <PackageReference Include="MX.Api.Abstractions" Version="2.3.25" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
   </ItemGroup>
 

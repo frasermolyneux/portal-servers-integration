@@ -35,10 +35,17 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
-    public void Root_DelegatesToFakeRoot()
+    public void ApiHealth_DelegatesToFakeApiHealth()
     {
         var fake = new FakeServersApiClient();
-        Assert.Same(fake.FakeRoot, fake.Root.V1);
+        Assert.Same(fake.FakeApiHealth, fake.ApiHealth.V1);
+    }
+
+    [Fact]
+    public void ApiInfo_DelegatesToFakeApiInfo()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeApiInfo, fake.ApiInfo.V1);
     }
 
     [Fact]

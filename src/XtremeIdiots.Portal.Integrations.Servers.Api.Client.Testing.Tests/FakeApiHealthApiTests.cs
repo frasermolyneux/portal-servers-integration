@@ -4,25 +4,25 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests;
 
 [Trait("Category", "Unit")]
-public class FakeRootApiTests
+public class FakeApiHealthApiTests
 {
     [Fact]
-    public async Task GetRoot_DefaultStatusCode_ReturnsSuccess()
+    public async Task CheckHealth_DefaultStatusCode_ReturnsSuccess()
     {
-        var fakeApi = new FakeRootApi();
+        var fakeApi = new FakeApiHealthApi();
 
-        var result = await fakeApi.GetRoot();
+        var result = await fakeApi.CheckHealth();
 
         Assert.True(result.IsSuccess);
     }
 
     [Fact]
-    public async Task GetRoot_WithErrorStatusCode_ReturnsError()
+    public async Task CheckHealth_WithErrorStatusCode_ReturnsError()
     {
-        var fakeApi = new FakeRootApi();
+        var fakeApi = new FakeApiHealthApi();
         fakeApi.WithStatusCode(HttpStatusCode.ServiceUnavailable);
 
-        var result = await fakeApi.GetRoot();
+        var result = await fakeApi.CheckHealth();
 
         Assert.False(result.IsSuccess);
     }
@@ -30,7 +30,7 @@ public class FakeRootApiTests
     [Fact]
     public void Reset_RestoresDefaultStatusCode()
     {
-        var fakeApi = new FakeRootApi();
+        var fakeApi = new FakeApiHealthApi();
         fakeApi.WithStatusCode(HttpStatusCode.InternalServerError);
 
         fakeApi.Reset();
@@ -41,7 +41,7 @@ public class FakeRootApiTests
     [Fact]
     public void FluentApi_SupportsChainingCalls()
     {
-        var fakeApi = new FakeRootApi();
+        var fakeApi = new FakeApiHealthApi();
 
         var result = fakeApi.WithStatusCode(HttpStatusCode.OK);
 

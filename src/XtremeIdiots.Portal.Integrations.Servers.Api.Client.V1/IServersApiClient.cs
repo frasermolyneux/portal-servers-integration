@@ -1,10 +1,11 @@
-﻿namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
     public interface IServersApiClient
     {
         public IVersionedQueryApi Query { get; }
         public IVersionedRconApi Rcon { get; }
         public IVersionedMapsApi Maps { get; }
-        public IVersionedRootApi Root { get; }
+        public IVersionedApiHealthApi ApiHealth { get; }
+        public IVersionedApiInfoApi ApiInfo { get; }
     }
 }

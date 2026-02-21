@@ -1,33 +1,31 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using XtremeIdiots.Portal.Repository.Abstractions.Interfaces.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.HealthChecks;
 
 public class RepositoryApiHealthCheck : IHealthCheck
 {
-    private readonly IConfiguration _configuration;
+    private readonly IApiHealthApi _apiHealthApi;
 
-    public RepositoryApiHealthCheck(IConfiguration configuration)
+    public RepositoryApiHealthCheck(IApiHealthApi apiHealthApi)
     {
-        _configuration = configuration;
+        _apiHealthApi = apiHealthApi;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        var baseUrl = _configuration["RepositoryApi:BaseUrl"];
-
-        if (string.IsNullOrWhiteSpace(baseUrl))
-            return HealthCheckResult.Unhealthy("RepositoryApi:BaseUrl is not configured");
-
         try
         {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var response = await httpClient.GetAsync($"{baseUrl.TrimEnd('/')}/v1.0/info", cancellationToken);
+            var result = await _apiHealthApi.CheckHealth(cancellationToken);
 
-            return response.IsSuccessStatusCode
-                ? HealthCheckResult.Healthy("Repository API is reachable")
-                : HealthCheckResult.Unhealthy($"Repository API returned {response.StatusCode}");
+            if (result.IsSuccess)
+            {
+                return HealthCheckResult.Healthy("Repository API is reachable");
+            }
+
+            return HealthCheckResult.Unhealthy($"Repository API returned {result.StatusCode}");
         }
         catch (Exception ex)
         {

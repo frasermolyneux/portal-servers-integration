@@ -12,32 +12,37 @@ public class FakeServersApiClient : IServersApiClient
     public FakeQueryApi FakeQuery { get; } = new();
     public FakeRconApi FakeRcon { get; } = new();
     public FakeMapsApi FakeMaps { get; } = new();
-    public FakeRootApi FakeRoot { get; } = new();
+    public FakeApiHealthApi FakeApiHealth { get; } = new();
+    public FakeApiInfoApi FakeApiInfo { get; } = new();
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
     private readonly Lazy<IVersionedRconApi> _versionedRcon;
     private readonly Lazy<IVersionedMapsApi> _versionedMaps;
-    private readonly Lazy<IVersionedRootApi> _versionedRoot;
+    private readonly Lazy<IVersionedApiHealthApi> _versionedApiHealth;
+    private readonly Lazy<IVersionedApiInfoApi> _versionedApiInfo;
 
     public FakeServersApiClient()
     {
         _versionedQuery = new Lazy<IVersionedQueryApi>(() => new FakeVersionedQueryApi(FakeQuery));
         _versionedRcon = new Lazy<IVersionedRconApi>(() => new FakeVersionedRconApi(FakeRcon));
         _versionedMaps = new Lazy<IVersionedMapsApi>(() => new FakeVersionedMapsApi(FakeMaps));
-        _versionedRoot = new Lazy<IVersionedRootApi>(() => new FakeVersionedRootApi(FakeRoot));
+        _versionedApiHealth = new Lazy<IVersionedApiHealthApi>(() => new FakeVersionedApiHealthApi(FakeApiHealth));
+        _versionedApiInfo = new Lazy<IVersionedApiInfoApi>(() => new FakeVersionedApiInfoApi(FakeApiInfo));
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
     public IVersionedRconApi Rcon => _versionedRcon.Value;
     public IVersionedMapsApi Maps => _versionedMaps.Value;
-    public IVersionedRootApi Root => _versionedRoot.Value;
+    public IVersionedApiHealthApi ApiHealth => _versionedApiHealth.Value;
+    public IVersionedApiInfoApi ApiInfo => _versionedApiInfo.Value;
 
     public void Reset()
     {
         FakeQuery.Reset();
         FakeRcon.Reset();
         FakeMaps.Reset();
-        FakeRoot.Reset();
+        FakeApiHealth.Reset();
+        FakeApiInfo.Reset();
     }
 
     private sealed class FakeVersionedQueryApi(IQueryApi v1) : IVersionedQueryApi
@@ -55,8 +60,13 @@ public class FakeServersApiClient : IServersApiClient
         public IMapsApi V1 => v1;
     }
 
-    private sealed class FakeVersionedRootApi(IRootApi v1) : IVersionedRootApi
+    private sealed class FakeVersionedApiHealthApi(IApiHealthApi v1) : IVersionedApiHealthApi
     {
-        public IRootApi V1 => v1;
+        public IApiHealthApi V1 => v1;
+    }
+
+    private sealed class FakeVersionedApiInfoApi(IApiInfoApi v1) : IVersionedApiInfoApi
+    {
+        public IApiInfoApi V1 => v1;
     }
 }

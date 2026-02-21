@@ -10,20 +10,27 @@ resource "azurerm_api_management_product_policy" "api_product_policy" {
   <inbound>
       <base/>
       <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none" />
-      <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
-          <openid-config url="https://login.microsoftonline.com/${data.azuread_client_config.current.tenant_id}/v2.0/.well-known/openid-configuration" />
-          <audiences>
-          <audience>${local.servers_integration_api.application.primary_identifier_uri}</audience>
-          </audiences>
-          <issuers>
-              <issuer>https://sts.windows.net/${data.azuread_client_config.current.tenant_id}/</issuer>
-          </issuers>
-          <required-claims>
-              <claim name="roles" match="any">
-                <value>ServiceAccount</value>
-              </claim>
-          </required-claims>
-      </validate-jwt>
+      <choose>
+          <when condition="@(System.Text.RegularExpressions.Regex.IsMatch(context.Request.Url.Path, @"/v\d+(\.\d+)?/(health|info)$"))">
+              <!-- Allow anonymous access to health and info endpoints -->
+          </when>
+          <otherwise>
+              <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="JWT validation was unsuccessful" require-expiration-time="true" require-scheme="Bearer" require-signed-tokens="true">
+                  <openid-config url="https://login.microsoftonline.com/${data.azuread_client_config.current.tenant_id}/v2.0/.well-known/openid-configuration" />
+                  <audiences>
+                  <audience>${local.servers_integration_api.application.primary_identifier_uri}</audience>
+                  </audiences>
+                  <issuers>
+                      <issuer>https://sts.windows.net/${data.azuread_client_config.current.tenant_id}/</issuer>
+                  </issuers>
+                  <required-claims>
+                      <claim name="roles" match="any">
+                        <value>ServiceAccount</value>
+                      </claim>
+                  </required-claims>
+              </validate-jwt>
+          </otherwise>
+      </choose>
   </inbound>
   <backend>
       <forward-request />

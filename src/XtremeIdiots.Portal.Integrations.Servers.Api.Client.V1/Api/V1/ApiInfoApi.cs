@@ -8,7 +8,7 @@ using MX.Api.Client.Extensions;
 using RestSharp;
 
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
-using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
@@ -25,18 +25,9 @@ public class ApiInfoApi : BaseApi<ServersApiClientOptions>, IApiInfoApi
 
     public async Task<ApiResult<ApiInfoDto>> GetApiInfo(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var request = await CreateRequestAsync("v1/info", Method.Get, cancellationToken);
-            var response = await ExecuteAsync(request, cancellationToken);
+        var request = await CreateRequestAsync("v1/info", Method.Get, cancellationToken);
+        var response = await ExecuteAsync(request, cancellationToken);
 
-            return response.ToApiResult<ApiInfoDto>();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            var errorResponse = new ApiResponse<ApiInfoDto>(
-                new ApiError("CLIENT_ERROR", "Failed to retrieve API info"));
-            return new ApiResult<ApiInfoDto>(System.Net.HttpStatusCode.InternalServerError, errorResponse);
-        }
+        return response.ToApiResult<ApiInfoDto>();
     }
 }

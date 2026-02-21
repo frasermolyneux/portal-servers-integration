@@ -1,7 +1,7 @@
 using System.Net;
 using MX.Api.Abstractions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
-using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
 

@@ -24,18 +24,9 @@ public class ApiHealthApi : BaseApi<ServersApiClientOptions>, IApiHealthApi
 
     public async Task<ApiResult> CheckHealth(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var request = await CreateRequestAsync("v1/health", Method.Get, cancellationToken);
-            var response = await ExecuteAsync(request, cancellationToken);
+        var request = await CreateRequestAsync("v1/health", Method.Get, cancellationToken);
+        var response = await ExecuteAsync(request, cancellationToken);
 
-            return response.ToApiResult();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            var errorResponse = new ApiResponse(
-                new ApiError("CLIENT_ERROR", "Failed to check API health"));
-            return new ApiResult(System.Net.HttpStatusCode.InternalServerError, errorResponse);
-        }
+        return response.ToApiResult();
     }
 }

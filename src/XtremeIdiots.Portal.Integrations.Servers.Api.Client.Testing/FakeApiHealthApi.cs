@@ -5,13 +5,13 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
 
 /// <summary>
-/// In-memory fake of <see cref="IRootApi"/> for unit and integration testing.
+/// In-memory fake of <see cref="IApiHealthApi"/> for unit and integration testing.
 /// </summary>
-public class FakeRootApi : IRootApi
+public class FakeApiHealthApi : IApiHealthApi
 {
     public HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.OK;
 
-    public FakeRootApi WithStatusCode(HttpStatusCode statusCode)
+    public FakeApiHealthApi WithStatusCode(HttpStatusCode statusCode)
     {
         StatusCode = statusCode;
         return this;
@@ -22,7 +22,7 @@ public class FakeRootApi : IRootApi
         StatusCode = HttpStatusCode.OK;
     }
 
-    public Task<ApiResult> GetRoot()
+    public Task<ApiResult> CheckHealth(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(StatusCode == HttpStatusCode.OK
             ? new ApiResult(HttpStatusCode.OK, new ApiResponse())

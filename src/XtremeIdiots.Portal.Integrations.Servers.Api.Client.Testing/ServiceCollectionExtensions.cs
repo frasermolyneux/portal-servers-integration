@@ -28,11 +28,13 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IVersionedQueryApi>();
         services.RemoveAll<IVersionedRconApi>();
         services.RemoveAll<IVersionedMapsApi>();
-        services.RemoveAll<IVersionedRootApi>();
+        services.RemoveAll<IVersionedApiHealthApi>();
+        services.RemoveAll<IVersionedApiInfoApi>();
+        services.RemoveAll<IApiHealthApi>();
+        services.RemoveAll<IApiInfoApi>();
         services.RemoveAll<IQueryApi>();
         services.RemoveAll<IRconApi>();
         services.RemoveAll<IMapsApi>();
-        services.RemoveAll<IRootApi>();
 
         // Register fakes as singletons
         services.AddSingleton(fakeClient);
@@ -40,11 +42,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVersionedQueryApi>(fakeClient.Query);
         services.AddSingleton<IVersionedRconApi>(fakeClient.Rcon);
         services.AddSingleton<IVersionedMapsApi>(fakeClient.Maps);
-        services.AddSingleton<IVersionedRootApi>(fakeClient.Root);
+        services.AddSingleton<IVersionedApiHealthApi>(fakeClient.ApiHealth);
+        services.AddSingleton<IVersionedApiInfoApi>(fakeClient.ApiInfo);
+        services.AddSingleton<IApiHealthApi>(fakeClient.FakeApiHealth);
+        services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
         services.AddSingleton<IQueryApi>(fakeClient.FakeQuery);
         services.AddSingleton<IRconApi>(fakeClient.FakeRcon);
         services.AddSingleton<IMapsApi>(fakeClient.FakeMaps);
-        services.AddSingleton<IRootApi>(fakeClient.FakeRoot);
 
         return services;
     }

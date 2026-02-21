@@ -27,7 +27,8 @@ public class ServersApiClientDITests
         Assert.NotNull(client.Query);
         Assert.NotNull(client.Rcon);
         Assert.NotNull(client.Maps);
-        Assert.NotNull(client.Root);
+        Assert.NotNull(client.ApiHealth);
+        Assert.NotNull(client.ApiInfo);
     }
 
     [Fact]
@@ -82,7 +83,7 @@ public class ServersApiClientDITests
     }
 
     [Fact]
-    public void ServersApiClient_RootApi_CanBeResolved()
+    public void ServersApiClient_ApiHealthApi_CanBeResolved()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -92,9 +93,26 @@ public class ServersApiClientDITests
         });
 
         var provider = services.BuildServiceProvider();
-        var rootApi = provider.GetRequiredService<IVersionedRootApi>();
+        var apiHealth = provider.GetRequiredService<IVersionedApiHealthApi>();
 
-        Assert.NotNull(rootApi);
-        Assert.NotNull(rootApi.V1);
+        Assert.NotNull(apiHealth);
+        Assert.NotNull(apiHealth.V1);
+    }
+
+    [Fact]
+    public void ServersApiClient_ApiInfoApi_CanBeResolved()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddServersApiClient(options =>
+        {
+            options.WithBaseUrl("https://localhost");
+        });
+
+        var provider = services.BuildServiceProvider();
+        var apiInfo = provider.GetRequiredService<IVersionedApiInfoApi>();
+
+        Assert.NotNull(apiInfo);
+        Assert.NotNull(apiInfo.V1);
     }
 }

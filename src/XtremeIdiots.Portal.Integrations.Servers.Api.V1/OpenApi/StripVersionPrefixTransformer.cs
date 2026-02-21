@@ -5,7 +5,7 @@ using Microsoft.OpenApi.Models;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 
 /// <summary>
-/// Strips the version prefix (e.g. /v1.0, /v1.1) from OpenAPI spec paths so that
+/// Strips the version prefix (e.g. /v1.0) from OpenAPI spec paths so that
 /// APIM segment versioning can manage the version prefix. Without this, APIM
 /// produces double-versioned paths like /v1/v1/...
 /// </summary>

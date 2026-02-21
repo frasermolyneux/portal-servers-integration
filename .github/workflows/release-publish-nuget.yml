@@ -44,12 +44,13 @@ jobs:
 
     - name: Publish to NuGet.org
       if: env.HAS_RELEASE_TAG == 'true'
-      uses: frasermolyneux/actions/publish-nuget-packages@publish-nuget-packages/v1.3
+      uses: frasermolyneux/actions/publish-nuget-packages@publish-nuget-packages/v2.0
       with:
         artifact-name: nuget-packages
         artifact-run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         artifact-output-path: nuget-packages
+      env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     - name: Create GitHub release

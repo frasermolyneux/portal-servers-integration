@@ -30,6 +30,7 @@ jobs:
             terraform:terraform/**
 
   terraform-state-check-dev:
+    if: github.event_name != 'schedule'
     permissions:
       contents: read
       id-token: write
@@ -49,7 +50,8 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
   build-and-test:
-    if: needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true'
+    if: |
+      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
     permissions:
       contents: read
       id-token: write
@@ -72,6 +74,7 @@ jobs:
       build_version: ${{ steps.v1-ci.outputs.build_version }}
 
   terraform-plan-and-apply-dev:
+    if: github.event_name != 'schedule'
     permissions:
       contents: read
       id-token: write
@@ -130,7 +133,7 @@ jobs:
 
   app-service-deploy-dev:
     if: |
-      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
+      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
     permissions:
       contents: read
       id-token: write
@@ -155,7 +158,7 @@ jobs:
 
   apim-api-import-dev:
     if: |
-      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
+      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
     permissions:
       contents: read
       id-token: write
@@ -224,7 +227,7 @@ jobs:
 
   terraform-plan-and-apply-prd:
     if: |
-      !failure() && !cancelled() && needs.terraform-plan-and-apply-dev.result == 'success'
+      !failure() && !cancelled() && (needs.terraform-plan-and-apply-dev.result == 'success' || github.event_name == 'schedule')
     permissions:
       contents: read
       id-token: write

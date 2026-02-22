@@ -29,14 +29,34 @@ jobs:
             src:src/**
             terraform:terraform/**
 
+  terraform-state-check-dev:
+    permissions:
+      contents: read
+      id-token: write
+    environment: Development
+    runs-on: ubuntu-latest
+    outputs:
+      has_resources: ${{ steps.state-check.outputs.has_resources }}
+    steps:
+      - id: state-check
+        uses: frasermolyneux/actions/terraform-state-check@terraform-state-check/v1.0
+        with:
+          terraform-folder: "terraform"
+          terraform-var-file: "tfvars/dev.tfvars"
+          terraform-backend-file: "backends/dev.backend.hcl"
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
   build-and-test:
-    if: needs.detect-changes.outputs.src == 'true'
+    if: needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true'
     permissions:
       contents: read
       id-token: write
     runs-on: ubuntu-latest
     needs:
       - detect-changes
+      - terraform-state-check-dev
     steps:
       - id: v1-ci
         uses: frasermolyneux/actions/dotnet-web-ci@dotnet-web-ci/v1.4
@@ -58,12 +78,13 @@ jobs:
     environment: Development
     needs:
       - detect-changes
+      - terraform-state-check-dev
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
       - uses: frasermolyneux/actions/terraform-plan-and-apply@terraform-plan-and-apply/v1.4
-        if: needs.detect-changes.outputs.terraform == 'true'
+        if: needs.detect-changes.outputs.terraform == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true'
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -73,7 +94,7 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - uses: frasermolyneux/actions/terraform-output@terraform-output/v1.0
-        if: needs.detect-changes.outputs.terraform != 'true'
+        if: needs.detect-changes.outputs.terraform != 'true' && needs.terraform-state-check-dev.outputs.has_resources == 'true'
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -109,13 +130,14 @@ jobs:
 
   app-service-deploy-dev:
     if: |
-      !failure() && !cancelled() && needs.detect-changes.outputs.src == 'true'
+      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
     permissions:
       contents: read
       id-token: write
     environment: Development
     needs:
       - detect-changes
+      - terraform-state-check-dev
       - build-and-test
       - terraform-plan-and-apply-dev
     runs-on: ubuntu-latest
@@ -133,13 +155,14 @@ jobs:
 
   apim-api-import-dev:
     if: |
-      !failure() && !cancelled() && needs.detect-changes.outputs.src == 'true'
+      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
     permissions:
       contents: read
       id-token: write
     environment: Development
     needs:
       - detect-changes
+      - terraform-state-check-dev
       - build-and-test
       - terraform-plan-and-apply-dev
       - app-service-deploy-dev

@@ -17,13 +17,59 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: actions/checkout@v6
+    - uses: actions/checkout@v6
 
-      - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v1.2
-        with:
-          terraform-folder: "terraform"
-          terraform-var-file: "tfvars/dev.tfvars"
-          terraform-backend-file: "backends/dev.backend.hcl"
-          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ vars.AZURE_CLIENT_ID }}
+        tenant-id: ${{ vars.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_wrapper: false
+
+    - name: Terraform Init
+      shell: bash
+      run: |
+        cd terraform
+        terraform init -backend-config=backends/dev.backend.hcl -var-file=tfvars/dev.tfvars
+      env:
+        ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        ARM_USE_AZUREAD: true
+        ARM_USE_OIDC: true
+
+    - name: Delete externally managed APIM APIs
+      shell: bash
+      run: |
+        cd terraform
+        APIM_NAME=$(terraform output -raw api_management_name 2>/dev/null) || true
+        APIM_RG=$(terraform output -raw api_management_resource_group_name 2>/dev/null) || true
+
+        if [ -n "$APIM_NAME" ] && [ -n "$APIM_RG" ]; then
+          echo "Deleting APIM APIs from $APIM_NAME in $APIM_RG..."
+          az apim api delete --resource-group "$APIM_RG" --service-name "$APIM_NAME" --api-id servers-integration-api-v1 --delete-revisions true -y 2>/dev/null || true
+          az apim api delete --resource-group "$APIM_RG" --service-name "$APIM_NAME" --api-id servers-integration-api-v1-1 --delete-revisions true -y 2>/dev/null || true
+        else
+          echo "Could not determine APIM details from Terraform outputs, skipping API cleanup"
+        fi
+      env:
+        ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        ARM_USE_AZUREAD: true
+        ARM_USE_OIDC: true
+
+    - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v1.2
+      with:
+        terraform-folder: "terraform"
+        terraform-var-file: "tfvars/dev.tfvars"
+        terraform-backend-file: "backends/dev.backend.hcl"
+        AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        perform-checkout: "false"

@@ -1,4 +1,3 @@
-using Azure.Core;
 using Azure.Identity;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -17,26 +16,27 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var appConfigurationEndpoint = builder.Configuration["AzureAppConfiguration:Endpoint"];
+var appConfigEndpoint = builder.Configuration["AzureAppConfiguration:Endpoint"];
 var isAzureAppConfigurationEnabled = false;
 
-if (!string.IsNullOrWhiteSpace(appConfigurationEndpoint))
+if (!string.IsNullOrWhiteSpace(appConfigEndpoint))
 {
     var managedIdentityClientId = builder.Configuration["AzureAppConfiguration:ManagedIdentityClientId"];
-    TokenCredential identityCredential = string.IsNullOrWhiteSpace(managedIdentityClientId)
-        ? new DefaultAzureCredential()
-        : new ManagedIdentityCredential(managedIdentityClientId);
+    var environmentLabel = builder.Configuration["AzureAppConfiguration:Environment"];
+
+    var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    {
+        ManagedIdentityClientId = managedIdentityClientId,
+    });
 
     builder.Configuration.AddAzureAppConfiguration(options =>
     {
-        options.Connect(new Uri(appConfigurationEndpoint), identityCredential)
-               .Select("XtremeIdiots.Portal.Integrations.Servers.Api.V1:*", labelFilter: builder.Configuration["AzureAppConfiguration:Environment"])
-               .TrimKeyPrefix("XtremeIdiots.Portal.Integrations.Servers.Api.V1:");
+        options.Connect(new Uri(appConfigEndpoint), credential)
+            .Select("XtremeIdiots.Portal.Integrations.Servers.Api.V1:*", environmentLabel)
+            .TrimKeyPrefix("XtremeIdiots.Portal.Integrations.Servers.Api.V1:")
+            .Select("RepositoryApi:*", environmentLabel);
 
-        options.ConfigureKeyVault(keyVaultOptions =>
-        {
-            keyVaultOptions.SetCredential(identityCredential);
-        });
+        options.ConfigureKeyVault(kv => kv.SetCredential(credential));
     });
 
     builder.Services.AddAzureAppConfiguration();
@@ -55,9 +55,9 @@ builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
     telemetryProcessorChainBuilder.UseAdaptiveSampling(
         settings: new SamplingPercentageEstimatorSettings
         {
-            InitialSamplingPercentage = 5,
-            MinSamplingPercentage = 5,
-            MaxSamplingPercentage = 60
+            InitialSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:InitialSamplingPercentage"], out var initPct) ? initPct : 5,
+            MinSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:MinSamplingPercentage"], out var minPct) ? minPct : 5,
+            MaxSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:MaxSamplingPercentage"], out var maxPct) ? maxPct : 60
         },
         callback: null,
         excludedTypes: "Exception");

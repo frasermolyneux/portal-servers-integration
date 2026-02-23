@@ -38,10 +38,7 @@ resource "azurerm_linux_web_app" "app_v1" {
 
     "AZURE_CLIENT_ID" = local.servers_integration_identity.client_id
 
-    "RepositoryApi__BaseUrl"             = local.repository_api.api_management.endpoint
-    "RepositoryApi__ApplicationAudience" = local.repository_api.application.primary_identifier_uri
-
-    "minTlsVersion"                              = "1.2"
+    "minTlsVersion"= "1.2"
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = data.azurerm_application_insights.app_insights.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "ASPNETCORE_ENVIRONMENT"                     = var.environment == "prd" ? "Production" : "Development"

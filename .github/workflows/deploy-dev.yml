@@ -105,24 +105,10 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Wait for V1 API version ${{ needs.build-and-test.outputs.build_version }}
-        shell: bash
-        run: |
-          EXPECTED_VERSION="${{ needs.build-and-test.outputs.build_version }}"
-          INFO_URL="https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
-          echo "Waiting for $INFO_URL to report version '$EXPECTED_VERSION'..."
-          for i in $(seq 1 30); do
-            RESPONSE=$(curl -s "$INFO_URL" || true)
-            CURRENT_VERSION=$(echo "$RESPONSE" | jq -r '.buildVersion // empty' 2>/dev/null || true)
-            if [ "$CURRENT_VERSION" = "$EXPECTED_VERSION" ]; then
-              echo "V1 API is running expected version '$EXPECTED_VERSION' (attempt $i)"
-              exit 0
-            fi
-            echo "Attempt $i: got version '$CURRENT_VERSION' - waiting 10s..."
-            sleep 10
-          done
-          echo "V1 API did not report expected version '$EXPECTED_VERSION' in time (last seen: '$CURRENT_VERSION')"
-          exit 1
+      - uses: frasermolyneux/actions/wait-for-version@wait-for-version/v1.0
+        with:
+          info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
+          expected-version: ${{ needs.build-and-test.outputs.build_version }}
 
       - name: Import OpenAPI v1 spec into APIM
         shell: bash

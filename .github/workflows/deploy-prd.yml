@@ -173,43 +173,23 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - name: Azure Login
-        uses: azure/login@v2
+      - uses: frasermolyneux/actions/apim-api-import@apim-api-import/v1.0
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - uses: frasermolyneux/actions/wait-for-version@wait-for-version/v1.0
-        with:
+          api-id: "servers-integration-api-v1"
+          api-display-name: "Servers Integration API"
+          api-path: "servers-integration"
+          api-version: "v1"
+          api-version-set-id: ${{ needs.terraform-plan-and-apply-dev.outputs.api_version_set_id }}
+          specification-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json"
+          service-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1"
+          apim-name: ${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}
+          apim-resource-group: ${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}
+          product-id: ${{ needs.terraform-plan-and-apply-dev.outputs.api_management_product_id }}
           info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
           expected-version: ${{ needs.build-and-test.outputs.build_version }}
-
-      - name: Import OpenAPI v1 spec into APIM
-        shell: bash
-        run: |
-          az apim api import \
-            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
-            --api-id servers-integration-api-v1 \
-            --display-name "Servers Integration API" \
-            --path servers-integration \
-            --api-version v1 \
-            --api-version-set-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_version_set_id }}" \
-            --protocols https \
-            --specification-format OpenApiJson \
-            --specification-url "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json" \
-            --service-url "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
-            --subscription-required false
-
-      - name: Add v1 API to product
-        shell: bash
-        run: |
-          az apim product api add \
-            --resource-group "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_name }}" \
-            --product-id "${{ needs.terraform-plan-and-apply-dev.outputs.api_management_product_id }}" \
-            --api-id servers-integration-api-v1 || true
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
   terraform-plan-and-apply-prd:
     if: |
@@ -313,40 +293,20 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-prd
     steps:
-      - name: Azure Login
-        uses: azure/login@v2
+      - uses: frasermolyneux/actions/apim-api-import@apim-api-import/v1.0
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - uses: frasermolyneux/actions/wait-for-version@wait-for-version/v1.0
-        with:
+          api-id: "servers-integration-api-v1"
+          api-display-name: "Servers Integration API"
+          api-path: "servers-integration"
+          api-version: "v1"
+          api-version-set-id: ${{ needs.terraform-plan-and-apply-prd.outputs.api_version_set_id }}
+          specification-url: "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json"
+          service-url: "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1"
+          apim-name: ${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}
+          apim-resource-group: ${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}
+          product-id: ${{ needs.terraform-plan-and-apply-prd.outputs.api_management_product_id }}
           info-url: "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
           expected-version: ${{ needs.build-and-test.outputs.build_version }}
-
-      - name: Import OpenAPI v1 spec into APIM
-        shell: bash
-        run: |
-          az apim api import \
-            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
-            --api-id servers-integration-api-v1 \
-            --display-name "Servers Integration API" \
-            --path servers-integration \
-            --api-version v1 \
-            --api-version-set-id "${{ needs.terraform-plan-and-apply-prd.outputs.api_version_set_id }}" \
-            --protocols https \
-            --specification-format OpenApiJson \
-            --specification-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/openapi/v1.0.json" \
-            --service-url "https://${{ needs.terraform-plan-and-apply-prd.outputs.web_app_name_v1 }}.azurewebsites.net/v1" \
-            --subscription-required false
-
-      - name: Add v1 API to product
-        shell: bash
-        run: |
-          az apim product api add \
-            --resource-group "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_resource_group_name }}" \
-            --service-name "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_name }}" \
-            --product-id "${{ needs.terraform-plan-and-apply-prd.outputs.api_management_product_id }}" \
-            --api-id servers-integration-api-v1 || true
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

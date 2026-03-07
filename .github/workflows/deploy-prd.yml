@@ -38,9 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       has_resources: ${{ steps.state-check.outputs.has_resources }}
+      state_tainted: ${{ steps.state-check.outputs.state_tainted }}
     steps:
       - id: state-check
-        uses: frasermolyneux/actions/terraform-state-check@terraform-state-check/v1.0
+        uses: frasermolyneux/actions/terraform-state-check@terraform-state-check/v1.1
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -51,7 +52,7 @@ jobs:
 
   build-and-test:
     if: |
-      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
+      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
     permissions:
       contents: read
       id-token: write
@@ -87,7 +88,7 @@ jobs:
       group: ${{ github.repository }}-dev
     steps:
       - uses: frasermolyneux/actions/terraform-plan-and-apply@terraform-plan-and-apply/v1.4
-        if: needs.detect-changes.outputs.terraform == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true'
+        if: needs.detect-changes.outputs.terraform == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true'
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -97,7 +98,7 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - uses: frasermolyneux/actions/terraform-output@terraform-output/v1.0
-        if: needs.detect-changes.outputs.terraform != 'true' && needs.terraform-state-check-dev.outputs.has_resources == 'true'
+        if: needs.detect-changes.outputs.terraform != 'true' && needs.terraform-state-check-dev.outputs.state_tainted != 'true'
         with:
           terraform-folder: "terraform"
           terraform-var-file: "tfvars/dev.tfvars"
@@ -133,7 +134,7 @@ jobs:
 
   app-service-deploy-dev:
     if: |
-      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
+      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
     permissions:
       contents: read
       id-token: write
@@ -158,7 +159,7 @@ jobs:
 
   apim-api-import-dev:
     if: |
-      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.has_resources != 'true')
+      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
     permissions:
       contents: read
       id-token: write

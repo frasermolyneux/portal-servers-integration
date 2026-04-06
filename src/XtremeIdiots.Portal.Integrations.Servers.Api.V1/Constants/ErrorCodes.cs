@@ -70,4 +70,19 @@ public static class ErrorCodes
         /// Player verification failed - the player name does not match the player in the specified slot.
         /// </summary>
         public const string PLAYER_VERIFICATION_FAILED = "PLAYER_VERIFICATION_FAILED";
+
+        /// <summary>
+        /// The requested configuration file was not found on the game server.
+        /// </summary>
+        public const string CONFIG_FILE_NOT_FOUND = "CONFIG_FILE_NOT_FOUND";
+
+        /// <summary>
+        /// The requested variable was not found in the configuration file.
+        /// </summary>
+        public const string CONFIG_VARIABLE_NOT_FOUND = "CONFIG_VARIABLE_NOT_FOUND";
+
+        /// <summary>
+        /// A configuration file operation failed during execution.
+        /// </summary>
+        public const string CONFIG_OPERATION_FAILED = "CONFIG_OPERATION_FAILED";
     }

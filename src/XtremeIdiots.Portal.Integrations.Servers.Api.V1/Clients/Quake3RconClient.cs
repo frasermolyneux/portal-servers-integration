@@ -385,6 +385,34 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             return Task.FromResult(GetStringFromPackets(packets));
         }
 
+        public Task<string> GetDvar(string dvarName)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to get dvar {DvarName}", _serverId, dvarName);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{GameServerId}] Failed to get dvar {DvarName} - retry count: {Count}", _serverId, dvarName, retryCount);
+                })
+                .Execute(() => GetCommandPackets(dvarName));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
+        public Task<string> SetDvar(string dvarName, string value)
+        {
+            _logger.LogDebug("[{GameServerId}] Attempting to set dvar {DvarName}", _serverId, dvarName);
+
+            var packets = Policy.Handle<Exception>()
+                .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning("[{GameServerId}] Failed to set dvar {DvarName} - retry count: {Count}", _serverId, dvarName, retryCount);
+                })
+                .Execute(() => GetCommandPackets($"set {dvarName} \"{value}\""));
+
+            return Task.FromResult(GetStringFromPackets(packets));
+        }
+
         private string PlayerStatus()
         {
             var packets = Policy.Handle<Exception>()

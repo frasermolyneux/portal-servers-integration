@@ -210,6 +210,16 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             throw new NotImplementedException("Getting command list is not implemented for Source engine games");
         }
 
+        public Task<string> GetDvar(string dvarName)
+        {
+            throw new NotImplementedException("Getting dvars is not implemented for Source engine games");
+        }
+
+        public Task<string> SetDvar(string dvarName, string value)
+        {
+            throw new NotImplementedException("Setting dvars is not implemented for Source engine games");
+        }
+
         private string PlayerStatus()
         {
             CreateConnection();

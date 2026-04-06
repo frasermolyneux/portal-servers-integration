@@ -102,5 +102,20 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
         /// </summary>
         /// <returns>List of commands</returns>
         Task<string> GetCommandList();
+
+        /// <summary>
+        /// Gets the value of a server dvar (dynamic variable)
+        /// </summary>
+        /// <param name="dvarName">The name of the dvar to retrieve</param>
+        /// <returns>The raw response from the server</returns>
+        Task<string> GetDvar(string dvarName);
+
+        /// <summary>
+        /// Sets the value of a server dvar (dynamic variable)
+        /// </summary>
+        /// <param name="dvarName">The name of the dvar to set</param>
+        /// <param name="value">The value to set</param>
+        /// <returns>The raw response from the server</returns>
+        Task<string> SetDvar(string dvarName, string value);
     }
 }

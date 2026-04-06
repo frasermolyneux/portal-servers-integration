@@ -233,5 +233,22 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
             return response.ToApiResult();
         }
+
+        public async Task<ApiResult<DvarValueDto>> GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/dvar/{dvarName}", Method.Get, cancellationToken);
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult<DvarValueDto>();
+        }
+
+        public async Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/dvar/{dvarName}", Method.Post, cancellationToken);
+            request.AddJsonBody(new SetDvarRequest { Value = value });
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult();
+        }
     }
 }

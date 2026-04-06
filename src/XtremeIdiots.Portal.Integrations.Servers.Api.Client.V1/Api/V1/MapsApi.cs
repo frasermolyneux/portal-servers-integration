@@ -47,5 +47,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
             return response.ToApiResult();
         }
+
+        public async Task<ApiResult<MapVerificationCollectionDto>> VerifyServerMaps(Guid gameServerId, List<string> mapNames, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/maps/{gameServerId}/host/verify", Method.Post, cancellationToken);
+            request.AddJsonBody(new MapVerificationRequestDto { MapNames = mapNames });
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult<MapVerificationCollectionDto>();
+        }
     }
 }

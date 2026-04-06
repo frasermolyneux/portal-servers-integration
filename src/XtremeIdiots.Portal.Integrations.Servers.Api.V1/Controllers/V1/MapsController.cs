@@ -206,4 +206,69 @@ public class MapsController(
                 return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to delete map directory from the game server's FTP host.")).ToApiResult();
             }
         }
+
+        [HttpPost]
+        [Route("maps/{gameServerId}/host/verify")]
+        public async Task<IActionResult> VerifyServerMaps(Guid gameServerId, [FromBody] MapVerificationRequestDto? request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            }
+
+            var response = await ((IMapsApi)this).VerifyServerMaps(gameServerId, request.MapNames);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult<MapVerificationCollectionDto>> IMapsApi.VerifyServerMaps(Guid gameServerId, List<string> mapNames, CancellationToken cancellationToken)
+        {
+            if (mapNames == null || mapNames.Count == 0)
+                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Map names list cannot be null or empty.")).ToBadRequestResult();
+
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("VerifyServerMaps");
+            operation.Telemetry.Type = "FTP";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.FtpHostname}:{gameServerApiResponse.Result.Data.FtpPort}";
+
+            try
+            {
+                await using var ftpClient = new AsyncFtpClient(gameServerApiResponse.Result.Data.FtpHostname, gameServerApiResponse.Result.Data.FtpUsername, gameServerApiResponse.Result.Data.FtpPassword, gameServerApiResponse.Result.Data.FtpPort ?? 21);
+                ftpClient.ValidateCertificate += (control, e) =>
+                {
+                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
+                    {
+                        e.Accept = true;
+                    }
+                };
+
+                await ftpClient.AutoConnect();
+                await ftpClient.SetWorkingDirectory("usermaps");
+
+                var files = await ftpClient.GetListing();
+                var existingDirectories = new HashSet<string>(files.Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
+
+                var results = mapNames.Select(mapName => new MapVerificationResultDto(mapName, existingDirectories.Contains(mapName))).ToList();
+
+                var data = new MapVerificationCollectionDto(results);
+                return new ApiResponse<MapVerificationCollectionDto>(data).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to verify server maps from FTP host for game server {GameServerId}", gameServerId);
+                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to verify maps.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
     }

@@ -187,4 +187,18 @@ public class FakeRconApi : IRconApi
 
     public Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName) =>
         LogAndReturnSuccess("TellPlayerWithVerification", gameServerId, new { clientId, message, expectedPlayerName });
+
+    public Task<ApiResult<DvarValueDto>> GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken = default)
+    {
+        _operationLog.Add(("GetDvar", gameServerId, new { dvarName }));
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<DvarValueDto>(HttpStatusCode.OK, new ApiResponse<DvarValueDto>(new DvarValueDto(dvarName, ""))),
+            DefaultBehavior.ReturnError => new ApiResult<DvarValueDto>(HttpStatusCode.InternalServerError, new ApiResponse<DvarValueDto>(new ApiError("FAILED", "Operation failed"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
+
+    public Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default) =>
+        LogAndReturnSuccess("SetDvar", gameServerId, new { dvarName, value });
 }

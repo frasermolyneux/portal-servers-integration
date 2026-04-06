@@ -74,4 +74,15 @@ public class FakeMapsApi : IMapsApi
             _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
         });
     }
+
+    public Task<ApiResult<MapVerificationCollectionDto>> VerifyServerMaps(Guid gameServerId, List<string> mapNames, CancellationToken cancellationToken = default)
+    {
+        _operationLog.Add(("VerifyServerMaps", gameServerId, string.Join(",", mapNames)));
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<MapVerificationCollectionDto>(HttpStatusCode.OK, new ApiResponse<MapVerificationCollectionDto>(new MapVerificationCollectionDto(mapNames.Select(m => new MapVerificationResultDto(m, true))))),
+            DefaultBehavior.ReturnError => new ApiResult<MapVerificationCollectionDto>(HttpStatusCode.InternalServerError, new ApiResponse<MapVerificationCollectionDto>(new ApiError("FAILED", "Operation failed"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
 }

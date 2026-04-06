@@ -1,4 +1,5 @@
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Config;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 
@@ -105,5 +106,32 @@ public static class ServersDtoFactory
         DateTime? modified = null)
     {
         return new ServerMapDto(name, fullName, modified ?? new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    public static ConfigFileContentDto CreateConfigFileContent(
+        string filePath = "server.cfg",
+        string content = "set sv_hostname \"Test Server\"")
+    {
+        return new ConfigFileContentDto(filePath, content);
+    }
+
+    public static DvarValueDto CreateDvarValue(
+        string name = "sv_hostname",
+        string value = "Test Server")
+    {
+        return new DvarValueDto(name, value);
+    }
+
+    public static MapVerificationResultDto CreateMapVerificationResult(
+        string mapName = "mp_crash",
+        bool existsOnServer = true)
+    {
+        return new MapVerificationResultDto(mapName, existsOnServer);
+    }
+
+    public static MapVerificationCollectionDto CreateMapVerificationCollection(
+        IEnumerable<MapVerificationResultDto>? results = null)
+    {
+        return new MapVerificationCollectionDto(results ?? [CreateMapVerificationResult()]);
     }
 }

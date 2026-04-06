@@ -26,4 +26,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     {
         IApiInfoApi V1 { get; }
     }
+
+    public interface IVersionedConfigApi
+    {
+        IConfigApi V1 { get; }
+    }
 }

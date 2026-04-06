@@ -19,12 +19,16 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             // Register API health endpoint
             serviceCollection.AddTypedApiClient<IApiHealthApi, ApiHealthApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
+            // Register Config API endpoint
+            serviceCollection.AddTypedApiClient<IConfigApi, ConfigApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
             serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
             serviceCollection.AddScoped<IVersionedMapsApi, VersionedMapsApi>();
             serviceCollection.AddScoped<IVersionedApiHealthApi, VersionedApiHealthApi>();
             serviceCollection.AddScoped<IVersionedApiInfoApi, VersionedApiInfoApi>();
+            serviceCollection.AddScoped<IVersionedConfigApi, VersionedConfigApi>();
 
             // Register the unified client as scoped
             serviceCollection.AddScoped<IServersApiClient, ServersApiClient>();

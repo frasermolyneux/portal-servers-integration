@@ -7,13 +7,15 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             IVersionedRconApi rconApiClient,
             IVersionedMapsApi mapsApiClient,
             IVersionedApiHealthApi apiHealth,
-            IVersionedApiInfoApi apiInfo)
+            IVersionedApiInfoApi apiInfo,
+            IVersionedConfigApi config)
         {
             Query = queryApiClient;
             Rcon = rconApiClient;
             Maps = mapsApiClient;
             ApiHealth = apiHealth;
             ApiInfo = apiInfo;
+            Config = config;
         }
 
         public IVersionedQueryApi Query { get; }
@@ -21,5 +23,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IVersionedMapsApi Maps { get; }
         public IVersionedApiHealthApi ApiHealth { get; }
         public IVersionedApiInfoApi ApiInfo { get; }
+        public IVersionedConfigApi Config { get; }
     }
 }

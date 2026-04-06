@@ -7,5 +7,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IVersionedMapsApi Maps { get; }
         public IVersionedApiHealthApi ApiHealth { get; }
         public IVersionedApiInfoApi ApiInfo { get; }
+        public IVersionedConfigApi Config { get; }
     }
 }

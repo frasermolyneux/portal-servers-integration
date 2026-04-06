@@ -14,12 +14,14 @@ public class FakeServersApiClient : IServersApiClient
     public FakeMapsApi FakeMaps { get; } = new();
     public FakeApiHealthApi FakeApiHealth { get; } = new();
     public FakeApiInfoApi FakeApiInfo { get; } = new();
+    public FakeConfigApi FakeConfig { get; } = new();
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
     private readonly Lazy<IVersionedRconApi> _versionedRcon;
     private readonly Lazy<IVersionedMapsApi> _versionedMaps;
     private readonly Lazy<IVersionedApiHealthApi> _versionedApiHealth;
     private readonly Lazy<IVersionedApiInfoApi> _versionedApiInfo;
+    private readonly Lazy<IVersionedConfigApi> _versionedConfig;
 
     public FakeServersApiClient()
     {
@@ -28,6 +30,7 @@ public class FakeServersApiClient : IServersApiClient
         _versionedMaps = new Lazy<IVersionedMapsApi>(() => new FakeVersionedMapsApi(FakeMaps));
         _versionedApiHealth = new Lazy<IVersionedApiHealthApi>(() => new FakeVersionedApiHealthApi(FakeApiHealth));
         _versionedApiInfo = new Lazy<IVersionedApiInfoApi>(() => new FakeVersionedApiInfoApi(FakeApiInfo));
+        _versionedConfig = new Lazy<IVersionedConfigApi>(() => new FakeVersionedConfigApi(FakeConfig));
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
@@ -35,6 +38,7 @@ public class FakeServersApiClient : IServersApiClient
     public IVersionedMapsApi Maps => _versionedMaps.Value;
     public IVersionedApiHealthApi ApiHealth => _versionedApiHealth.Value;
     public IVersionedApiInfoApi ApiInfo => _versionedApiInfo.Value;
+    public IVersionedConfigApi Config => _versionedConfig.Value;
 
     public void Reset()
     {
@@ -43,6 +47,7 @@ public class FakeServersApiClient : IServersApiClient
         FakeMaps.Reset();
         FakeApiHealth.Reset();
         FakeApiInfo.Reset();
+        FakeConfig.Reset();
     }
 
     private sealed class FakeVersionedQueryApi(IQueryApi v1) : IVersionedQueryApi
@@ -68,5 +73,10 @@ public class FakeServersApiClient : IServersApiClient
     private sealed class FakeVersionedApiInfoApi(IApiInfoApi v1) : IVersionedApiInfoApi
     {
         public IApiInfoApi V1 => v1;
+    }
+
+    private sealed class FakeVersionedConfigApi(IConfigApi v1) : IVersionedConfigApi
+    {
+        public IConfigApi V1 => v1;
     }
 }

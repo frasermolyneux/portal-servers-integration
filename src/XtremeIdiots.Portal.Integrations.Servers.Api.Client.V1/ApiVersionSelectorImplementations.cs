@@ -51,4 +51,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public IApiInfoApi V1 { get; }
     }
+
+    public class VersionedConfigApi : IVersionedConfigApi
+    {
+        public VersionedConfigApi(IConfigApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IConfigApi V1 { get; }
+    }
 }

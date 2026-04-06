@@ -23,11 +23,13 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IVersionedMapsApi>());
         Assert.NotNull(provider.GetService<IVersionedApiHealthApi>());
         Assert.NotNull(provider.GetService<IVersionedApiInfoApi>());
+        Assert.NotNull(provider.GetService<IVersionedConfigApi>());
         Assert.NotNull(provider.GetService<IApiHealthApi>());
         Assert.NotNull(provider.GetService<IApiInfoApi>());
         Assert.NotNull(provider.GetService<IQueryApi>());
         Assert.NotNull(provider.GetService<IRconApi>());
         Assert.NotNull(provider.GetService<IMapsApi>());
+        Assert.NotNull(provider.GetService<IConfigApi>());
     }
 
     [Fact]
@@ -61,5 +63,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(client.Maps);
         Assert.NotNull(client.ApiHealth);
         Assert.NotNull(client.ApiInfo);
+        Assert.NotNull(client.Config);
     }
 }

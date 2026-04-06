@@ -161,4 +161,21 @@ public interface IRconApi
     /// <param name="message">The message to send</param>
     /// <param name="expectedPlayerName">Optional player name to verify before sending message. If provided and doesn't match, operation will fail.</param>
     Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName);
+
+    /// <summary>
+    /// Gets the value of a server dvar (dynamic variable)
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="dvarName">The name of the dvar to retrieve</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult<DvarValueDto>> GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the value of a server dvar (dynamic variable)
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="dvarName">The name of the dvar to set</param>
+    /// <param name="value">The value to set</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default);
 }

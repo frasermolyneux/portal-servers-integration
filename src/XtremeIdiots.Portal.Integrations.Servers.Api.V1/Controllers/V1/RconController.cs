@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Asp.Versioning;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
@@ -1533,6 +1534,135 @@ public class RconController(
 
                 logger.LogError(ex, "Failed to send message to player {ClientId} on game server {GameServerId}", clientId, gameServerId);
                 return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to player on the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpGet]
+        [Route("rcon/{gameServerId}/dvar/{dvarName}")]
+        public async Task<IActionResult> GetDvar(Guid gameServerId, string dvarName)
+        {
+            var response = await ((IRconApi)this).GetDvar(gameServerId, dvarName);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult<DvarValueDto>> IRconApi.GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(dvarName) || !Regex.IsMatch(dvarName, @"^[a-zA-Z_][a-zA-Z0-9_]*$"))
+                return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Dvar name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();
+
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconGetDvar");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var response = await rconClient.GetDvar(dvarName);
+
+                // Parse the dvar response - Quake3 format: "dvarName" is: "value"
+                var dvarMatch = System.Text.RegularExpressions.Regex.Match(response, @"""([^""]+)""\s+is:\s+""([^""]*)""");
+                var dvarValue = dvarMatch.Success ? dvarMatch.Groups[2].Value : response;
+
+                var dto = new DvarValueDto(dvarName, dvarValue);
+                return new ApiResponse<DvarValueDto>(dto).ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Get dvar operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The get dvar operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to get dvar on game server {GameServerId}", gameServerId);
+                return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to get dvar from the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/dvar/{dvarName}")]
+        public async Task<IActionResult> SetDvar(Guid gameServerId, string dvarName, [FromBody] SetDvarRequest? request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            }
+
+            var response = await ((IRconApi)this).SetDvar(gameServerId, dvarName, request.Value);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(dvarName) || !Regex.IsMatch(dvarName, @"^[a-zA-Z_][a-zA-Z0-9_]*$"))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Dvar name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();
+
+            // Reject values with characters that could break RCON quoting
+            if (value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Value must not contain double quotes or newline characters.")).ToBadRequestResult();
+
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (string.IsNullOrWhiteSpace(gameServerApiResponse.Result.Data.RconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_PASSWORD_NOT_CONFIGURED, "The game server does not have an RCON password configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, gameServerApiResponse.Result.Data.RconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconSetDvar");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                await rconClient.SetDvar(dvarName, value);
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Set dvar operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The set dvar operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to set dvar on game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to set dvar on the game server via RCON.")).ToApiResult();
             }
             finally
             {

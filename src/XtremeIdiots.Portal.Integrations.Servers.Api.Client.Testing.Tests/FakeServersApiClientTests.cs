@@ -49,6 +49,13 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
+    public void Config_DelegatesToFakeConfig()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeConfig, fake.Config.V1);
+    }
+
+    [Fact]
     public void Reset_ClearsAllFakeState()
     {
         var fake = new FakeServersApiClient();

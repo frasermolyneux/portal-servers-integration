@@ -61,4 +61,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public IConfigApi V1 { get; }
     }
+
+    public class VersionedFtpBrowseApi : IVersionedFtpBrowseApi
+    {
+        public VersionedFtpBrowseApi(IFtpBrowseApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IFtpBrowseApi V1 { get; }
+    }
 }

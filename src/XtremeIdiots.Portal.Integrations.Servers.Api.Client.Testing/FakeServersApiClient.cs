@@ -15,6 +15,7 @@ public class FakeServersApiClient : IServersApiClient
     public FakeApiHealthApi FakeApiHealth { get; } = new();
     public FakeApiInfoApi FakeApiInfo { get; } = new();
     public FakeConfigApi FakeConfig { get; } = new();
+    public FakeFtpBrowseApi FakeFtpBrowse { get; } = new();
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
     private readonly Lazy<IVersionedRconApi> _versionedRcon;
@@ -22,6 +23,7 @@ public class FakeServersApiClient : IServersApiClient
     private readonly Lazy<IVersionedApiHealthApi> _versionedApiHealth;
     private readonly Lazy<IVersionedApiInfoApi> _versionedApiInfo;
     private readonly Lazy<IVersionedConfigApi> _versionedConfig;
+    private readonly Lazy<IVersionedFtpBrowseApi> _versionedFtpBrowse;
 
     public FakeServersApiClient()
     {
@@ -31,6 +33,7 @@ public class FakeServersApiClient : IServersApiClient
         _versionedApiHealth = new Lazy<IVersionedApiHealthApi>(() => new FakeVersionedApiHealthApi(FakeApiHealth));
         _versionedApiInfo = new Lazy<IVersionedApiInfoApi>(() => new FakeVersionedApiInfoApi(FakeApiInfo));
         _versionedConfig = new Lazy<IVersionedConfigApi>(() => new FakeVersionedConfigApi(FakeConfig));
+        _versionedFtpBrowse = new Lazy<IVersionedFtpBrowseApi>(() => new FakeVersionedFtpBrowseApi(FakeFtpBrowse));
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
@@ -39,6 +42,7 @@ public class FakeServersApiClient : IServersApiClient
     public IVersionedApiHealthApi ApiHealth => _versionedApiHealth.Value;
     public IVersionedApiInfoApi ApiInfo => _versionedApiInfo.Value;
     public IVersionedConfigApi Config => _versionedConfig.Value;
+    public IVersionedFtpBrowseApi FtpBrowse => _versionedFtpBrowse.Value;
 
     public void Reset()
     {
@@ -48,6 +52,7 @@ public class FakeServersApiClient : IServersApiClient
         FakeApiHealth.Reset();
         FakeApiInfo.Reset();
         FakeConfig.Reset();
+        FakeFtpBrowse.Reset();
     }
 
     private sealed class FakeVersionedQueryApi(IQueryApi v1) : IVersionedQueryApi
@@ -78,5 +83,10 @@ public class FakeServersApiClient : IServersApiClient
     private sealed class FakeVersionedConfigApi(IConfigApi v1) : IVersionedConfigApi
     {
         public IConfigApi V1 => v1;
+    }
+
+    private sealed class FakeVersionedFtpBrowseApi(IFtpBrowseApi v1) : IVersionedFtpBrowseApi
+    {
+        public IFtpBrowseApi V1 => v1;
     }
 }

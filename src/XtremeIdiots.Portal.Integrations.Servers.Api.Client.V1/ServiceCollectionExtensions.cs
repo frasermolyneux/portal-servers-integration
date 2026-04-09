@@ -22,6 +22,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             // Register Config API endpoint
             serviceCollection.AddTypedApiClient<IConfigApi, ConfigApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
+            // Register FTP Browse API endpoint
+            serviceCollection.AddTypedApiClient<IFtpBrowseApi, FtpBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
             serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
@@ -29,6 +32,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddScoped<IVersionedApiHealthApi, VersionedApiHealthApi>();
             serviceCollection.AddScoped<IVersionedApiInfoApi, VersionedApiInfoApi>();
             serviceCollection.AddScoped<IVersionedConfigApi, VersionedConfigApi>();
+            serviceCollection.AddScoped<IVersionedFtpBrowseApi, VersionedFtpBrowseApi>();
 
             // Register the unified client as scoped
             serviceCollection.AddScoped<IServersApiClient, ServersApiClient>();

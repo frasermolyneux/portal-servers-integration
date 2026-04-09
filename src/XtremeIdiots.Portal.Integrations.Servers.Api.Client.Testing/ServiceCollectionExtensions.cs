@@ -31,12 +31,14 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IVersionedApiHealthApi>();
         services.RemoveAll<IVersionedApiInfoApi>();
         services.RemoveAll<IVersionedConfigApi>();
+        services.RemoveAll<IVersionedFtpBrowseApi>();
         services.RemoveAll<IApiHealthApi>();
         services.RemoveAll<IApiInfoApi>();
         services.RemoveAll<IQueryApi>();
         services.RemoveAll<IRconApi>();
         services.RemoveAll<IMapsApi>();
         services.RemoveAll<IConfigApi>();
+        services.RemoveAll<IFtpBrowseApi>();
 
         // Register fakes as singletons
         services.AddSingleton(fakeClient);
@@ -47,12 +49,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVersionedApiHealthApi>(fakeClient.ApiHealth);
         services.AddSingleton<IVersionedApiInfoApi>(fakeClient.ApiInfo);
         services.AddSingleton<IVersionedConfigApi>(fakeClient.Config);
+        services.AddSingleton<IVersionedFtpBrowseApi>(fakeClient.FtpBrowse);
         services.AddSingleton<IApiHealthApi>(fakeClient.FakeApiHealth);
         services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
         services.AddSingleton<IQueryApi>(fakeClient.FakeQuery);
         services.AddSingleton<IRconApi>(fakeClient.FakeRcon);
         services.AddSingleton<IMapsApi>(fakeClient.FakeMaps);
         services.AddSingleton<IConfigApi>(fakeClient.FakeConfig);
+        services.AddSingleton<IFtpBrowseApi>(fakeClient.FakeFtpBrowse);
 
         return services;
     }

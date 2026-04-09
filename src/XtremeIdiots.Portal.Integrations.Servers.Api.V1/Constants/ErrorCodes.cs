@@ -85,4 +85,9 @@ public static class ErrorCodes
         /// A configuration file operation failed during execution.
         /// </summary>
         public const string CONFIG_OPERATION_FAILED = "CONFIG_OPERATION_FAILED";
+
+        /// <summary>
+        /// The game server does not have FTP credentials configured.
+        /// </summary>
+        public const string FTP_CREDENTIALS_MISSING = "FTP_CREDENTIALS_MISSING";
     }

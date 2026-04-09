@@ -64,6 +64,10 @@ public class FtpBrowseController(
         try
         {
             await using var ftpClient = new AsyncFtpClient(serverData.FtpHostname, serverData.FtpUsername, serverData.FtpPassword, serverData.FtpPort ?? 21);
+            ftpClient.Config.ConnectTimeout = 10000;
+            ftpClient.Config.ReadTimeout = 10000;
+            ftpClient.Config.DataConnectionConnectTimeout = 10000;
+            ftpClient.Config.DataConnectionReadTimeout = 10000;
             ftpClient.ValidateCertificate += (control, e) =>
             {
                 if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))

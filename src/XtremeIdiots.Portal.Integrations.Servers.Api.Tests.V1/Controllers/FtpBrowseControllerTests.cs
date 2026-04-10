@@ -9,6 +9,7 @@ using MX.Api.Abstractions;
 using Newtonsoft.Json;
 using System.Net;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.Configurations;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
@@ -71,6 +72,12 @@ public class FtpBrowseControllerTests
         _mockRepositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(apiResult);
+
+        // Return an empty configuration (no FTP config)
+        var emptyConfigResult = new ApiResult<ConfigurationDto>(HttpStatusCode.NotFound, null);
+        _mockRepositoryApiClient
+            .Setup(x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(emptyConfigResult);
 
         var controller = CreateController();
 

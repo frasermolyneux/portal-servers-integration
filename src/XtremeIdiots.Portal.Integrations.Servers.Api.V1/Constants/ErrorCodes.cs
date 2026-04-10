@@ -90,4 +90,9 @@ public static class ErrorCodes
         /// The game server does not have FTP credentials configured.
         /// </summary>
         public const string FTP_CREDENTIALS_MISSING = "FTP_CREDENTIALS_MISSING";
+
+        /// <summary>
+        /// The game server does not have RCON credentials configured.
+        /// </summary>
+        public const string RCON_CREDENTIALS_MISSING = "RCON_CREDENTIALS_MISSING";
     }

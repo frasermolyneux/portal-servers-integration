@@ -10,6 +10,7 @@ using MX.Api.Web.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Ftp;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
@@ -48,9 +49,9 @@ public class FtpBrowseController(
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-        var serverData = gameServerApiResponse.Result.Data;
-
-        if (string.IsNullOrWhiteSpace(serverData.FtpHostname) || string.IsNullOrWhiteSpace(serverData.FtpUsername))
+        var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
+        var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
+        if (ftpCreds == null)
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
 
         var cacheKey = $"{gameServerId}-ftp-browse-{normalizedPath}";
@@ -59,11 +60,11 @@ public class FtpBrowseController(
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("FtpBrowse");
         operation.Telemetry.Type = "FTP";
-        operation.Telemetry.Target = $"{serverData.FtpHostname}:{serverData.FtpPort}";
+        operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
 
         try
         {
-            await using var ftpClient = new AsyncFtpClient(serverData.FtpHostname, serverData.FtpUsername, serverData.FtpPassword, serverData.FtpPort ?? 21);
+            await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
             ftpClient.Config.ConnectTimeout = 10000;
             ftpClient.Config.ReadTimeout = 10000;
             ftpClient.Config.DataConnectionConnectTimeout = 10000;

@@ -27,6 +27,7 @@ public class ConfigController(
     IConfiguration configuration) : Controller, IConfigApi
 {
         private static readonly Regex SafeConfigFileNameRegex = new(@"^[a-zA-Z0-9_\-]+\.cfg$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex SafeConfigFilePathRegex = new(@"^/?([a-zA-Z0-9_\-]+/)*[a-zA-Z0-9_\-]+\.cfg$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private static readonly Regex SafeVariableNameRegex = new(@"^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
@@ -35,10 +36,10 @@ public class ConfigController(
         private static bool IsAllowedFilePath(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath)) return false;
-            if (filePath.Contains("..") || filePath.Contains('/') || filePath.Contains('\\') || Path.IsPathRooted(filePath))
+            if (filePath.Contains("..") || filePath.Contains('\\'))
                 return false;
 
-            return SafeConfigFileNameRegex.IsMatch(filePath);
+            return SafeConfigFilePathRegex.IsMatch(filePath);
         }
 
         private static Regex ConfigVariableRegex(string variableName)
@@ -59,7 +60,7 @@ public class ConfigController(
         async Task<ApiResult<ConfigFileContentDto>> IConfigApi.GetConfigFile(Guid gameServerId, string filePath, CancellationToken cancellationToken)
         {
             if (!IsAllowedFilePath(filePath))
-                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "File path must be a single .cfg filename (e.g. 'server.cfg'). Path separators and traversal are not allowed.")).ToBadRequestResult();
+                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.INVALID_REQUEST, $"File path '{filePath}' is not valid. Must be a .cfg path (e.g. 'server.cfg' or '/mods/mymod/configs/mapcontrol.cfg'). Backslashes and path traversal (..) are not allowed.")).ToBadRequestResult();
 
             var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
@@ -129,7 +130,7 @@ public class ConfigController(
         async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines, CancellationToken cancellationToken)
         {
             if (!IsAllowedFilePath(filePath))
-                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "File path must be a single .cfg filename (e.g. 'server.cfg'). Path separators and traversal are not allowed.")).ToBadRequestResult();
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, $"File path '{filePath}' is not valid. Must be a .cfg path (e.g. 'server.cfg' or '/mods/mymod/configs/mapcontrol.cfg'). Backslashes and path traversal (..) are not allowed.")).ToBadRequestResult();
 
             if (string.IsNullOrWhiteSpace(variableName) || !SafeVariableNameRegex.IsMatch(variableName))
                 return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Variable name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();

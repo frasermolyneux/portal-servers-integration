@@ -53,9 +53,9 @@ public class FakeConfigApi : IConfigApi
         });
     }
 
-    public Task<ApiResult> UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, CancellationToken cancellationToken = default)
+    public Task<ApiResult> UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines = null, CancellationToken cancellationToken = default)
     {
-        _operationLog.Add(("UpdateConfigVariable", gameServerId, new { filePath, variableName, value }));
+        _operationLog.Add(("UpdateConfigVariable", gameServerId, new { filePath, variableName, value, commentLines }));
         return Task.FromResult(DefaultResponseBehavior switch
         {
             DefaultBehavior.ReturnGenericSuccess => new ApiResult(HttpStatusCode.OK, new ApiResponse()),

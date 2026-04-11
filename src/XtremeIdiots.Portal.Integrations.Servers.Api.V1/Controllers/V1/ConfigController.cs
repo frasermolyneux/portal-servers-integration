@@ -30,6 +30,8 @@ public class ConfigController(
 
         private static readonly Regex SafeVariableNameRegex = new(@"^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
+        private const string ManagedCommentPrefix = "// [Portal] ";
+
         private static bool IsAllowedFilePath(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath)) return false;
@@ -119,12 +121,12 @@ public class ConfigController(
                 return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
             }
 
-            var response = await ((IConfigApi)this).UpdateConfigVariable(gameServerId, filePath, variableName, request.Value);
+            var response = await ((IConfigApi)this).UpdateConfigVariable(gameServerId, filePath, variableName, request.Value, request.CommentLines);
 
             return response.ToHttpResult();
         }
 
-        async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, CancellationToken cancellationToken)
+        async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines, CancellationToken cancellationToken)
         {
             if (!IsAllowedFilePath(filePath))
                 return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "File path must be a single .cfg filename (e.g. 'server.cfg'). Path separators and traversal are not allowed.")).ToBadRequestResult();
@@ -175,9 +177,18 @@ public class ConfigController(
                 if (!match.Success)
                     return new ApiResponse(new ApiError(ErrorCodes.CONFIG_VARIABLE_NOT_FOUND, $"The variable '{variableName}' was not found in the config file '{filePath}'.")).ToBadRequestResult();
 
+                // Detect the file's newline style
+                var newline = content.Contains("\r\n") ? "\r\n" : "\n";
+
                 // Replace only the first match, and escape $ in value to prevent regex replacement interpretation
                 var escapedValue = value.Replace("$", "$$");
                 var updatedContent = regex.Replace(content, $"${{1}}\"{escapedValue}\"", 1);
+
+                // Handle managed comment block above the variable
+                if (commentLines is not null)
+                {
+                    updatedContent = UpsertManagedCommentBlock(updatedContent, variableName, commentLines, newline);
+                }
                 var updatedBytes = System.Text.Encoding.UTF8.GetBytes(updatedContent);
 
                 using var stream = new MemoryStream(updatedBytes);
@@ -198,5 +209,73 @@ public class ConfigController(
             {
                 telemetryClient.StopOperation(operation);
             }
+        }
+
+        /// <summary>
+        /// Inserts or replaces a managed comment block (lines prefixed with "// [Portal] ") above the
+        /// first occurrence of the given config variable. Pass an empty array to remove any existing block.
+        /// </summary>
+        internal static string UpsertManagedCommentBlock(string content, string variableName, string[] commentLines, string newline)
+        {
+            var lines = content.Split(newline);
+            var varRegex = ConfigVariableRegex(variableName);
+
+            // Find the first line that matches the variable
+            var varLineIndex = -1;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                if (varRegex.IsMatch(lines[i]))
+                {
+                    varLineIndex = i;
+                    break;
+                }
+            }
+
+            if (varLineIndex < 0)
+                return content; // Variable not found, return unchanged
+
+            // Collect indices of managed comment lines above the variable (may have gaps)
+            var managedLineIndices = new HashSet<int>();
+            for (var i = varLineIndex - 1; i >= 0; i--)
+            {
+                var trimmed = lines[i].TrimStart();
+                if (trimmed.StartsWith(ManagedCommentPrefix.TrimStart()))
+                {
+                    managedLineIndices.Add(i);
+                }
+                else if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("//"))
+                {
+                    // Skip blank lines and regular comments to find non-contiguous managed blocks
+                    continue;
+                }
+                else
+                {
+                    // Stop at the first non-comment, non-blank line
+                    break;
+                }
+            }
+
+            // Build the new set of lines
+            var result = new List<string>();
+
+            // Lines before the variable, excluding old managed comment lines
+            for (var i = 0; i < varLineIndex; i++)
+            {
+                if (!managedLineIndices.Contains(i))
+                    result.Add(lines[i]);
+            }
+
+            // Insert new managed comment lines (if any)
+            foreach (var line in commentLines)
+            {
+                if (!string.IsNullOrEmpty(line))
+                    result.Add($"{ManagedCommentPrefix}{line}");
+            }
+
+            // The variable line and everything after it
+            for (var i = varLineIndex; i < lines.Length; i++)
+                result.Add(lines[i]);
+
+            return string.Join(newline, result);
         }
     }

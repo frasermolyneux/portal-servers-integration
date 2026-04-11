@@ -31,12 +31,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult<ConfigFileContentDto>();
         }
 
-        public async Task<ApiResult> UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, CancellationToken cancellationToken = default)
+        public async Task<ApiResult> UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines = null, CancellationToken cancellationToken = default)
         {
             var request = await CreateRequestAsync($"v1/config/{gameServerId}/file/variable", Method.Put, cancellationToken);
             request.AddQueryParameter("filePath", filePath);
             request.AddQueryParameter("variableName", variableName);
-            request.AddJsonBody(new UpdateConfigVariableRequest { Value = value });
+            request.AddJsonBody(new UpdateConfigVariableRequest { Value = value, CommentLines = commentLines });
             var response = await ExecuteAsync(request, cancellationToken);
 
             return response.ToApiResult();

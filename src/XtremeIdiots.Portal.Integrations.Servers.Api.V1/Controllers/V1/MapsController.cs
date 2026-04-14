@@ -106,6 +106,13 @@ public class MapsController(
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
+            // Built-in maps are already present on the server — no FTP upload needed
+            if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
+            {
+                logger.LogInformation("Map {MapName} is a built-in map for {GameType}, skipping FTP push", mapName, gameServerApiResponse.Result.Data.GameType);
+                return new ApiResponse().ToApiResult();
+            }
+
             var mapApiResponse = await repositoryApiClient.Maps.V1.GetMap(gameServerApiResponse.Result.Data.GameType, mapName);
 
             if (mapApiResponse.IsNotFound || mapApiResponse.Result?.Data == null)
@@ -182,6 +189,13 @@ public class MapsController(
 
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            // Built-in maps cannot be removed from the server — they are part of the game installation
+            if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
+            {
+                logger.LogInformation("Map {MapName} is a built-in map for {GameType}, skipping FTP delete", mapName, gameServerApiResponse.Result.Data.GameType);
+                return new ApiResponse().ToApiResult();
+            }
 
             var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
             var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);

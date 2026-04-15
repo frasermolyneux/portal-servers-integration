@@ -1,7 +1,6 @@
 using Azure.Identity;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Identity.Web;
 
 using System.Text.Json.Serialization;
@@ -11,7 +10,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using Asp.Versioning;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
-using Microsoft.ApplicationInsights.WindowsServer.Channel.Implementation;
+using MX.Observability.ApplicationInsights.Extensions;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 
@@ -59,30 +58,12 @@ builder.Services.AddLogging();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 
-//https://learn.microsoft.com/en-us/azure/azure-monitor/app/sampling-classic-api#configure-sampling-settings
-var samplingSettings = new SamplingPercentageEstimatorSettings
-{
-    InitialSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:InitialSamplingPercentage"], out var initPct) ? initPct : 5,
-    MinSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:MinSamplingPercentage"], out var minPct) ? minPct : 5,
-    MaxSamplingPercentage = double.TryParse(builder.Configuration["ApplicationInsights:MaxSamplingPercentage"], out var maxPct) ? maxPct : 60
-};
-
-builder.Services.Configure<TelemetryConfiguration>(telemetryConfiguration =>
-{
-    var telemetryProcessorChainBuilder = telemetryConfiguration.DefaultTelemetrySink.TelemetryProcessorChainBuilder;
-    telemetryProcessorChainBuilder.Use(next => new DependencyFilterTelemetryProcessor(next, builder.Configuration));
-    telemetryProcessorChainBuilder.UseAdaptiveSampling(
-        settings: samplingSettings,
-        callback: null,
-        excludedTypes: "Exception");
-    telemetryProcessorChainBuilder.Build();
-});
-
 builder.Services.AddApplicationInsightsTelemetry(new ApplicationInsightsServiceOptions
 {
     EnableAdaptiveSampling = false,
 });
 
+builder.Services.AddObservability();
 builder.Services.AddServiceProfiler();
 
 // Add services to the container.
@@ -135,17 +116,6 @@ if (isAzureAppConfigurationEnabled)
 {
     app.UseAzureAppConfiguration();
 }
-
-// Update adaptive sampling settings when configuration refreshes
-ChangeToken.OnChange(
-    () => app.Configuration.GetReloadToken(),
-    () =>
-    {
-        if (double.TryParse(app.Configuration["ApplicationInsights:MinSamplingPercentage"], out var min))
-            samplingSettings.MinSamplingPercentage = min;
-        if (double.TryParse(app.Configuration["ApplicationInsights:MaxSamplingPercentage"], out var max))
-            samplingSettings.MaxSamplingPercentage = max;
-    });
 
 // Configure the HTTP request pipeline.
 app.MapOpenApi();

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MX.Api.Abstractions;
 using MX.Api.Web.Extensions;
+using MX.Observability.ApplicationInsights.Auditing;
+using MX.Observability.ApplicationInsights.Auditing.Models;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
@@ -26,7 +28,8 @@ public class RconController(
     ILogger<RconController> logger,
     IRepositoryApiClient repositoryApiClient,
     IRconClientFactory rconClientFactory,
-    TelemetryClient telemetryClient) : Controller, IRconApi
+    TelemetryClient telemetryClient,
+    IAuditLogger auditLogger) : Controller, IRconApi
 {
 
         /// <summary>
@@ -298,12 +301,12 @@ public class RconController(
             {
                 var result = await rconClient.KickPlayer(clientId);
 
-                telemetryClient.TrackEvent("RconKickPlayer", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "Result", result.ToString() }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconKickPlayer", AuditAction.Moderate)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player")
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }
@@ -370,12 +373,12 @@ public class RconController(
             {
                 var result = await rconClient.BanPlayer(clientId);
 
-                telemetryClient.TrackEvent("RconBanPlayer", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "Result", result.ToString() }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconBanPlayer", AuditAction.Moderate)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player")
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }
@@ -1507,13 +1510,12 @@ public class RconController(
             {
                 var result = await rconClient.KickPlayer(clientId);
 
-                telemetryClient.TrackEvent("RconKickPlayerWithVerification", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
-                    { "Result", result.ToString() }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconKickPlayerWithVerification", AuditAction.Moderate)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }
@@ -1590,13 +1592,12 @@ public class RconController(
             {
                 var result = await rconClient.BanPlayer(clientId);
 
-                telemetryClient.TrackEvent("RconBanPlayerWithVerification", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
-                    { "Result", result.ToString() }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconBanPlayerWithVerification", AuditAction.Moderate)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }
@@ -1673,13 +1674,12 @@ public class RconController(
             {
                 var result = await rconClient.TempBanPlayer(clientId);
 
-                telemetryClient.TrackEvent("RconTempBanPlayerWithVerification", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "ExpectedPlayerName", expectedPlayerName ?? "null" },
-                    { "Result", result.ToString() }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconTempBanPlayerWithVerification", AuditAction.Moderate)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }
@@ -1759,12 +1759,11 @@ public class RconController(
             {
                 await rconClient.TellPlayer(clientId, message);
 
-                telemetryClient.TrackEvent("RconTellPlayerWithVerification", new Dictionary<string, string>
-                {
-                    { "GameServerId", gameServerApiResponse.Result.Data.GameServerId.ToString() },
-                    { "ClientId", clientId.ToString() },
-                    { "ExpectedPlayerName", expectedPlayerName ?? "null" }
-                });
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconTellPlayerWithVerification", AuditAction.Execute)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
+                    .WithSource("RconController")
+                    .Build());
 
                 return new ApiResponse().ToApiResult();
             }

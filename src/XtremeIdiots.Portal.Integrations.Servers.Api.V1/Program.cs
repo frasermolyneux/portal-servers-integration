@@ -10,7 +10,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using Asp.Versioning;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
-using MX.Observability.ApplicationInsights.Extensions;
+using MX.Observability.ApplicationInsights.AspNetCore;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 

@@ -1,0 +1,70 @@
+name: Contract Changed Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, ready_for_review, synchronize]
+    paths:
+      - 'src/XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1/**'
+      - 'src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing/**'
+      - 'src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1/**'
+
+permissions: {}
+
+jobs:
+  consumer-impact-gate:
+    name: Consumer impact section gate
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Verify PR body contains a populated Consumer impact section
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+
+            // Strip HTML comments — guidance comments must not satisfy the gate.
+            // Then strip fenced code blocks — pasted markdown excerpts must not satisfy the gate either.
+            const stripped = body
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/```[\s\S]*?```/g, '');
+
+            const lines = stripped.split(/\r?\n/);
+            const headingIdx = lines.findIndex(l => /^##\s+Consumer impact\s*$/.test(l));
+
+            const fail = (msg) => core.setFailed(
+              msg +
+              `\n\nThis PR modifies published contract paths (Abstractions or Api.Client), ` +
+              `so the PR body must include a populated '## Consumer impact' section ` +
+              `describing downstream impact and migration notes.\n\n` +
+              `If the change is non-backwards-compatible, also apply the 'breaking-contract' label ` +
+              `and bump the package major version.\n\n` +
+              `If the change does NOT actually alter the published contract, revert the path changes ` +
+              `or move them out of these directories — do not bypass the gate.`
+            );
+
+            if (headingIdx === -1) {
+              fail(`PR body is missing the '## Consumer impact' section.`);
+              return;
+            }
+
+            // Collect lines until the next '## ' heading or end of body.
+            const sectionLines = [];
+            for (let i = headingIdx + 1; i < lines.length; i++) {
+              if (/^##\s+\S/.test(lines[i])) break;
+              sectionLines.push(lines[i]);
+            }
+
+            // The section body must contain at least one non-blank line that is NOT an
+            // empty placeholder bullet like "- **Breaking?**:" (label with no value).
+            const placeholder = /^\s*[-*]\s+\*\*[^*]+\*\*:\s*$/;
+            const meaningful = sectionLines.some(l => l.trim().length > 0 && !placeholder.test(l));
+
+            if (!meaningful) {
+              fail(`PR body has a '## Consumer impact' heading but every field is empty.`);
+              return;
+            }
+
+            core.info("'## Consumer impact' section is present and populated. Gate passes.");

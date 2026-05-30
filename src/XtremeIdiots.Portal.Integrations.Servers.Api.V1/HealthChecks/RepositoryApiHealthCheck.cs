@@ -27,6 +27,10 @@ public class RepositoryApiHealthCheck : IHealthCheck
 
             return HealthCheckResult.Unhealthy($"Repository API returned {result.StatusCode}");
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return HealthCheckResult.Unhealthy("Repository API is unreachable", ex);

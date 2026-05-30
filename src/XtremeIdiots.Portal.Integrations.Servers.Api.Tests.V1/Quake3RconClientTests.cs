@@ -20,7 +20,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             _loggerMock = new Mock<ILogger<Quake3RconClient>>();
             _rconClient = new Quake3RconClient(_loggerMock.Object);
             _mockServer = new MockUdpServer();
-            
+
             // Configure the client to connect to our mock server
             _rconClient.Configure(
                 GameType.CallOfDuty4,
@@ -356,7 +356,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         {
             // Arrange
             var serverInfoResponse = "sv_hostname TestServer\ng_gametype dm\nsv_maxclients 32";
-            
+
             _mockServer.RegisterCommandHandler("serverinfo", cmd =>
             {
                 return MockUdpServer.CreateQuake3Response(serverInfoResponse);

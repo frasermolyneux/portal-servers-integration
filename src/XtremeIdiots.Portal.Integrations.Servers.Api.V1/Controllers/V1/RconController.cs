@@ -1832,10 +1832,14 @@ public class RconController(
             try
             {
                 var response = await rconClient.GetDvar(dvarName);
+                var normalizedResponse = Regex.Replace(response ?? string.Empty, @"\^[0-9A-Za-z]", string.Empty).Trim();
+
+                if (normalizedResponse.StartsWith("Bad command or cvar:", StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.DVAR_NOT_FOUND, $"The dvar '{dvarName}' was not found on the game server.")).ToNotFoundResult();
 
                 // Parse the dvar response - Quake3 format: "dvarName" is: "value"
-                var dvarMatch = System.Text.RegularExpressions.Regex.Match(response, @"""([^""]+)""\s+is:\s+""([^""]*)""");
-                var dvarValue = dvarMatch.Success ? dvarMatch.Groups[2].Value : response;
+                var dvarMatch = System.Text.RegularExpressions.Regex.Match(normalizedResponse, @"""([^""]+)""\s+is:\s+""([^""]*)""");
+                var dvarValue = dvarMatch.Success ? dvarMatch.Groups[2].Value : normalizedResponse;
 
                 var dto = new DvarValueDto(dvarName, dvarValue);
                 return new ApiResponse<DvarValueDto>(dto).ToApiResult();

@@ -27,6 +27,11 @@ public static class ErrorCodes
         public const string MAP_FILES_NOT_FOUND = "MAP_FILES_NOT_FOUND";
 
         /// <summary>
+        /// The requested dvar was not found on the game server.
+        /// </summary>
+        public const string DVAR_NOT_FOUND = "DVAR_NOT_FOUND";
+
+        /// <summary>
         /// Failed to establish connection to the game server's FTP host.
         /// </summary>
         public const string FTP_CONNECTION_FAILED = "FTP_CONNECTION_FAILED";

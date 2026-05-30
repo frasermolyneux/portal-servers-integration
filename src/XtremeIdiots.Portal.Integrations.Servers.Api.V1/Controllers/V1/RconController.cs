@@ -31,8 +31,8 @@ public class RconController(
     TelemetryClient telemetryClient,
     IAuditLogger auditLogger) : Controller, IRconApi
 {
-        private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled);
-        private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
 
         /// <summary>

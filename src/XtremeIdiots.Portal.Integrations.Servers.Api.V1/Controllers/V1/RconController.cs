@@ -31,6 +31,9 @@ public class RconController(
     TelemetryClient telemetryClient,
     IAuditLogger auditLogger) : Controller, IRconApi
 {
+        private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled);
+        private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled);
+
 
         /// <summary>
         /// Verifies that the player in the specified slot matches the expected player name
@@ -1832,13 +1835,13 @@ public class RconController(
             try
             {
                 var response = await rconClient.GetDvar(dvarName);
-                var normalizedResponse = Regex.Replace(response ?? string.Empty, @"\^[0-9A-Za-z]", string.Empty).Trim();
+                var normalizedResponse = QuakeColorCodeRegex.Replace(response ?? string.Empty, string.Empty).Trim();
 
                 if (normalizedResponse.StartsWith("Bad command or cvar:", StringComparison.OrdinalIgnoreCase))
                     return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.DVAR_NOT_FOUND, $"The dvar '{dvarName}' was not found on the game server.")).ToNotFoundResult();
 
                 // Parse the dvar response - Quake3 format: "dvarName" is: "value"
-                var dvarMatch = System.Text.RegularExpressions.Regex.Match(normalizedResponse, @"""([^""]+)""\s+is:\s+""([^""]*)""");
+                var dvarMatch = DvarResponseRegex.Match(normalizedResponse);
                 var dvarValue = dvarMatch.Success ? dvarMatch.Groups[2].Value : normalizedResponse;
 
                 var dto = new DvarValueDto(dvarName, dvarValue);

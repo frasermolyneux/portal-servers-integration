@@ -1,7 +1,6 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
 using MX.Observability.ApplicationInsights.Auditing;
@@ -74,11 +73,10 @@ public class RconControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.GetDvar(gameServerId, "unknown_dvar");
+        var result = await ((IRconApi)controller).GetDvar(gameServerId, "unknown_dvar");
 
         // Assert
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(404, objectResult.StatusCode);
+        Assert.True(result.IsNotFound);
     }
 
     [Fact]
@@ -103,5 +101,29 @@ public class RconControllerTests
         // Assert
         Assert.NotNull(result.Result?.Data);
         Assert.Equal("Xtreme Idiots", result.Result!.Data!.Value);
+    }
+
+    [Fact]
+    public async Task GetDvar_WhenCoD4xValueContainsAlphabeticColorCodes_ReturnsNormalizedValue()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.Setup(x => x.GetDvar("g_motd")).ReturnsAsync("\"g_motd\" is: \"^aWelcome ^ZHome\"");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).GetDvar(gameServerId, "g_motd");
+
+        // Assert
+        Assert.NotNull(result.Result?.Data);
+        Assert.Equal("Welcome Home", result.Result!.Data!.Value);
     }
 }

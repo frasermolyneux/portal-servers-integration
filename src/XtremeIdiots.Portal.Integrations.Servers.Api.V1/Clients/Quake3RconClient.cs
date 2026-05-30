@@ -24,6 +24,9 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9a-f]{32})\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty4PlayerRegex();
 
+    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+|PRIM|ZMBI|CNCT)\s+([0-9]{19})\s+(?:[0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    private static partial Regex CallOfDuty4xPlayerRegex();
+
     [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty5PlayerRegex();
 
@@ -456,6 +459,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             {
                 GameType.CallOfDuty2 => CallOfDuty2PlayerRegex(),
                 GameType.CallOfDuty4 => CallOfDuty4PlayerRegex(),
+                GameType.CallOfDuty4x => CallOfDuty4xPlayerRegex(),
                 GameType.CallOfDuty5 => CallOfDuty5PlayerRegex(),
                 _ => throw new NotSupportedException($"Game type {gameType} is not supported")
             };

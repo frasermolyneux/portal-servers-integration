@@ -14,7 +14,7 @@ public class QueryClientFactory(ILogger<QueryClientFactory> logger) : IQueryClie
 
         IQueryClient queryClient = gameType switch
         {
-            GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty5 => new Quake3QueryClient(_logger),
+            GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty4x or GameType.CallOfDuty5 => new Quake3QueryClient(_logger),
             GameType.Insurgency or GameType.Rust or GameType.Left4Dead2 => new SourceQueryClient(_logger),
             _ => throw new NotSupportedException($"Game type {gameType} is not supported for query operations")
         };

@@ -372,6 +372,90 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.Equal("Unknown", result);
         }
 
+        [Fact]
+        public async Task GetPlayers_Cod4x_ParsesPlayerIdAsGuid()
+        {
+            // Arrange — CoD4x status output has an extra steamid column between playerid and name.
+            // Columns: num score ping playerid(19) steamid(17 or 0) name lastmsg address qport rate
+            // The regex must capture the 19-digit playerid as the GUID (group 4) and treat
+            // steamid as a non-captured column so downstream index positions stay aligned with CoD4.
+            _rconClient.Configure(
+                GameType.CallOfDuty4x,
+                _testServerId,
+                "127.0.0.1",
+                _mockServer.Port,
+                TestRconPassword
+            );
+
+            var statusResponse =
+                "map: mp_atp\n" +
+                "num score ping playerid          steamid          name            lastmsg address               qport rate\n" +
+                "--- ----- ---- ----------------- ---------------- --------------- ------- --------------------- ----- -----\n" +
+                "  0    42   78 2310346616629847491 76561198076145247 BloodyEye 50 81.97.115.41:28960 -1234 25000\n" +
+                "  1     5    0 1234567890123456789 0 Mikey 12 192.168.1.50:28961 -5678 25000\n";
+
+            _mockServer.RegisterCommandHandler("status", cmd =>
+                MockUdpServer.CreateQuake3Response(statusResponse));
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var players = _rconClient.GetPlayers();
+
+            // Assert
+            Assert.Equal(2, players.Count);
+
+            Assert.Equal(0, players[0].Num);
+            Assert.Equal(78, players[0].Ping);
+            Assert.Equal("2310346616629847491", players[0].Guid);
+            Assert.Equal("BloodyEye", players[0].Name);
+            Assert.Equal("81.97.115.41", players[0].IpAddress);
+
+            Assert.Equal(1, players[1].Num);
+            Assert.Equal("1234567890123456789", players[1].Guid);
+            Assert.Equal("Mikey", players[1].Name);
+            Assert.Equal("192.168.1.50", players[1].IpAddress);
+        }
+
+        [Fact]
+        public async Task GetPlayers_Cod4x_ToleratesPrimZmbiCnctPingStates()
+        {
+            // Arrange — connecting / zombie / primed players in CoD4x show alphabetic ping states.
+            // Verify the regex accepts PRIM / ZMBI / CNCT in the ping column without dropping rows.
+            _rconClient.Configure(
+                GameType.CallOfDuty4x,
+                _testServerId,
+                "127.0.0.1",
+                _mockServer.Port,
+                TestRconPassword
+            );
+
+            var statusResponse =
+                "map: mp_crash\n" +
+                "num score ping playerid          steamid          name            lastmsg address               qport rate\n" +
+                "--- ----- ---- ----------------- ---------------- --------------- ------- --------------------- ----- -----\n" +
+                "  0     0 PRIM 1111111111111111111 0 Alpha 25 10.0.0.1:28960 -1 25000\n" +
+                "  1     0 ZMBI 2222222222222222222 0 Beta 25 10.0.0.2:28960 -2 25000\n" +
+                "  2     0 CNCT 3333333333333333333 0 Gamma 25 10.0.0.3:28960 -3 25000\n";
+
+            _mockServer.RegisterCommandHandler("status", cmd =>
+                MockUdpServer.CreateQuake3Response(statusResponse));
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var players = _rconClient.GetPlayers();
+
+            // Assert — all three rows parse; non-numeric ping falls back to 0.
+            Assert.Equal(3, players.Count);
+            Assert.Equal("1111111111111111111", players[0].Guid);
+            Assert.Equal(0, players[0].Ping);
+            Assert.Equal("2222222222222222222", players[1].Guid);
+            Assert.Equal(0, players[1].Ping);
+            Assert.Equal("3333333333333333333", players[2].Guid);
+            Assert.Equal(0, players[2].Ping);
+        }
+
         public void Dispose()
         {
             _mockServer?.Dispose();

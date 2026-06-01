@@ -10,7 +10,7 @@ public interface IMapsApi
     Task<ApiResult> DeleteServerMapFromHost(Guid gameServerId, string mapName);
 
     /// <summary>
-    /// Verifies whether the specified maps exist on the game server's FTP host
+    /// Verifies whether the specified maps exist on the game server file transport host.
     /// </summary>
     /// <param name="gameServerId">The ID of the game server</param>
     /// <param name="mapNames">The list of map names to verify</param>

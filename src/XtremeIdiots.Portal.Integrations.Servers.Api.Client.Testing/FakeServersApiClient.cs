@@ -16,6 +16,7 @@ public class FakeServersApiClient : IServersApiClient
     public FakeApiInfoApi FakeApiInfo { get; } = new();
     public FakeConfigApi FakeConfig { get; } = new();
     public FakeFtpBrowseApi FakeFtpBrowse { get; } = new();
+    public FakeFileBrowseApi FakeFileBrowse => FakeFtpBrowse;
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
     private readonly Lazy<IVersionedRconApi> _versionedRcon;
@@ -23,6 +24,7 @@ public class FakeServersApiClient : IServersApiClient
     private readonly Lazy<IVersionedApiHealthApi> _versionedApiHealth;
     private readonly Lazy<IVersionedApiInfoApi> _versionedApiInfo;
     private readonly Lazy<IVersionedConfigApi> _versionedConfig;
+    private readonly Lazy<IVersionedFileBrowseApi> _versionedFileBrowse;
     private readonly Lazy<IVersionedFtpBrowseApi> _versionedFtpBrowse;
 
     public FakeServersApiClient()
@@ -33,6 +35,7 @@ public class FakeServersApiClient : IServersApiClient
         _versionedApiHealth = new Lazy<IVersionedApiHealthApi>(() => new FakeVersionedApiHealthApi(FakeApiHealth));
         _versionedApiInfo = new Lazy<IVersionedApiInfoApi>(() => new FakeVersionedApiInfoApi(FakeApiInfo));
         _versionedConfig = new Lazy<IVersionedConfigApi>(() => new FakeVersionedConfigApi(FakeConfig));
+        _versionedFileBrowse = new Lazy<IVersionedFileBrowseApi>(() => new FakeVersionedFileBrowseApi(FakeFileBrowse));
         _versionedFtpBrowse = new Lazy<IVersionedFtpBrowseApi>(() => new FakeVersionedFtpBrowseApi(FakeFtpBrowse));
     }
 
@@ -42,6 +45,7 @@ public class FakeServersApiClient : IServersApiClient
     public IVersionedApiHealthApi ApiHealth => _versionedApiHealth.Value;
     public IVersionedApiInfoApi ApiInfo => _versionedApiInfo.Value;
     public IVersionedConfigApi Config => _versionedConfig.Value;
+    public IVersionedFileBrowseApi FileBrowse => _versionedFileBrowse.Value;
     public IVersionedFtpBrowseApi FtpBrowse => _versionedFtpBrowse.Value;
 
     public void Reset()
@@ -83,6 +87,11 @@ public class FakeServersApiClient : IServersApiClient
     private sealed class FakeVersionedConfigApi(IConfigApi v1) : IVersionedConfigApi
     {
         public IConfigApi V1 => v1;
+    }
+
+    private sealed class FakeVersionedFileBrowseApi(IFileBrowseApi v1) : IVersionedFileBrowseApi
+    {
+        public IFileBrowseApi V1 => v1;
     }
 
     private sealed class FakeVersionedFtpBrowseApi(IFtpBrowseApi v1) : IVersionedFtpBrowseApi

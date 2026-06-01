@@ -56,6 +56,21 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
+    public void FileBrowse_DelegatesToSharedBrowseFake()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeFileBrowse, fake.FileBrowse.V1);
+    }
+
+    [Fact]
+    public void FtpBrowse_DelegatesToSharedBrowseFake()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeFtpBrowse, fake.FtpBrowse.V1);
+        Assert.Same(fake.FakeFileBrowse, fake.FakeFtpBrowse);
+    }
+
+    [Fact]
     public void Reset_ClearsAllFakeState()
     {
         var fake = new FakeServersApiClient();

@@ -100,4 +100,19 @@ public static class ErrorCodes
         /// The game server does not have RCON credentials configured.
         /// </summary>
         public const string RCON_CREDENTIALS_MISSING = "RCON_CREDENTIALS_MISSING";
+
+        /// <summary>
+        /// Transport-neutral alias for missing file transport credentials.
+        /// </summary>
+        public const string FILE_TRANSPORT_CREDENTIALS_MISSING = FTP_CREDENTIALS_MISSING;
+
+        /// <summary>
+        /// Transport-neutral alias for file transport connection failures.
+        /// </summary>
+        public const string FILE_TRANSPORT_CONNECTION_FAILED = FTP_CONNECTION_FAILED;
+
+        /// <summary>
+        /// Transport-neutral alias for file transport operation failures.
+        /// </summary>
+        public const string FILE_TRANSPORT_OPERATION_FAILED = FTP_OPERATION_FAILED;
     }

@@ -10,7 +10,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Ftp;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class FtpBrowseApi : BaseApi<ServersApiClientOptions>, IFtpBrowseApi
+    public class FtpBrowseApi : BaseApi<ServersApiClientOptions>, IFileBrowseApi, IFtpBrowseApi
     {
         public FtpBrowseApi(
             ILogger<BaseApi<ServersApiClientOptions>> logger,

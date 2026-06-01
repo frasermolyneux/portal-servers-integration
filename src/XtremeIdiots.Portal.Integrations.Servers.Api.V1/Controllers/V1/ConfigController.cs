@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using Asp.Versioning;
-using FluentFTP;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +11,6 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Config;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
-using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
@@ -22,11 +20,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 [Route("v{version:apiVersion}")]
 public class ConfigController(
     ILogger<ConfigController> logger,
-    IRepositoryApiClient repositoryApiClient,
-    TelemetryClient telemetryClient,
-    IConfiguration configuration) : Controller, IConfigApi
+    IGameServerFileTransportFactory fileTransportFactory,
+    TelemetryClient telemetryClient) : Controller, IConfigApi
 {
-        private static readonly Regex SafeConfigFileNameRegex = new(@"^[a-zA-Z0-9_\-]+\.cfg$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
         private static readonly Regex SafeConfigFilePathRegex = new(@"^/?([a-zA-Z0-9_\-]+/)*[a-zA-Z0-9_\-]+\.cfg$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private static readonly Regex SafeVariableNameRegex = new(@"^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -62,37 +58,31 @@ public class ConfigController(
             if (!IsAllowedFilePath(filePath))
                 return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.INVALID_REQUEST, $"File path '{filePath}' is not valid. Must be a .cfg path (e.g. 'server.cfg' or '/mods/mymod/configs/mapcontrol.cfg'). Backslashes and path traversal (..) are not allowed.")).ToBadRequestResult();
 
-            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
-
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
+            if (sessionResult.IsNotFound)
                 return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve config file.")).ToApiResult();
+
+                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("GetConfigFile");
-            operation.Telemetry.Type = "FTP";
-            operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
+            operation.Telemetry.Type = session.Transport.TelemetryType;
+            operation.Telemetry.Target = session.Transport.TelemetryTarget;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    {
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-
-                if (!await ftpClient.FileExists(filePath))
+                if (!await session.FileExists(filePath, cancellationToken).ConfigureAwait(false))
                     return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.CONFIG_FILE_NOT_FOUND, $"The config file '{filePath}' was not found on the server.")).ToNotFoundResult();
 
-                var content = await ftpClient.DownloadBytes(filePath, cancellationToken);
+                var content = await session.DownloadBytes(filePath, cancellationToken).ConfigureAwait(false);
                 var contentString = System.Text.Encoding.UTF8.GetString(content);
 
                 var data = new ConfigFileContentDto(filePath, contentString);
@@ -104,8 +94,8 @@ public class ConfigController(
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
 
-                logger.LogError(ex, "Failed to retrieve config file from FTP host for game server {GameServerId}", gameServerId);
-                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to retrieve config file.")).ToApiResult();
+                logger.LogError(ex, "Failed to retrieve config file from file transport host for game server {GameServerId}", gameServerId);
+                return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve config file.")).ToApiResult();
             }
             finally
             {
@@ -139,37 +129,31 @@ public class ConfigController(
             if (value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
                 return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Value must not contain double quotes or newline characters.")).ToBadRequestResult();
 
-            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
-
-            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
+            if (sessionResult.IsNotFound)
                 return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to update config variable.")).ToApiResult();
+
+                return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("UpdateConfigVariable");
-            operation.Telemetry.Type = "FTP";
-            operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
+            operation.Telemetry.Type = session.Transport.TelemetryType;
+            operation.Telemetry.Target = session.Transport.TelemetryTarget;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    {
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-
-                if (!await ftpClient.FileExists(filePath))
+                if (!await session.FileExists(filePath, cancellationToken).ConfigureAwait(false))
                     return new ApiResponse(new ApiError(ErrorCodes.CONFIG_FILE_NOT_FOUND, $"The config file '{filePath}' was not found on the server.")).ToNotFoundResult();
 
-                var contentBytes = await ftpClient.DownloadBytes(filePath, cancellationToken);
+                var contentBytes = await session.DownloadBytes(filePath, cancellationToken).ConfigureAwait(false);
                 var content = System.Text.Encoding.UTF8.GetString(contentBytes);
 
                 var regex = ConfigVariableRegex(variableName);
@@ -191,9 +175,7 @@ public class ConfigController(
                     updatedContent = UpsertManagedCommentBlock(updatedContent, variableName, commentLines, newline);
                 }
                 var updatedBytes = System.Text.Encoding.UTF8.GetBytes(updatedContent);
-
-                using var stream = new MemoryStream(updatedBytes);
-                await ftpClient.UploadStream(stream, filePath, FtpRemoteExists.Overwrite, true, null, cancellationToken);
+                await session.UploadBytes(filePath, updatedBytes, cancellationToken).ConfigureAwait(false);
 
                 return new ApiResponse().ToApiResult();
             }
@@ -203,8 +185,8 @@ public class ConfigController(
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
 
-                logger.LogError(ex, "Failed to update config variable on FTP host for game server {GameServerId}", gameServerId);
-                return new ApiResponse(new ApiError(ErrorCodes.CONFIG_OPERATION_FAILED, "Failed to update config variable on the game server's FTP host.")).ToApiResult();
+                logger.LogError(ex, "Failed to update config variable on file transport host for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.CONFIG_OPERATION_FAILED, "Failed to update config variable on the game server file transport host.")).ToApiResult();
             }
             finally
             {

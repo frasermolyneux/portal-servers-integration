@@ -12,7 +12,6 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Ftp;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
-using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
@@ -22,9 +21,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 [Route("v{version:apiVersion}")]
 public class FtpBrowseController(
     ILogger<FtpBrowseController> logger,
-    IRepositoryApiClient repositoryApiClient,
+    IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient,
-    IConfiguration configuration,
     IMemoryCache memoryCache) : Controller, IFtpBrowseApi
 {
 
@@ -37,59 +35,47 @@ public class FtpBrowseController(
         return response.ToHttpResult();
     }
 
-    async Task<ApiResult<FtpDirectoryListingDto>> IFtpBrowseApi.BrowseDirectory(Guid gameServerId, string? path, CancellationToken cancellationToken)
+    async Task<ApiResult<FtpDirectoryListingDto>> IFileBrowseApi.BrowseDirectory(Guid gameServerId, string? path, CancellationToken cancellationToken)
     {
         var normalizedPath = NormalizePath(path);
 
         if (ContainsTraversalSegments(normalizedPath))
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The path contains invalid traversal segments.")).ToBadRequestResult();
 
-        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
-
-        if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
+        if (sessionResult.IsNotFound)
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-        var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-        var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-        if (ftpCreds == null)
-            return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+        if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+        {
+            var error = sessionResult.Result?.Errors?.FirstOrDefault();
+            if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to browse directory.")).ToApiResult();
 
-        var cacheKey = $"{gameServerId}-ftp-browse-{normalizedPath}";
+            return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+        }
+
+        await using var session = sessionResult.Result.Data;
+
+        var cacheKey = $"{gameServerId}-file-browse-{session.Transport.TransportType}-{normalizedPath}";
         if (memoryCache.TryGetValue<FtpDirectoryListingDto>(cacheKey, out var cached) && cached != null)
             return new ApiResponse<FtpDirectoryListingDto>(cached).ToApiResult();
 
-        var operation = telemetryClient.StartOperation<DependencyTelemetry>("FtpBrowse");
-        operation.Telemetry.Type = "FTP";
-        operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
+        var operation = telemetryClient.StartOperation<DependencyTelemetry>("FileBrowse");
+        operation.Telemetry.Type = session.Transport.TelemetryType;
+        operation.Telemetry.Target = session.Transport.TelemetryTarget;
 
         try
         {
-            await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-            ftpClient.Config.ConnectTimeout = 10000;
-            ftpClient.Config.ReadTimeout = 10000;
-            ftpClient.Config.DataConnectionConnectTimeout = 10000;
-            ftpClient.Config.DataConnectionReadTimeout = 10000;
-            ftpClient.ValidateCertificate += (control, e) =>
-            {
-                if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                { // Account for self-signed FTP certificate for self-hosted servers
-                    e.Accept = true;
-                }
-            };
-
-            await ftpClient.AutoConnect();
-
-            var files = await ftpClient.GetListing(normalizedPath);
+            var files = await session.GetListing(normalizedPath, cancellationToken).ConfigureAwait(false);
 
             var items = files
-                .Where(f => f.Name != "." && f.Name != "..")
-                .Where(f => f.Type == FtpObjectType.File || f.Type == FtpObjectType.Directory)
                 .Select(f => new FtpItemDto(
                     f.Name,
-                    f.FullName,
-                    f.Type == FtpObjectType.Directory ? FtpItemType.Directory : FtpItemType.File,
-                    f.Type == FtpObjectType.File ? f.Size : null,
-                    f.Modified != DateTime.MinValue ? f.Modified : null))
+                    f.FullPath,
+                    f.IsDirectory ? FtpItemType.Directory : FtpItemType.File,
+                    f.Size,
+                    f.Modified))
                 .OrderBy(f => f.Type == FtpItemType.Directory ? 0 : 1)
                 .ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -107,8 +93,8 @@ public class FtpBrowseController(
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
-            logger.LogError(ex, "Failed to browse FTP directory for game server {GameServerId} at path {Path}", gameServerId, normalizedPath);
-            return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to browse directory.")).ToApiResult();
+            logger.LogError(ex, "Failed to browse file transport directory for game server {GameServerId} at path {Path}", gameServerId, normalizedPath);
+            return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to browse directory.")).ToApiResult();
         }
         finally
         {

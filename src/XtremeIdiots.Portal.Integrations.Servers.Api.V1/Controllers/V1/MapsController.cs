@@ -1,7 +1,6 @@
 
 using System.Net;
 using Asp.Versioning;
-using FluentFTP;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Authorization;
@@ -24,8 +23,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 public class MapsController(
     ILogger<MapsController> logger,
     IRepositoryApiClient repositoryApiClient,
+    IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient,
-    IConfiguration configuration,
     IHttpClientFactory httpClientFactory) : Controller, IMapsApi
 {
 
@@ -45,31 +44,26 @@ public class MapsController(
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve maps.")).ToApiResult();
+
+                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("GetFileList");
-            operation.Telemetry.Type = $"FTP";
-            operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
+            operation.Telemetry.Type = session.Transport.TelemetryType;
+            operation.Telemetry.Target = session.Transport.TelemetryTarget;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    { // Account for self-signed FTP certificate for self-hosted servers
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-                await ftpClient.SetWorkingDirectory("usermaps");
-
-                var files = await ftpClient.GetListing();
-                var entries = files.Select(f => new ServerMapDto(f.Name, f.FullName, f.Modified)).ToList();
+                var files = await session.GetListing("usermaps").ConfigureAwait(false);
+                var entries = files.Select(f => new ServerMapDto(f.Name, f.FullPath, f.Modified ?? DateTime.UnixEpoch)).ToList();
 
                 var data = new ServerMapsCollectionDto(entries);
 
@@ -81,8 +75,8 @@ public class MapsController(
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
 
-                logger.LogError(ex, "Failed to retrieve server maps from FTP host for game server {GameServerId}", gameServerId);
-                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to retrieve maps.")).ToApiResult();
+                logger.LogError(ex, "Failed to retrieve server maps from file transport host for game server {GameServerId}", gameServerId);
+                return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve maps.")).ToApiResult();
             }
             finally
             {
@@ -121,45 +115,36 @@ public class MapsController(
             if (mapApiResponse.Result.Data.MapFiles.Count == 0)
                 return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' does not have any files associated with it.")).ToBadRequestResult();
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to push maps.")).ToApiResult();
+
+                return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    { // Account for self-signed FTP certificate for self-hosted servers
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-
                 var mapDirectoryPath = $"usermaps/{mapName}";
 
-                if (await ftpClient.DirectoryExists(mapDirectoryPath))
+                if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
                 {
                     logger.LogInformation("Directory {MapDirectoryPath} already exists on the server, skipping sync", mapDirectoryPath);
                     return new ApiResponse().ToApiResult();
                 }
                 else
                 {
-                    await ftpClient.CreateDirectory(mapDirectoryPath);
+                    await session.CreateDirectory(mapDirectoryPath).ConfigureAwait(false);
 
                     var httpClient = httpClientFactory.CreateClient();
                     foreach (var file in mapApiResponse.Result.Data.MapFiles)
                     {
-                        var filePath = Path.Join(Path.GetTempPath(), file.FileName);
-                        await using (var stream = System.IO.File.Create(filePath))
-                        {
-                            await (await httpClient.GetStreamAsync(file.Url)).CopyToAsync(stream);
-                        }
-
-                        await ftpClient.UploadFile(filePath, $"{mapDirectoryPath}/{file.FileName}");
+                        await using var mapStream = await httpClient.GetStreamAsync(file.Url).ConfigureAwait(false);
+                        await session.UploadStream($"{mapDirectoryPath}/{file.FileName}", mapStream).ConfigureAwait(false);
                     }
 
                     return new ApiResponse().ToApiResult();
@@ -170,7 +155,7 @@ public class MapsController(
             {
                 telemetryClient.TrackException(ex);
                 logger.LogError(ex, "Failed to push map {MapName} to game server {GameServerId}", mapName, gameServerId);
-                return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to push map files to the game server's FTP host.")).ToApiResult();
+                return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to push map files to the game server file transport host.")).ToApiResult();
             }
         }
 
@@ -197,29 +182,25 @@ public class MapsController(
                 return new ApiResponse().ToApiResult();
             }
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete maps.")).ToApiResult();
+
+                return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    { // Account for self-signed FTP certificate for self-hosted servers
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-
                 var mapDirectoryPath = $"usermaps/{mapName}";
 
-                if (await ftpClient.DirectoryExists(mapDirectoryPath))
+                if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
                 {
-                    await ftpClient.DeleteDirectory(mapDirectoryPath);
+                    await session.DeleteDirectory(mapDirectoryPath).ConfigureAwait(false);
                     return new ApiResponse().ToApiResult();
                 }
                 else
@@ -233,7 +214,7 @@ public class MapsController(
             {
                 telemetryClient.TrackException(ex);
                 logger.LogError(ex, "Failed to delete map {MapName} from game server {GameServerId}", mapName, gameServerId);
-                return new ApiResponse(new ApiError(ErrorCodes.FTP_OPERATION_FAILED, "Failed to delete map directory from the game server's FTP host.")).ToApiResult();
+                return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to delete map directory from the game server file transport host.")).ToApiResult();
             }
         }
 
@@ -261,31 +242,26 @@ public class MapsController(
             if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
                 return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
 
-            var ftpConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp").ConfigureAwait(false);
-            var ftpCreds = FtpConfigResolver.ParseFromConfig(ftpConfigResult?.Result?.Data?.Configuration);
-            if (ftpCreds == null)
-                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FTP_CREDENTIALS_MISSING, "The game server does not have FTP credentials configured.")).ToBadRequestResult();
+            var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
+            if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
+            {
+                var error = sessionResult.Result?.Errors?.FirstOrDefault();
+                if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+                    return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to verify maps.")).ToApiResult();
+
+                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            }
+
+            await using var session = sessionResult.Result.Data;
 
             var operation = telemetryClient.StartOperation<DependencyTelemetry>("VerifyServerMaps");
-            operation.Telemetry.Type = "FTP";
-            operation.Telemetry.Target = $"{ftpCreds.Hostname}:{ftpCreds.Port}";
+            operation.Telemetry.Type = session.Transport.TelemetryType;
+            operation.Telemetry.Target = session.Transport.TelemetryTarget;
 
             try
             {
-                await using var ftpClient = new AsyncFtpClient(ftpCreds.Hostname, ftpCreds.Username, ftpCreds.Password, ftpCreds.Port);
-                ftpClient.ValidateCertificate += (control, e) =>
-                {
-                    if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"]))
-                    {
-                        e.Accept = true;
-                    }
-                };
-
-                await ftpClient.AutoConnect();
-                await ftpClient.SetWorkingDirectory("usermaps");
-
-                var files = await ftpClient.GetListing();
-                var existingDirectories = new HashSet<string>(files.Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
+                var files = await session.GetListing("usermaps", cancellationToken).ConfigureAwait(false);
+                var existingDirectories = new HashSet<string>(files.Where(f => f.IsDirectory).Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
 
                 var results = mapNames.Select(mapName => new MapVerificationResultDto(mapName, existingDirectories.Contains(mapName))).ToList();
 
@@ -298,8 +274,8 @@ public class MapsController(
                 operation.Telemetry.ResultCode = ex.Message;
                 telemetryClient.TrackException(ex);
 
-                logger.LogError(ex, "Failed to verify server maps from FTP host for game server {GameServerId}", gameServerId);
-                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FTP_CONNECTION_FAILED, "Failed to connect to the game server's FTP host to verify maps.")).ToApiResult();
+                logger.LogError(ex, "Failed to verify server maps from file transport host for game server {GameServerId}", gameServerId);
+                return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to verify maps.")).ToApiResult();
             }
             finally
             {

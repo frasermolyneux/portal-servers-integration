@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IVersionedApiHealthApi>();
         services.RemoveAll<IVersionedApiInfoApi>();
         services.RemoveAll<IVersionedConfigApi>();
+        services.RemoveAll<IVersionedFileBrowseApi>();
         services.RemoveAll<IVersionedFtpBrowseApi>();
         services.RemoveAll<IApiHealthApi>();
         services.RemoveAll<IApiInfoApi>();
@@ -38,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IRconApi>();
         services.RemoveAll<IMapsApi>();
         services.RemoveAll<IConfigApi>();
+        services.RemoveAll<IFileBrowseApi>();
         services.RemoveAll<IFtpBrowseApi>();
 
         // Register fakes as singletons
@@ -49,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVersionedApiHealthApi>(fakeClient.ApiHealth);
         services.AddSingleton<IVersionedApiInfoApi>(fakeClient.ApiInfo);
         services.AddSingleton<IVersionedConfigApi>(fakeClient.Config);
+        services.AddSingleton<IVersionedFileBrowseApi>(fakeClient.FileBrowse);
         services.AddSingleton<IVersionedFtpBrowseApi>(fakeClient.FtpBrowse);
         services.AddSingleton<IApiHealthApi>(fakeClient.FakeApiHealth);
         services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
@@ -56,6 +59,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRconApi>(fakeClient.FakeRcon);
         services.AddSingleton<IMapsApi>(fakeClient.FakeMaps);
         services.AddSingleton<IConfigApi>(fakeClient.FakeConfig);
+        services.AddSingleton<IFileBrowseApi>(fakeClient.FakeFileBrowse);
         services.AddSingleton<IFtpBrowseApi>(fakeClient.FakeFtpBrowse);
 
         return services;

@@ -13,6 +13,7 @@ using XtremeIdiots.Portal.Repository.Api.Client.V1;
 using MX.Observability.ApplicationInsights.AspNetCore;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,6 +101,8 @@ builder.Services.AddOpenApi("v1.0", options =>
 
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
+builder.Services.AddSingleton<IFileTransportResolver, FileTransportResolver>();
+builder.Services.AddSingleton<IGameServerFileTransportFactory, GameServerFileTransportFactory>();
 
 builder.Services.AddRepositoryApiClient(options => options
     .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))

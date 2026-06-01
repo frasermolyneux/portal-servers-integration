@@ -101,8 +101,8 @@ builder.Services.AddOpenApi("v1.0", options =>
 
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
 builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
-builder.Services.AddSingleton<IFileTransportResolver, FileTransportResolver>();
-builder.Services.AddSingleton<IGameServerFileTransportFactory, GameServerFileTransportFactory>();
+builder.Services.AddScoped<IFileTransportResolver, FileTransportResolver>();
+builder.Services.AddScoped<IGameServerFileTransportFactory, GameServerFileTransportFactory>();
 
 builder.Services.AddRepositoryApiClient(options => options
     .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))

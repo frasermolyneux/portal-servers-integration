@@ -186,13 +186,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             // Arrange
             var clientId = 3;
             var message = "Hello player";
-            var expectedResponse = "Message sent";
             var commandReceived = false;
 
             _mockServer.RegisterCommandHandler($"tell {clientId} \"{message}\"", cmd =>
             {
                 commandReceived = true;
-                return MockUdpServer.CreateQuake3Response(expectedResponse);
+                return MockUdpServer.CreateQuake3Response("Message sent");
             });
             _mockServer.Start();
             await Task.Delay(100);
@@ -203,7 +202,27 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             // Assert
             await Task.Delay(200);
             Assert.True(commandReceived, "Expected command was not received by mock server");
-            Assert.Contains(expectedResponse, result);
+            Assert.Equal("Tell command sent to player", result);
+        }
+
+        [Fact]
+        public async Task TellPlayer_DoesNotRequireResponsePacket()
+        {
+            // Arrange
+            var clientId = 4;
+            var message = "No response expected";
+
+            _mockServer.Start();
+            await Task.Delay(100);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            // Act
+            var result = await _rconClient.TellPlayer(clientId, message);
+            stopwatch.Stop();
+
+            // Assert
+            Assert.Equal("Tell command sent to player", result);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), "Tell should not block waiting for a response packet.");
         }
 
         [Fact]
@@ -349,6 +368,25 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             // Assert
             await Task.Delay(200);
             Assert.True(commandReceived, "Expected command was not received by mock server");
+        }
+
+        [Fact]
+        public async Task Say_DoesNotRequireResponsePacket()
+        {
+            // Arrange
+            var message = "Fire and forget";
+
+            _mockServer.Start();
+            await Task.Delay(100);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            // Act
+            var ex = await Record.ExceptionAsync(() => _rconClient.Say(message));
+            stopwatch.Stop();
+
+            // Assert
+            Assert.Null(ex);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), "Say should not block waiting for a response packet.");
         }
 
         [Fact]

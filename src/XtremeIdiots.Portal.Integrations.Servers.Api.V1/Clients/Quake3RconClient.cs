@@ -133,9 +133,11 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         _logger.LogDebug("[{GameServerId}] Attempting to send '{message}' to the server", _serverId, message);
 
+        // Many game servers do not emit a response payload for `say`, so treat this command
+        // as best-effort fire-and-forget to avoid false failures from receive timeouts.
         Policy.Handle<Exception>()
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", _serverId, retryCount); })
-            .Execute(() => GetCommandPackets($"say \"{message}\""));
+            .Execute(() => GetCommandPackets($"say \"{message}\"", skipReceive: true));
 
         return Task.CompletedTask;
     }
@@ -322,14 +324,15 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         _logger.LogDebug("[{GameServerId}] Attempting to send message to client ID {ClientId}", _serverId, clientId);
 
-        var packets = Policy.Handle<Exception>()
+        // Some servers do not emit a payload for `tell`; treat this as best-effort fire-and-forget.
+        Policy.Handle<Exception>()
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
             {
                 _logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", _serverId, retryCount);
             })
-            .Execute(() => GetCommandPackets($"tell {clientId} \"{message}\""));
+            .Execute(() => GetCommandPackets($"tell {clientId} \"{message}\"", skipReceive: true));
 
-        return Task.FromResult(GetStringFromPackets(packets));
+        return Task.FromResult("Tell command sent to player");
     }
 
     public Task<string> ChangeMap(string mapName)

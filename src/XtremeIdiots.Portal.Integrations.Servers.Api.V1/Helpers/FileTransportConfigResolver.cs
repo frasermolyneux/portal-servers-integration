@@ -18,6 +18,9 @@ internal static class FileTransportConfigResolver
             var hostname = root.TryGetProperty("hostname", out var hostProperty) ? hostProperty.GetString() : null;
             var username = root.TryGetProperty("username", out var usernameProperty) ? usernameProperty.GetString() : null;
             var password = root.TryGetProperty("password", out var passwordProperty) ? passwordProperty.GetString() : null;
+            var hostKeyFingerprint = transportType == FileTransportType.Sftp && root.TryGetProperty("hostKeyFingerprint", out var hostKeyFingerprintProperty)
+                ? hostKeyFingerprintProperty.GetString()
+                : null;
 
             var defaultPort = transportType == FileTransportType.Sftp ? 22 : 21;
             var port = root.TryGetProperty("port", out var portProperty) && portProperty.TryGetInt32(out var parsedPort)
@@ -27,7 +30,7 @@ internal static class FileTransportConfigResolver
             if (string.IsNullOrWhiteSpace(hostname) || string.IsNullOrWhiteSpace(username))
                 return null;
 
-            return new FileTransportCredentials(hostname, port, username, password ?? string.Empty);
+            return new FileTransportCredentials(hostname, port, username, password ?? string.Empty, hostKeyFingerprint);
         }
         catch
         {

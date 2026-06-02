@@ -24,7 +24,7 @@ internal sealed class GameServerFileTransportFactory(
         {
             IGameServerFileTransportSession session = resolution.Result.Data.TransportType switch
             {
-                FileTransportType.Sftp => await SftpGameServerFileTransportSession.CreateAsync(resolution.Result.Data, configuration, cancellationToken).ConfigureAwait(false),
+                FileTransportType.Sftp => await SftpGameServerFileTransportSession.CreateAsync(resolution.Result.Data, cancellationToken).ConfigureAwait(false),
                 _ => await FtpGameServerFileTransportSession.CreateAsync(resolution.Result.Data, configuration, cancellationToken).ConfigureAwait(false),
             };
 
@@ -140,12 +140,12 @@ internal sealed class GameServerFileTransportFactory(
 
         public ResolvedFileTransport Transport { get; }
 
-        public static async Task<SftpGameServerFileTransportSession> CreateAsync(ResolvedFileTransport transport, IConfiguration configuration, CancellationToken cancellationToken)
+        public static async Task<SftpGameServerFileTransportSession> CreateAsync(ResolvedFileTransport transport, CancellationToken cancellationToken)
         {
-            var expectedFingerprint = NormalizeFingerprint(configuration["xtremeidiots_sftp_host_key_fingerprint"]);
+            var expectedFingerprint = NormalizeFingerprint(transport.Credentials.HostKeyFingerprint);
             if (string.IsNullOrWhiteSpace(expectedFingerprint))
             {
-                throw new InvalidOperationException("The xtremeidiots_sftp_host_key_fingerprint setting is required for SFTP connections.");
+                throw new InvalidOperationException("The sftp.hostKeyFingerprint setting is required for SFTP connections.");
             }
 
             var connectionInfo = new Renci.SshNet.ConnectionInfo(

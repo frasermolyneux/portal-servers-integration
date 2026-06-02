@@ -2,7 +2,7 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
-public sealed record FileTransportCredentials(string Hostname, int Port, string Username, string Password);
+public sealed record FileTransportCredentials(string Hostname, int Port, string Username, string Password, string? HostKeyFingerprint = null);
 
 public sealed record ResolvedFileTransport(
     FileTransportType TransportType,

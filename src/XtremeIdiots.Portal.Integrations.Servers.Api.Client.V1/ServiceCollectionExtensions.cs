@@ -22,9 +22,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             // Register Config API endpoint
             serviceCollection.AddTypedApiClient<IConfigApi, ConfigApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
-            // Register transport-neutral browse endpoint and FTP compatibility wrapper.
-            serviceCollection.AddTypedApiClient<IFileBrowseApi, FtpBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddScoped<IFtpBrowseApi>(sp => (IFtpBrowseApi)sp.GetRequiredService<IFileBrowseApi>());
+            // Register transport-neutral browse endpoint.
+            serviceCollection.AddTypedApiClient<IFileBrowseApi, FileBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
@@ -34,7 +33,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddScoped<IVersionedApiInfoApi, VersionedApiInfoApi>();
             serviceCollection.AddScoped<IVersionedConfigApi, VersionedConfigApi>();
             serviceCollection.AddScoped<IVersionedFileBrowseApi, VersionedFileBrowseApi>();
-            serviceCollection.AddScoped<IVersionedFtpBrowseApi, VersionedFtpBrowseApi>();
 
             // Register the unified client as scoped
             serviceCollection.AddScoped<IServersApiClient, ServersApiClient>();

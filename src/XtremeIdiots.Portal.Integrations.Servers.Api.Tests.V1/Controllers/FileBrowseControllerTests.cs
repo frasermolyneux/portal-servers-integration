@@ -14,20 +14,20 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 
 [Trait("Category", "Unit")]
-public class FtpBrowseControllerTests
+public class FileBrowseControllerTests
 {
-    private readonly Mock<ILogger<FtpBrowseController>> _mockLogger = new();
+    private readonly Mock<ILogger<FileBrowseController>> _mockLogger = new();
     private readonly Mock<IGameServerFileTransportFactory> _mockFileTransportFactory = new();
     private readonly TelemetryClient _telemetryClient;
     private readonly IMemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-    public FtpBrowseControllerTests()
+    public FileBrowseControllerTests()
     {
         var telemetryConfig = new TelemetryConfiguration { TelemetryChannel = new Mock<ITelemetryChannel>().Object };
         _telemetryClient = new TelemetryClient(telemetryConfig);
     }
 
-    private FtpBrowseController CreateController() => new(
+    private FileBrowseController CreateController() => new(
         _mockLogger.Object,
         _mockFileTransportFactory.Object,
         _telemetryClient,

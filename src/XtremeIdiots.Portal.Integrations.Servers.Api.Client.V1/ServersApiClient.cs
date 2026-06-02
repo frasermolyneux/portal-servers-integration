@@ -9,8 +9,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             IVersionedApiHealthApi apiHealth,
             IVersionedApiInfoApi apiInfo,
             IVersionedConfigApi config,
-            IVersionedFileBrowseApi fileBrowse,
-            IVersionedFtpBrowseApi ftpBrowse)
+            IVersionedFileBrowseApi fileBrowse)
         {
             Query = queryApiClient;
             Rcon = rconApiClient;
@@ -19,7 +18,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             ApiInfo = apiInfo;
             Config = config;
             FileBrowse = fileBrowse;
-            FtpBrowse = ftpBrowse;
         }
 
         public IVersionedQueryApi Query { get; }
@@ -29,6 +27,5 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IVersionedApiInfoApi ApiInfo { get; }
         public IVersionedConfigApi Config { get; }
         public IVersionedFileBrowseApi FileBrowse { get; }
-        public IVersionedFtpBrowseApi FtpBrowse { get; }
     }
 }

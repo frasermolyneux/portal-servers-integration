@@ -10,9 +10,9 @@ using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Ftp;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {
-    public class FtpBrowseApi : BaseApi<ServersApiClientOptions>, IFileBrowseApi, IFtpBrowseApi
+    public class FileBrowseApi : BaseApi<ServersApiClientOptions>, IFileBrowseApi
     {
-        public FtpBrowseApi(
+        public FileBrowseApi(
             ILogger<BaseApi<ServersApiClientOptions>> logger,
             IApiTokenProvider? apiTokenProvider,
             IRestClientService restClientService,
@@ -23,7 +23,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public async Task<ApiResult<FtpDirectoryListingDto>> BrowseDirectory(Guid gameServerId, string? path = null, CancellationToken cancellationToken = default)
         {
-            var request = await CreateRequestAsync($"v1/ftp/{gameServerId}/browse", Method.Get, cancellationToken);
+            var request = await CreateRequestAsync($"v1/file-browse/{gameServerId}/browse", Method.Get, cancellationToken);
 
             if (!string.IsNullOrEmpty(path))
                 request.AddQueryParameter("path", path);

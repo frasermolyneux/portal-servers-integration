@@ -19,18 +19,18 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 [Authorize(Roles = "ServiceAccount")]
 [ApiVersion(ApiVersions.V1)]
 [Route("v{version:apiVersion}")]
-public class FtpBrowseController(
-    ILogger<FtpBrowseController> logger,
+public class FileBrowseController(
+    ILogger<FileBrowseController> logger,
     IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient,
-    IMemoryCache memoryCache) : Controller, IFtpBrowseApi
+    IMemoryCache memoryCache) : Controller, IFileBrowseApi
 {
 
     [HttpGet]
-    [Route("ftp/{gameServerId}/browse")]
+    [Route("file-browse/{gameServerId}/browse")]
     public async Task<IActionResult> BrowseDirectory(Guid gameServerId, [FromQuery] string? path = null)
     {
-        var response = await ((IFtpBrowseApi)this).BrowseDirectory(gameServerId, path);
+        var response = await ((IFileBrowseApi)this).BrowseDirectory(gameServerId, path);
 
         return response.ToHttpResult();
     }

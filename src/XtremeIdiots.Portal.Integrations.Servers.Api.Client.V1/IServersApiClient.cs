@@ -9,6 +9,5 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IVersionedApiInfoApi ApiInfo { get; }
         public IVersionedConfigApi Config { get; }
         public IVersionedFileBrowseApi FileBrowse { get; }
-        public IVersionedFtpBrowseApi FtpBrowse { get; }
     }
 }

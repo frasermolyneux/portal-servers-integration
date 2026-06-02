@@ -36,9 +36,4 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     {
         IFileBrowseApi V1 { get; }
     }
-
-    public interface IVersionedFtpBrowseApi
-    {
-        IFtpBrowseApi V1 { get; }
-    }
 }

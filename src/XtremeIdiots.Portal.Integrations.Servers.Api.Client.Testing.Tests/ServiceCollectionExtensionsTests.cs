@@ -32,7 +32,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IMapsApi>());
         Assert.NotNull(provider.GetService<IConfigApi>());
         Assert.NotNull(provider.GetService<IFileBrowseApi>());
-        Assert.NotNull(provider.GetService<IFtpBrowseApi>());
     }
 
     [Fact]
@@ -68,6 +67,5 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(client.ApiInfo);
         Assert.NotNull(client.Config);
         Assert.NotNull(client.FileBrowse);
-        Assert.NotNull(client.FtpBrowse);
     }
 }

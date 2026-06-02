@@ -63,14 +63,6 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
-    public void FtpBrowse_DelegatesToSharedBrowseFake()
-    {
-        var fake = new FakeServersApiClient();
-        Assert.Same(fake.FakeFtpBrowse, fake.FtpBrowse.V1);
-        Assert.Same(fake.FakeFileBrowse, fake.FakeFtpBrowse);
-    }
-
-    [Fact]
     public void Reset_ClearsAllFakeState()
     {
         var fake = new FakeServersApiClient();

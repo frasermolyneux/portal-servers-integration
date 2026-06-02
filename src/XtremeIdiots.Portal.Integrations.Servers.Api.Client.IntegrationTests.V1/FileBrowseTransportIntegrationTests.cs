@@ -35,7 +35,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         SetupGameServer(gameServerId, fileTransportEnabled: false, fileTransportType: FileTransportType.Unknown, ftpEnabled: false);
 
         // Act
-        var response = await _client.GetAsync($"/v1.0/ftp/{gameServerId}/browse");
+        var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -58,7 +58,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         SetupConfiguration(gameServerId, "sftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
-        var response = await _client.GetAsync($"/v1.0/ftp/{gameServerId}/browse");
+        var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -81,7 +81,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         SetupConfiguration(gameServerId, "ftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
-        var response = await _client.GetAsync($"/v1.0/ftp/{gameServerId}/browse");
+        var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);

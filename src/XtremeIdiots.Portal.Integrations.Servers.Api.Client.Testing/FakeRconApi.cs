@@ -201,4 +201,7 @@ public class FakeRconApi : IRconApi
 
     public Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default) =>
         LogAndReturnSuccess("SetDvar", gameServerId, new { dvarName, value });
+
+    public Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnSuccess("TakeScreenshot", gameServerId, new { request.PlayerIdentifier });
 }

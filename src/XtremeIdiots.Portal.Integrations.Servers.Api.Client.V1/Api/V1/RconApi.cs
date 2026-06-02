@@ -250,5 +250,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
             return response.ToApiResult();
         }
+
+        public async Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto requestDto, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/screenshot", Method.Post, cancellationToken);
+            request.AddJsonBody(requestDto);
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult();
+        }
     }
 }

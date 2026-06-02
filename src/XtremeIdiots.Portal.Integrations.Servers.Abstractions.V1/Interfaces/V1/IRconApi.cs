@@ -178,4 +178,12 @@ public interface IRconApi
     /// <param name="value">The value to set</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Triggers a CoD4x screenshot for a player identifier.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="request">Screenshot request payload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default);
 }

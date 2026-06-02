@@ -416,6 +416,22 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         return Task.FromResult(GetStringFromPackets(packets));
     }
 
+    public Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to trigger screenshot for player identifier {PlayerIdentifier}", _serverId, playerIdentifier);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var packets = Policy.Handle<Exception>()
+            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+            {
+                _logger.LogWarning("[{GameServerId}] Failed to trigger screenshot for player identifier {PlayerIdentifier} - retry count: {Count}", _serverId, playerIdentifier, retryCount);
+            })
+            .Execute(token => GetCommandPackets($"getss {playerIdentifier}", cancellationToken: token), cancellationToken);
+
+        return Task.FromResult(GetStringFromPackets(packets));
+    }
+
     private string PlayerStatus()
     {
         var packets = Policy.Handle<Exception>()
@@ -475,16 +491,30 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         return [.. prefix, .. commandBytes];
     }
 
-    private List<byte[]> GetCommandPackets(string command, bool skipReceive = false)
+    private List<byte[]> GetCommandPackets(string command, bool skipReceive = false, CancellationToken cancellationToken = default)
     {
         UdpClient udpClient = null;
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var commandBytes = ExecuteCommandPacket(_rconPassword, command);
             var remoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             udpClient = new UdpClient() { Client = { SendTimeout = 5000, ReceiveTimeout = 5000 } };
+            using var cancellationRegistration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    udpClient.Close();
+                }
+                catch
+                {
+                    // If disposal races with completion, ignore and let normal flow continue.
+                }
+            });
+
             udpClient.Connect(_hostname, _queryPort);
             udpClient.Send(commandBytes, commandBytes.Length);
 
@@ -497,11 +527,26 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                     datagrams.Add(datagramBytes);
 
                     if (udpClient.Available == 0)
-                        Thread.Sleep(500);
+                    {
+                        if (cancellationToken.WaitHandle.WaitOne(500))
+                            cancellationToken.ThrowIfCancellationRequested();
+                    }
                 } while (udpClient.Available > 0);
             }
 
             return datagrams;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(cancellationToken);
+        }
+        catch (SocketException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(cancellationToken);
         }
         catch (Exception ex)
         {

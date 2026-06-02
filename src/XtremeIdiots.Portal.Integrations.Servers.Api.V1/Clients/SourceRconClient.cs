@@ -220,6 +220,11 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             throw new NotImplementedException("Setting dvars is not implemented for Source engine games");
         }
 
+        public Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Taking screenshots is not implemented for Source engine games");
+        }
+
         private string PlayerStatus()
         {
             CreateConnection();

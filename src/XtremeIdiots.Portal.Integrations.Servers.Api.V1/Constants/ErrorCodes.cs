@@ -12,6 +12,11 @@ public static class ErrorCodes
     public const string INVALID_REQUEST = "INVALID_REQUEST";
 
     /// <summary>
+    /// The provided player identifier is invalid.
+    /// </summary>
+    public const string INVALID_PLAYER_IDENTIFIER = "INVALID_PLAYER_IDENTIFIER";
+
+    /// <summary>
     /// The requested game server was not found.
     /// </summary>
     public const string GAME_SERVER_NOT_FOUND = "GAME_SERVER_NOT_FOUND";
@@ -70,6 +75,11 @@ public static class ErrorCodes
     /// The requested operation is not implemented for this game server type.
     /// </summary>
     public const string OPERATION_NOT_IMPLEMENTED = "OPERATION_NOT_IMPLEMENTED";
+
+    /// <summary>
+    /// The requested operation is not supported for the game type.
+    /// </summary>
+    public const string OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE = "OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE";
 
     /// <summary>
     /// Player verification failed - the player name does not match the player in the specified slot.

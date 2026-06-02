@@ -33,6 +33,7 @@ public class RconController(
 {
         private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
         private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xPlayerIdentifierRegex = new(@"^[0-9]{17,21}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
 
         /// <summary>
@@ -1787,6 +1788,95 @@ public class RconController(
 
                 logger.LogError(ex, "Failed to send message to player {ClientId} on game server {GameServerId}", clientId, gameServerId);
                 return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to player on the game server via RCON.")).ToApiResult();
+            }
+            finally
+            {
+                telemetryClient.StopOperation(operation);
+            }
+        }
+
+        [HttpPost]
+        [Route("rcon/{gameServerId}/screenshot")]
+        public async Task<IActionResult> TakeScreenshot(Guid gameServerId, [FromBody] TakeScreenshotRequestDto? request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            }
+
+            var response = await ((IRconApi)this).TakeScreenshot(gameServerId, request, HttpContext.RequestAborted);
+
+            return response.ToHttpResult();
+        }
+
+        async Task<ApiResult> IRconApi.TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken)
+        {
+            var playerIdentifier = request.PlayerIdentifier?.Trim();
+            if (string.IsNullOrWhiteSpace(playerIdentifier) || !CoD4xPlayerIdentifierRegex.IsMatch(playerIdentifier))
+            {
+                return new ApiResponse(new ApiError(ErrorCodes.INVALID_PLAYER_IDENTIFIER, "Player identifier must be a numeric CoD4x identifier between 17 and 21 digits.")).ToBadRequestResult();
+            }
+
+            var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
+
+            if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+                return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+            if (gameServerApiResponse.Result.Data.GameType != GameType.CallOfDuty4x)
+            {
+                logger.LogWarning("Screenshot command requested for unsupported game type {GameType} on game server {GameServerId}", gameServerApiResponse.Result.Data.GameType, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE, "Screenshot command is only supported for CoD4x game servers.")).ToBadRequestResult();
+            }
+
+            var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon", cancellationToken).ConfigureAwait(false);
+            var rconPassword = RconConfigResolver.ParsePasswordFromConfig(rconConfigResult?.Result?.Data?.Configuration);
+
+            if (string.IsNullOrWhiteSpace(rconPassword))
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
+
+            var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
+
+            var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconTakeScreenshot");
+            operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+            operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+            try
+            {
+                var result = await rconClient.TakeScreenshot(playerIdentifier, cancellationToken);
+
+                auditLogger.LogAudit(AuditEvent.ServerAction("RconTakeScreenshot", AuditAction.Execute)
+                    .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                    .WithTarget(playerIdentifier, "Player")
+                    .WithSource("RconController")
+                    .WithProperty("Result", result.ToString())
+                    .Build());
+
+                return new ApiResponse().ToApiResult();
+            }
+            catch (NotImplementedException ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogWarning(ex, "Take screenshot operation not implemented for game server {GameServerId}", gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The take screenshot operation is not implemented for this game server type.")).ToApiResult();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = "Cancelled";
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = ex.Message;
+                telemetryClient.TrackException(ex);
+
+                logger.LogError(ex, "Failed to take screenshot for player identifier {PlayerIdentifier} on game server {GameServerId}", playerIdentifier, gameServerId);
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute screenshot command on the game server via RCON.")).ToApiResult();
             }
             finally
             {

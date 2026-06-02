@@ -1,4 +1,6 @@
-﻿using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
+﻿using System.Threading;
+
+using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
@@ -117,5 +119,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
         /// <param name="value">The value to set</param>
         /// <returns>The raw response from the server</returns>
         Task<string> SetDvar(string dvarName, string value);
+
+        /// <summary>
+        /// Triggers a CoD4x screenshot for a player identifier.
+        /// </summary>
+        /// <param name="playerIdentifier">The CoD4x player identifier</param>
+        /// <returns>The raw response from the server</returns>
+        Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default);
     }
 }

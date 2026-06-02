@@ -1,4 +1,5 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests;
 
@@ -94,6 +95,17 @@ public class FakeRconApiTests
 
         var log = Assert.Single(_fakeApi.OperationLog);
         Assert.Equal("KickPlayerWithVerification", log.Operation);
+    }
+
+    [Fact]
+    public async Task TakeScreenshot_LogsOperation()
+    {
+        var serverId = Guid.NewGuid();
+        await _fakeApi.TakeScreenshot(serverId, new TakeScreenshotRequestDto { PlayerIdentifier = "2310346615957836592" });
+
+        var log = Assert.Single(_fakeApi.OperationLog);
+        Assert.Equal("TakeScreenshot", log.Operation);
+        Assert.Equal(serverId, log.ServerId);
     }
 
     [Fact]

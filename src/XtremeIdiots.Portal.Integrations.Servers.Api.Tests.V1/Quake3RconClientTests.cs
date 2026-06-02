@@ -232,6 +232,31 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         }
 
         [Fact]
+        public async Task TakeScreenshot_SendsCorrectCommand()
+        {
+            // Arrange
+            var playerIdentifier = "2310346615957836592";
+            var expectedResponse = "screenshot queued";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler($"getss {playerIdentifier}", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response(expectedResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = await _rconClient.TakeScreenshot(playerIdentifier);
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+            Assert.Contains(expectedResponse, result);
+        }
+
+        [Fact]
         public async Task GetServerInfo_SendsCorrectCommand()
         {
             // Arrange

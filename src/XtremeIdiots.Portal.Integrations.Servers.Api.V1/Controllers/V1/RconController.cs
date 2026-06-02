@@ -1796,6 +1796,81 @@ public class RconController(
     }
 
     [HttpPost]
+    [Route("rcon/{gameServerId}/resolve-player")]
+    public async Task<IActionResult> ResolvePlayer(Guid gameServerId, [FromBody] ResolvePlayerRequestDto? request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+        }
+
+        var response = await ((IRconApi)this).ResolvePlayer(gameServerId, request, HttpContext.RequestAborted);
+
+        return response.ToHttpResult();
+    }
+
+    async Task<ApiResult<ResolvePlayerResponseDto>> IRconApi.ResolvePlayer(Guid gameServerId, ResolvePlayerRequestDto request, CancellationToken cancellationToken)
+    {
+        var playerQuery = request.PlayerQuery?.Trim();
+        if (string.IsNullOrWhiteSpace(playerQuery))
+            return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Player query cannot be null or empty.")).ToBadRequestResult();
+
+        var maxSuggestions = request.MaxSuggestions ?? 3;
+        if (maxSuggestions is < 1 or > 5)
+            return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Max suggestions must be between 1 and 5.")).ToBadRequestResult();
+
+        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
+
+        if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+            return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+
+        var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon", cancellationToken).ConfigureAwait(false);
+        var rconPassword = RconConfigResolver.ParsePasswordFromConfig(rconConfigResult?.Result?.Data?.Configuration);
+
+        if (string.IsNullOrWhiteSpace(rconPassword))
+            return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
+
+        var rconClient = rconClientFactory.CreateInstance(
+            gameServerApiResponse.Result.Data.GameType,
+            gameServerApiResponse.Result.Data.GameServerId,
+            gameServerApiResponse.Result.Data.Hostname,
+            gameServerApiResponse.Result.Data.QueryPort,
+            rconPassword);
+
+        var operation = telemetryClient.StartOperation<DependencyTelemetry>("RconResolvePlayer");
+        operation.Telemetry.Type = $"{gameServerApiResponse.Result.Data.GameType}Server";
+        operation.Telemetry.Target = $"{gameServerApiResponse.Result.Data.Hostname}:{gameServerApiResponse.Result.Data.QueryPort}";
+
+        try
+        {
+            var players = rconClient.GetPlayers();
+            var resolution = PlayerResolutionMatcher.ResolvePlayer(players, playerQuery, maxSuggestions);
+
+            logger.LogDebug(
+                "Resolved player query on game server {GameServerId}: status={Status}, playerCount={PlayerCount}, suggestionCount={SuggestionCount}",
+                gameServerId,
+                resolution.Status,
+                players?.Count ?? 0,
+                resolution.Suggestions.Count);
+
+            return new ApiResponse<ResolvePlayerResponseDto>(resolution).ToApiResult();
+        }
+        catch (Exception ex)
+        {
+            operation.Telemetry.Success = false;
+            operation.Telemetry.ResultCode = ex.Message;
+            telemetryClient.TrackException(ex);
+
+            logger.LogError(ex, "Failed to resolve player for query {PlayerQuery} on game server {GameServerId}", playerQuery, gameServerId);
+            return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to resolve player on the game server via RCON.")).ToApiResult();
+        }
+        finally
+        {
+            telemetryClient.StopOperation(operation);
+        }
+    }
+
+    [HttpPost]
     [Route("rcon/{gameServerId}/screenshot")]
     public async Task<IActionResult> TakeScreenshot(Guid gameServerId, [FromBody] TakeScreenshotRequestDto? request)
     {

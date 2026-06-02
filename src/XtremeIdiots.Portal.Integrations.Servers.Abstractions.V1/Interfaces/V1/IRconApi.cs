@@ -186,4 +186,12 @@ public interface IRconApi
     /// <param name="request">Screenshot request payload</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves a player from a free-form query against current live server players.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="request">Resolve-player request payload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult<ResolvePlayerResponseDto>> ResolvePlayer(Guid gameServerId, ResolvePlayerRequestDto request, CancellationToken cancellationToken = default);
 }

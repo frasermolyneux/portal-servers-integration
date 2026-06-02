@@ -13,7 +13,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         private readonly CancellationTokenSource _cancellationTokenSource;
         private Task? _listenTask;
         private readonly Dictionary<string, Func<string, byte[]>> _commandHandlers;
-        
+
         public int Port { get; }
 
         public MockUdpServer(int port = 0)
@@ -47,28 +47,31 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var result = await _udpClient.ReceiveAsync();
-                    if (cancellationToken.IsCancellationRequested) break;
-                    
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     var receivedData = result.Buffer;
                     var remoteEndPoint = result.RemoteEndPoint;
 
                     // Parse the RCON command
                     // Format: ÿÿÿÿrcon {password} {command}
                     var dataString = Encoding.ASCII.GetString(receivedData);
-                    
+
                     // Check for RCON prefix (4 bytes of 0xFF)
-                    if (receivedData.Length > 4 && 
-                        receivedData[0] == 0xFF && receivedData[1] == 0xFF && 
+                    if (receivedData.Length > 4 &&
+                        receivedData[0] == 0xFF && receivedData[1] == 0xFF &&
                         receivedData[2] == 0xFF && receivedData[3] == 0xFF)
                     {
                         var commandText = dataString[4..];
-                        
+
                         // Extract the actual command (skip "rcon password ")
                         var parts = commandText.Split(' ', 3);
                         if (parts.Length >= 3 && parts[0] == "rcon")
                         {
                             var command = parts[2];
-                            
+
                             // Find matching handler
                             foreach (var kvp in _commandHandlers)
                             {
@@ -101,16 +104,16 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
             byte[] prefix = [0xFF, 0xFF, 0xFF, 0xFF];
             var printCommand = Encoding.ASCII.GetBytes("print\n");
             var contentBytes = Encoding.ASCII.GetBytes(content);
-            
-            return [..prefix, ..printCommand, ..contentBytes];
+
+            return [.. prefix, .. printCommand, .. contentBytes];
         }
 
         public void Dispose()
         {
             _cancellationTokenSource.Cancel();
             _listenTask?.Wait(TimeSpan.FromMilliseconds(500));
-            _udpClient?.Dispose();
-            _cancellationTokenSource?.Dispose();
+            _udpClient.Dispose();
+            _cancellationTokenSource.Dispose();
         }
     }
 }

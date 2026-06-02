@@ -109,6 +109,40 @@ public class FakeRconApiTests
     }
 
     [Fact]
+    public async Task ResolvePlayer_WithConfiguredResponse_ReturnsCannedData()
+    {
+        var serverId = Guid.NewGuid();
+        _fakeApi.AddResolvePlayerResponse(serverId, new ResolvePlayerResponseDto
+        {
+            Status = ResolvePlayerStatus.Resolved,
+            ResolvedPlayer = new ResolvePlayerSuggestionDto
+            {
+                Name = "Fraser",
+                Slot = 2,
+                Guid = "g-1",
+                Score = 1000
+            }
+        });
+
+        var result = await _fakeApi.ResolvePlayer(serverId, new ResolvePlayerRequestDto { PlayerQuery = "fraser" });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ResolvePlayerStatus.Resolved, result.Result!.Data!.Status);
+        Assert.Equal(2, result.Result.Data.ResolvedPlayer!.Slot);
+    }
+
+    [Fact]
+    public async Task ResolvePlayer_LogsOperation()
+    {
+        var serverId = Guid.NewGuid();
+        await _fakeApi.ResolvePlayer(serverId, new ResolvePlayerRequestDto { PlayerQuery = "fra", MaxSuggestions = 2 });
+
+        var log = Assert.Single(_fakeApi.OperationLog);
+        Assert.Equal("ResolvePlayer", log.Operation);
+        Assert.Equal(serverId, log.ServerId);
+    }
+
+    [Fact]
     public async Task MultipleOperations_AllTracked()
     {
         var serverId = Guid.NewGuid();

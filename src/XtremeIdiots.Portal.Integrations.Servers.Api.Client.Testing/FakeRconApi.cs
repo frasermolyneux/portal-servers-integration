@@ -16,6 +16,7 @@ public class FakeRconApi : IRconApi
     private readonly ConcurrentDictionary<Guid, ApiResult<ServerRconStatusResponseDto>> _statusResponses = new();
     private readonly ConcurrentDictionary<Guid, ApiResult<RconMapCollectionDto>> _mapsResponses = new();
     private readonly ConcurrentDictionary<Guid, ApiResult<RconCurrentMapDto>> _currentMapResponses = new();
+    private readonly ConcurrentDictionary<Guid, ApiResult<ResolvePlayerResponseDto>> _resolvePlayerResponses = new();
     private readonly ConcurrentBag<(string Operation, Guid ServerId, object? Params)> _operationLog = [];
 
     public IReadOnlyCollection<(string Operation, Guid ServerId, object? Params)> OperationLog => _operationLog.ToArray();
@@ -40,6 +41,12 @@ public class FakeRconApi : IRconApi
         return this;
     }
 
+    public FakeRconApi AddResolvePlayerResponse(Guid gameServerId, ResolvePlayerResponseDto dto)
+    {
+        _resolvePlayerResponses[gameServerId] = new ApiResult<ResolvePlayerResponseDto>(HttpStatusCode.OK, new ApiResponse<ResolvePlayerResponseDto>(dto));
+        return this;
+    }
+
     public FakeRconApi SetDefaultBehavior(DefaultBehavior behavior)
     {
         DefaultResponseBehavior = behavior;
@@ -51,6 +58,7 @@ public class FakeRconApi : IRconApi
         _statusResponses.Clear();
         _mapsResponses.Clear();
         _currentMapResponses.Clear();
+        _resolvePlayerResponses.Clear();
         _operationLog.Clear();
         DefaultResponseBehavior = DefaultBehavior.ReturnGenericSuccess;
     }
@@ -96,6 +104,25 @@ public class FakeRconApi : IRconApi
         {
             DefaultBehavior.ReturnGenericSuccess => new ApiResult<RconCurrentMapDto>(HttpStatusCode.OK, new ApiResponse<RconCurrentMapDto>(new RconCurrentMapDto("mp_default"))),
             DefaultBehavior.ReturnError => new ApiResult<RconCurrentMapDto>(HttpStatusCode.NotFound, new ApiResponse<RconCurrentMapDto>(new ApiError("NOT_FOUND", "Server not found"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
+
+    public Task<ApiResult<ResolvePlayerResponseDto>> ResolvePlayer(Guid gameServerId, ResolvePlayerRequestDto request, CancellationToken cancellationToken = default)
+    {
+        _operationLog.Add(("ResolvePlayer", gameServerId, request));
+
+        if (_resolvePlayerResponses.TryGetValue(gameServerId, out var result))
+            return Task.FromResult(result);
+
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<ResolvePlayerResponseDto>(HttpStatusCode.OK, new ApiResponse<ResolvePlayerResponseDto>(new ResolvePlayerResponseDto
+            {
+                Status = ResolvePlayerStatus.NotFound,
+                Suggestions = []
+            })),
+            DefaultBehavior.ReturnError => new ApiResult<ResolvePlayerResponseDto>(HttpStatusCode.NotFound, new ApiResponse<ResolvePlayerResponseDto>(new ApiError("NOT_FOUND", "Server not found"))),
             _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
         });
     }

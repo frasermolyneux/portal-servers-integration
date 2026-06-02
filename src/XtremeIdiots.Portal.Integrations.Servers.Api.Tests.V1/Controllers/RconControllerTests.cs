@@ -186,4 +186,94 @@ public class RconControllerTests
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(ErrorCodes.OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE, result.Result?.Errors?.Single().Code);
     }
+
+    [Fact]
+    public async Task ResolvePlayer_WhenQueryIsEmpty_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        var result = await ((IRconApi)controller).ResolvePlayer(Guid.NewGuid(), new ResolvePlayerRequestDto { PlayerQuery = "   " });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_REQUEST, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task ResolvePlayer_WhenMaxSuggestionsOutOfRange_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        var result = await ((IRconApi)controller).ResolvePlayer(Guid.NewGuid(), new ResolvePlayerRequestDto { PlayerQuery = "fraser", MaxSuggestions = 6 });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_REQUEST, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task ResolvePlayer_WhenUniqueMatchExists_ReturnsResolved()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.Setup(x => x.GetPlayers()).Returns([
+            CreateRconPlayer(2, "^1Fraser", "g-1"),
+            CreateRconPlayer(5, "SomeoneElse", "g-2")
+        ]);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        var result = await ((IRconApi)controller).ResolvePlayer(gameServerId, new ResolvePlayerRequestDto { PlayerQuery = "fraser" });
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Result?.Data);
+        Assert.Equal(ResolvePlayerStatus.Resolved, result.Result!.Data!.Status);
+        Assert.Equal(2, result.Result.Data.ResolvedPlayer?.Slot);
+    }
+
+    [Fact]
+    public async Task ResolvePlayer_WhenMultipleCloseMatchesExist_ReturnsAmbiguous()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.Setup(x => x.GetPlayers()).Returns([
+            CreateRconPlayer(1, "Frase", "g-1"),
+            CreateRconPlayer(2, "Frazz", "g-2"),
+            CreateRconPlayer(3, "Other", "g-3")
+        ]);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        var result = await ((IRconApi)controller).ResolvePlayer(gameServerId, new ResolvePlayerRequestDto { PlayerQuery = "fra", MaxSuggestions = 2 });
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Result?.Data);
+        Assert.Equal(ResolvePlayerStatus.Ambiguous, result.Result!.Data!.Status);
+        Assert.Equal(2, result.Result.Data.Suggestions.Count);
+    }
+
+    private static IRconPlayer CreateRconPlayer(int slot, string name, string guid)
+    {
+        var mockPlayer = new Mock<IRconPlayer>();
+        mockPlayer.SetupProperty(x => x.Num, slot);
+        mockPlayer.SetupProperty(x => x.Name, name);
+        mockPlayer.SetupProperty(x => x.Guid, guid);
+        mockPlayer.SetupProperty(x => x.IpAddress, "127.0.0.1");
+        mockPlayer.SetupProperty(x => x.Ping, 50);
+        mockPlayer.SetupProperty(x => x.Rate, 25000);
+
+        return mockPlayer.Object;
+    }
 }

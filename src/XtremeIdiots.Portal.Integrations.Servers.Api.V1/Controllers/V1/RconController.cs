@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Asp.Versioning;
 using Microsoft.ApplicationInsights;
@@ -16,6 +17,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
@@ -63,6 +65,28 @@ public class RconController(
         {
             logger.LogError(ex, "Failed to verify player in slot {ClientId} on game server {GameServerId}", clientId, gameServerId);
             return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before operation."));
+        }
+    }
+
+    private async Task TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken cancellationToken = default)
+    {
+        var eventData = JsonSerializer.Serialize(data);
+        var effectiveCancellationToken = cancellationToken == default
+            ? HttpContext.RequestAborted
+            : cancellationToken;
+
+        try
+        {
+            await repositoryApiClient.GameServersEvents.V1
+                .CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, eventType, eventData), effectiveCancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Failed to write {EventType} operator event for game server {GameServerId}",
+                eventType,
+                gameServerId);
         }
     }
 
@@ -312,6 +336,12 @@ public class RconController(
                 .WithProperty("Result", result.ToString())
                 .Build());
 
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconKickPlayer", new
+            {
+                ClientId = clientId,
+                Result = result.ToString()
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -384,6 +414,12 @@ public class RconController(
                 .WithProperty("Result", result.ToString())
                 .Build());
 
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconBanPlayer", new
+            {
+                ClientId = clientId,
+                Result = result.ToString()
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -448,6 +484,17 @@ public class RconController(
         try
         {
             await rconClient.Restart();
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconRestart", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconRestart", new
+            {
+                Operation = "Restart"
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -512,6 +559,17 @@ public class RconController(
         try
         {
             await rconClient.RestartMap();
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconRestartMap", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconRestartMap", new
+            {
+                Operation = "RestartMap"
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -576,6 +634,17 @@ public class RconController(
         try
         {
             await rconClient.FastRestartMap();
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconFastRestartMap", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconFastRestartMap", new
+            {
+                Operation = "FastRestartMap"
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -640,6 +709,17 @@ public class RconController(
         try
         {
             await rconClient.NextMap();
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconNextMap", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconNextMap", new
+            {
+                Operation = "NextMap"
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -712,6 +792,18 @@ public class RconController(
         try
         {
             await rconClient.Say(message);
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconSay", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .WithProperty("Message", message)
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconSay", new
+            {
+                Message = message
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -779,6 +871,19 @@ public class RconController(
         try
         {
             await rconClient.TellPlayer(clientId, message);
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconTellPlayer", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithTarget(clientId.ToString(), "Player")
+                .WithSource("RconController")
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTellPlayer", new
+            {
+                ClientId = clientId,
+                Message = message
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -851,6 +956,18 @@ public class RconController(
         try
         {
             await rconClient.ChangeMap(mapName);
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconChangeMap", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .WithProperty("MapName", mapName)
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconChangeMap", new
+            {
+                MapName = mapName
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -918,6 +1035,12 @@ public class RconController(
         try
         {
             await rconClient.KickPlayerByName(name);
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconKickPlayerByName", new
+            {
+                Name = name
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -982,6 +1105,12 @@ public class RconController(
         try
         {
             await rconClient.KickAllPlayers();
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconKickAllPlayers", new
+            {
+                Operation = "KickAllPlayers"
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1049,6 +1178,12 @@ public class RconController(
         try
         {
             await rconClient.BanPlayerByName(name);
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconBanPlayerByName", new
+            {
+                Name = name
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1113,6 +1248,12 @@ public class RconController(
         try
         {
             await rconClient.TempBanPlayer(clientId);
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTempBanPlayer", new
+            {
+                ClientId = clientId
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1180,6 +1321,12 @@ public class RconController(
         try
         {
             await rconClient.TempBanPlayerByName(name);
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTempBanPlayerByName", new
+            {
+                Name = name
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1247,6 +1394,12 @@ public class RconController(
         try
         {
             await rconClient.UnbanPlayer(name);
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconUnbanPlayer", new
+            {
+                Name = name
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1521,6 +1674,13 @@ public class RconController(
                 .WithProperty("Result", result.ToString())
                 .Build());
 
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconKickPlayerWithVerification", new
+            {
+                ClientId = clientId,
+                ExpectedPlayerName = expectedPlayerName,
+                Result = result.ToString()
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1603,6 +1763,13 @@ public class RconController(
                 .WithProperty("Result", result.ToString())
                 .Build());
 
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconBanPlayerWithVerification", new
+            {
+                ClientId = clientId,
+                ExpectedPlayerName = expectedPlayerName,
+                Result = result.ToString()
+            }).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)
@@ -1684,6 +1851,13 @@ public class RconController(
                 .WithSource("RconController")
                 .WithProperty("Result", result.ToString())
                 .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTempBanPlayerWithVerification", new
+            {
+                ClientId = clientId,
+                ExpectedPlayerName = expectedPlayerName,
+                Result = result.ToString()
+            }).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();
         }
@@ -1768,6 +1942,13 @@ public class RconController(
                 .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
                 .WithSource("RconController")
                 .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTellPlayerWithVerification", new
+            {
+                ClientId = clientId,
+                ExpectedPlayerName = expectedPlayerName,
+                Message = message
+            }).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();
         }
@@ -1925,6 +2106,12 @@ public class RconController(
                 .WithSource("RconController")
                 .WithProperty("Result", result.ToString())
                 .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTakeScreenshot", new
+            {
+                PlayerIdentifier = playerIdentifier,
+                Result = result.ToString()
+            }, cancellationToken).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();
         }
@@ -2086,6 +2273,20 @@ public class RconController(
         try
         {
             await rconClient.SetDvar(dvarName, value);
+
+            auditLogger.LogAudit(AuditEvent.ServerAction("RconSetDvar", AuditAction.Execute)
+                .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
+                .WithSource("RconController")
+                .WithProperty("DvarName", dvarName)
+                .WithProperty("Value", value)
+                .Build());
+
+            await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconSetDvar", new
+            {
+                DvarName = dvarName,
+                Value = value
+            }, cancellationToken).ConfigureAwait(false);
+
             return new ApiResponse().ToApiResult();
         }
         catch (NotImplementedException ex)

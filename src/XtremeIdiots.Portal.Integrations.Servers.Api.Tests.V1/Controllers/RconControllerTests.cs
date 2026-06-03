@@ -12,6 +12,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.Configurations;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
@@ -23,6 +24,8 @@ public class RconControllerTests
 {
     private readonly Mock<ILogger<RconController>> _mockLogger = new();
     private readonly Mock<IRepositoryApiClient> _mockRepositoryApiClient = new() { DefaultValue = DefaultValue.Mock };
+    private readonly Mock<IVersionedGameServersEventsApi> _mockVersionedGameServerEventsApi = new();
+    private readonly Mock<IGameServersEventsApi> _mockGameServerEventsApi = new();
     private readonly Mock<IRconClientFactory> _mockRconClientFactory = new();
     private readonly Mock<IAuditLogger> _mockAuditLogger = new();
     private readonly TelemetryClient _telemetryClient;
@@ -31,6 +34,9 @@ public class RconControllerTests
     {
         var telemetryConfig = new TelemetryConfiguration { TelemetryChannel = new Mock<ITelemetryChannel>().Object };
         _telemetryClient = new TelemetryClient(telemetryConfig);
+
+        _mockVersionedGameServerEventsApi.SetupGet(x => x.V1).Returns(_mockGameServerEventsApi.Object);
+        _mockRepositoryApiClient.SetupGet(x => x.GameServersEvents).Returns(_mockVersionedGameServerEventsApi.Object);
     }
 
     private RconController CreateController() => new(
@@ -262,6 +268,33 @@ public class RconControllerTests
         Assert.NotNull(result.Result?.Data);
         Assert.Equal(ResolvePlayerStatus.Ambiguous, result.Result!.Data!.Status);
         Assert.Equal(2, result.Result.Data.Suggestions.Count);
+    }
+
+    [Fact]
+    public async Task Say_WhenEventWriteFails_StillReturnsSuccess()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.Setup(x => x.Say("Hello all")).Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        _mockGameServerEventsApi
+            .Setup(x => x.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("write failed"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).Say(gameServerId, "Hello all");
+
+        // Assert
+        Assert.True(result.IsSuccess);
     }
 
     private static IRconPlayer CreateRconPlayer(int slot, string name, string guid)

@@ -55,6 +55,8 @@ public class MapsController(
         }
 
         await using var session = sessionResult.Result.Data;
+        if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+            return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("GetFileList");
         operation.Telemetry.Type = session.Transport.TelemetryType;
@@ -62,7 +64,7 @@ public class MapsController(
 
         try
         {
-            var files = await session.GetListing("usermaps").ConfigureAwait(false);
+            var files = await session.GetListing(mapsDirectoryPath).ConfigureAwait(false);
             var entries = files.Select(f => new ServerMapDto(f.Name, f.FullPath, f.Modified ?? DateTime.UnixEpoch)).ToList();
 
             var data = new ServerMapsCollectionDto(entries);
@@ -95,6 +97,9 @@ public class MapsController(
 
     async Task<ApiResult> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
     {
+        if (!IsValidMapName(mapName))
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The map name contains invalid path characters.")).ToBadRequestResult();
+
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -126,10 +131,12 @@ public class MapsController(
         }
 
         await using var session = sessionResult.Result.Data;
+        if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
 
         try
         {
-            var mapDirectoryPath = $"usermaps/{mapName}";
+            var mapDirectoryPath = JoinPath(mapsDirectoryPath, mapName);
 
             if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
             {
@@ -170,6 +177,9 @@ public class MapsController(
 
     async Task<ApiResult> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
     {
+        if (!IsValidMapName(mapName))
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The map name contains invalid path characters.")).ToBadRequestResult();
+
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -193,10 +203,12 @@ public class MapsController(
         }
 
         await using var session = sessionResult.Result.Data;
+        if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
 
         try
         {
-            var mapDirectoryPath = $"usermaps/{mapName}";
+            var mapDirectoryPath = JoinPath(mapsDirectoryPath, mapName);
 
             if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
             {
@@ -237,6 +249,9 @@ public class MapsController(
         if (mapNames == null || mapNames.Count == 0)
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Map names list cannot be null or empty.")).ToBadRequestResult();
 
+        if (mapNames.Any(mapName => !IsValidMapName(mapName)))
+            return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "One or more map names contain invalid path characters.")).ToBadRequestResult();
+
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
@@ -253,6 +268,8 @@ public class MapsController(
         }
 
         await using var session = sessionResult.Result.Data;
+        if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+            return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("VerifyServerMaps");
         operation.Telemetry.Type = session.Transport.TelemetryType;
@@ -260,7 +277,7 @@ public class MapsController(
 
         try
         {
-            var files = await session.GetListing("usermaps", cancellationToken).ConfigureAwait(false);
+            var files = await session.GetListing(mapsDirectoryPath, cancellationToken).ConfigureAwait(false);
             var existingDirectories = new HashSet<string>(files.Where(f => f.IsDirectory).Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
 
             var results = mapNames.Select(mapName => new MapVerificationResultDto(mapName, existingDirectories.Contains(mapName))).ToList();
@@ -281,5 +298,79 @@ public class MapsController(
         {
             telemetryClient.StopOperation(operation);
         }
+    }
+
+    private static bool TryGetMapsDirectoryPath(string? mapsRootPath, out string mapsDirectoryPath)
+    {
+        mapsDirectoryPath = string.Empty;
+        if (!TryNormalizePath(mapsRootPath, out var normalizedRoot))
+            return false;
+
+        if (normalizedRoot == "/")
+        {
+            mapsDirectoryPath = "usermaps";
+            return true;
+        }
+
+        if (normalizedRoot.EndsWith("/usermaps", StringComparison.OrdinalIgnoreCase))
+        {
+            mapsDirectoryPath = normalizedRoot;
+            return true;
+        }
+
+        mapsDirectoryPath = JoinPath(normalizedRoot, "usermaps");
+        return true;
+    }
+
+    private static bool TryNormalizePath(string? path, out string normalized)
+    {
+        normalized = "/";
+
+        if (string.IsNullOrWhiteSpace(path))
+            return true;
+
+        normalized = path.Replace('\\', '/').Trim();
+        if (normalized.Length == 0)
+        {
+            normalized = "/";
+            return true;
+        }
+
+        if (!normalized.StartsWith('/'))
+            normalized = "/" + normalized;
+
+        while (normalized.Length > 1 && normalized.EndsWith('/'))
+            normalized = normalized[..^1];
+
+        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Any(segment => segment == ".."))
+            return false;
+
+        return true;
+    }
+
+    private static string JoinPath(string left, string right)
+    {
+        var leftNormalized = left.TrimEnd('/');
+        var rightNormalized = right.Trim('/');
+        return $"{leftNormalized}/{rightNormalized}";
+    }
+
+    private static bool IsValidMapName(string mapName)
+    {
+        if (string.IsNullOrWhiteSpace(mapName))
+            return false;
+
+        var normalized = mapName.Trim();
+        if (normalized is "." or "..")
+            return false;
+
+        if (mapName.Contains('/') || mapName.Contains('\\'))
+            return false;
+
+        if (mapName.Contains("..", StringComparison.Ordinal))
+            return false;
+
+        return mapName.All(c => !char.IsControl(c));
     }
 }

@@ -21,7 +21,7 @@ public class FileTransportResolverTests
     {
         var gameServerId = Guid.NewGuid();
         var gameServer = CreateGameServerDto(fileTransportEnabled: true, fileTransportType: FileTransportType.Sftp, ftpEnabled: false);
-        var configuration = CreateConfigurationDto("sftp", "{\"hostname\":\"sftp-host\",\"username\":\"demo\",\"password\":\"secret\"}");
+        var configuration = CreateConfigurationDto("sftp", "{\"hostname\":\"sftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
 
         _repositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
@@ -39,6 +39,7 @@ public class FileTransportResolverTests
         Assert.Equal(FileTransportType.Sftp, result.Result!.Data!.TransportType);
         Assert.Equal("sftp", result.Result.Data.ConfigurationNamespace);
         Assert.Equal(22, result.Result.Data.Credentials.Port);
+        Assert.Equal("/srv/game", result.Result.Data.Credentials.MapsRootPath);
 
         _repositoryApiClient.Verify(
             x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "sftp", It.IsAny<CancellationToken>()),

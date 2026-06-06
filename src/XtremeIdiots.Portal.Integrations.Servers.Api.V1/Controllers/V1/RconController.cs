@@ -35,6 +35,7 @@ public class RconController(
 {
     private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex MultiWhitespaceRegex = new(@"\s+", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xPlayerIdentifierRegex = new(@"^[0-9]{17,21}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
 
@@ -46,16 +47,34 @@ public class RconController(
     {
         try
         {
+            var normalizedExpectedPlayerName = NormalizePlayerName(expectedPlayerName);
             var players = rconClient.GetPlayers();
             var player = players?.FirstOrDefault(p => p.Num == clientId);
 
             if (player == null)
             {
+                logger.LogWarning(
+                    "Player verification failed for game server {GameServerId}: no player found in slot {ClientId}. Expected player '{ExpectedPlayerName}' (normalized '{NormalizedExpectedPlayerName}')",
+                    gameServerId,
+                    clientId,
+                    expectedPlayerName,
+                    normalizedExpectedPlayerName);
+
                 return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"No player found in slot {clientId}."));
             }
 
-            if (!string.Equals(player.Name, expectedPlayerName, StringComparison.OrdinalIgnoreCase))
+            var normalizedActualPlayerName = NormalizePlayerName(player.Name);
+            if (!string.Equals(normalizedActualPlayerName, normalizedExpectedPlayerName, StringComparison.OrdinalIgnoreCase))
             {
+                logger.LogWarning(
+                    "Player verification mismatch on game server {GameServerId}, slot {ClientId}. Expected '{ExpectedPlayerName}' (normalized '{NormalizedExpectedPlayerName}') but found '{ActualPlayerName}' (normalized '{NormalizedActualPlayerName}')",
+                    gameServerId,
+                    clientId,
+                    expectedPlayerName,
+                    normalizedExpectedPlayerName,
+                    player.Name,
+                    normalizedActualPlayerName);
+
                 return new ApiResponse(new ApiError(ErrorCodes.PLAYER_VERIFICATION_FAILED, $"Player verification failed. Expected '{expectedPlayerName}' but found '{player.Name}' in slot {clientId}."));
             }
 
@@ -66,6 +85,18 @@ public class RconController(
             logger.LogError(ex, "Failed to verify player in slot {ClientId} on game server {GameServerId}", clientId, gameServerId);
             return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to verify player identity before operation."));
         }
+    }
+
+    private static string NormalizePlayerName(string? playerName)
+    {
+        if (string.IsNullOrWhiteSpace(playerName))
+        {
+            return string.Empty;
+        }
+
+        var withoutColors = QuakeColorCodeRegex.Replace(playerName, string.Empty);
+        var collapsedWhitespace = MultiWhitespaceRegex.Replace(withoutColors, " ");
+        return collapsedWhitespace.Trim();
     }
 
     private async Task TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken cancellationToken = default)

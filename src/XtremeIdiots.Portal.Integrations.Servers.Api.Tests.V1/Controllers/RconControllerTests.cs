@@ -297,6 +297,70 @@ public class RconControllerTests
         Assert.True(result.IsSuccess);
     }
 
+    [Fact]
+    public async Task TellPlayerWithVerification_WhenNamesOnlyDifferByColorCodesAndWhitespace_ReturnsSuccess()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(3, "^1Totty>XI<Adm^7", "2310346613733334073")
+            ]);
+
+        mockRconClient
+            .Setup(x => x.TellPlayer(3, "hello"))
+            .ReturnsAsync("Tell command sent to player");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller)
+            .TellPlayerWithVerification(gameServerId, 3, "hello", "  Totty>XI<Adm  ");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.Verify(x => x.TellPlayer(3, "hello"), Times.Once);
+    }
+
+    [Fact]
+    public async Task TellPlayerWithVerification_WhenNormalizedNamesDiffer_ReturnsBadRequestWithVerificationCode()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(3, "^2Totty>XI<Adm", "2310346613733334073")
+            ]);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller)
+            .TellPlayerWithVerification(gameServerId, 3, "hello", "DifferentPlayer");
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.PLAYER_VERIFICATION_FAILED, result.Result?.Errors?.Single().Code);
+        mockRconClient.Verify(x => x.TellPlayer(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+    }
+
     private static IRconPlayer CreateRconPlayer(int slot, string name, string guid)
     {
         var mockPlayer = new Mock<IRconPlayer>();

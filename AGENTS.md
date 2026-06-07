@@ -38,6 +38,11 @@ The `copilot-setup-steps.yml` workflow checks out `frasermolyneux/.github-copilo
 - `patterns.terraform-remote-state`
 - `dotnet-nuget-library.instructions.md`, `dotnet-api-client-libraries.instructions.md`
 
+### Platform settings contracts
+- File transport and RCON resolver paths must consume `XtremeIdiots.Portal.Settings.Contracts.V1` typed contracts/validators.
+- Do not reintroduce raw namespace/property JSON parsing for migrated settings namespaces.
+- Preserve contract-defined legacy schema compatibility behavior where required.
+
 ### Platform consumption contracts
 - `platform.workloads`, `platform.monitoring`, `platform.connectivity`
 

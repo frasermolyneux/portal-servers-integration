@@ -29,4 +29,8 @@
     <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures\Resolvers\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,6 @@
+{
+    "hostname": "sftp.example.local",
+    "port": "not-an-int",
+    "username": "demo",
+    "password": "secret"
+}

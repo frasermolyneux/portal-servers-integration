@@ -1,0 +1,8 @@
+{
+    "hostname": "sftp.example.local",
+    "port": 2022,
+    "username": "demo",
+    "password": "secret",
+    "hostKeyFingerprint": "SHA256:abcdef",
+    "mapsRootPath": "/srv/game"
+}

@@ -1,0 +1,8 @@
+{
+    "hostname": "ftp.example.local",
+    "port": 2121,
+    "username": "demo",
+    "password": "secret",
+    "mapsRootPath": "/mods/maps",
+    "extra": "ignored"
+}

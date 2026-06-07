@@ -1,3 +1,5 @@
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
+
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal static class FtpConfigResolver
@@ -10,18 +12,15 @@ internal static class FtpConfigResolver
 
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(configJson);
-            var root = doc.RootElement;
-
-            var hostname = root.TryGetProperty("hostname", out var h) ? h.GetString() : null;
-            var username = root.TryGetProperty("username", out var u) ? u.GetString() : null;
-            var password = root.TryGetProperty("password", out var p) ? p.GetString() : null;
-            var port = root.TryGetProperty("port", out var pt) && pt.TryGetInt32(out var portVal) ? portVal : 21;
-
-            if (string.IsNullOrWhiteSpace(hostname) || string.IsNullOrWhiteSpace(username))
+            var document = SettingsContractsJsonSerializer.Deserialize<FtpSettingsDocument>(configJson);
+            var validationResult = new FtpSettingsValidator().Validate(document);
+            if (document is null || validationResult.Errors.Count > 0)
                 return null;
 
-            return new FtpCredentials(hostname, port, username, password ?? "");
+            if (string.IsNullOrWhiteSpace(document.Hostname) || string.IsNullOrWhiteSpace(document.Username))
+                return null;
+
+            return new FtpCredentials(document.Hostname, document.Port ?? 21, document.Username, document.Password ?? string.Empty);
         }
         catch
         {

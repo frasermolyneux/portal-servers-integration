@@ -104,4 +104,49 @@ public class FileTransportConfigResolverFixtureTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void Parse_WithUnsupportedSchemaVersion_ReturnsNull()
+    {
+        const string payload = """
+        {
+            "schemaVersion": 999,
+            "hostname": "ftp.example.local",
+            "username": "demo"
+        }
+        """;
+
+        var result = FileTransportConfigResolver.Parse(FileTransportType.Ftp, payload);
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData(FileTransportType.Ftp, "legacy-ftp.example.local", 2121, null)]
+    [InlineData(FileTransportType.Sftp, "legacy-sftp.example.local", 2022, "SHA256:legacy")]
+    public void Parse_WithLegacySupportedSchemaVersion_ReturnsCredentials(
+        FileTransportType transportType,
+        string expectedHostname,
+        int expectedPort,
+        string? expectedHostKeyFingerprint)
+    {
+        var payload = $$"""
+        {
+            "schemaVersion": 0,
+            "hostname": "{{expectedHostname}}",
+            "port": {{expectedPort}},
+            "username": "demo",
+            "password": "secret"{{(expectedHostKeyFingerprint is null ? string.Empty : $",\n            \"hostKeyFingerprint\": \"{expectedHostKeyFingerprint}\"")}}
+        }
+        """;
+
+        var result = FileTransportConfigResolver.Parse(transportType, payload);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedHostname, result!.Hostname);
+        Assert.Equal(expectedPort, result.Port);
+        Assert.Equal("demo", result.Username);
+        Assert.Equal("secret", result.Password);
+        Assert.Equal(expectedHostKeyFingerprint, result.HostKeyFingerprint);
+    }
 }

@@ -1,3 +1,5 @@
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.Rcon;
+
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal static class RconConfigResolver
@@ -8,10 +10,12 @@ internal static class RconConfigResolver
 
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(configJson);
-            var root = doc.RootElement;
+            var document = SettingsContractsJsonSerializer.Deserialize<RconSettingsDocument>(configJson);
+            var validationResult = new RconSettingsValidator().Validate(document);
+            if (document is null || validationResult.Errors.Count > 0)
+                return null;
 
-            return root.TryGetProperty("password", out var p) ? p.GetString() : null;
+            return document.Password;
         }
         catch
         {

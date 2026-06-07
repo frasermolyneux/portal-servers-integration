@@ -4,14 +4,15 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal sealed class FileTransportResolver(
     IRepositoryApiClient repositoryApiClient) : IFileTransportResolver
 {
-    private const string FtpNamespace = "ftp";
-    private const string SftpNamespace = "sftp";
+    private const string FtpNamespace = FtpSettingsConstants.Namespace;
+    private const string SftpNamespace = SftpSettingsConstants.Namespace;
 
     public async Task<ApiResult<ResolvedFileTransport>> Resolve(Guid gameServerId, CancellationToken cancellationToken = default)
     {

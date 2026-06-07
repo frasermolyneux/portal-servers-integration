@@ -40,4 +40,34 @@ public class RconConfigResolverFixtureTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void ParsePasswordFromConfig_WithUnsupportedSchemaVersion_ReturnsNull()
+    {
+        const string payload = """
+        {
+            "schemaVersion": 999,
+            "password": "rcon-secret"
+        }
+        """;
+
+        var result = RconConfigResolver.ParsePasswordFromConfig(payload);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ParsePasswordFromConfig_WithLegacySupportedSchemaVersion_ReturnsPassword()
+    {
+        const string payload = """
+        {
+            "schemaVersion": 0,
+            "password": "legacy-secret"
+        }
+        """;
+
+        var result = RconConfigResolver.ParsePasswordFromConfig(payload);
+
+        Assert.Equal("legacy-secret", result);
+    }
 }

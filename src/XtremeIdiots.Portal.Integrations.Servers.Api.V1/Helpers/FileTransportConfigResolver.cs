@@ -1,5 +1,5 @@
-using System.Text.Json;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
@@ -12,30 +12,54 @@ internal static class FileTransportConfigResolver
 
         try
         {
-            using var doc = JsonDocument.Parse(configJson);
-            var root = doc.RootElement;
-
-            var hostname = root.TryGetProperty("hostname", out var hostProperty) ? hostProperty.GetString() : null;
-            var username = root.TryGetProperty("username", out var usernameProperty) ? usernameProperty.GetString() : null;
-            var password = root.TryGetProperty("password", out var passwordProperty) ? passwordProperty.GetString() : null;
-            var hostKeyFingerprint = transportType == FileTransportType.Sftp && root.TryGetProperty("hostKeyFingerprint", out var hostKeyFingerprintProperty)
-                ? hostKeyFingerprintProperty.GetString()
-                : null;
-            var mapsRootPath = root.TryGetProperty("mapsRootPath", out var mapsRootPathProperty) ? mapsRootPathProperty.GetString() : null;
-
-            var defaultPort = transportType == FileTransportType.Sftp ? 22 : 21;
-            var port = root.TryGetProperty("port", out var portProperty) && portProperty.TryGetInt32(out var parsedPort)
-                ? parsedPort
-                : defaultPort;
-
-            if (string.IsNullOrWhiteSpace(hostname) || string.IsNullOrWhiteSpace(username))
-                return null;
-
-            return new FileTransportCredentials(hostname, port, username, password ?? string.Empty, hostKeyFingerprint, mapsRootPath);
+            return transportType switch
+            {
+                FileTransportType.Sftp => ParseSftp(configJson),
+                FileTransportType.Ftp => ParseFtp(configJson),
+                _ => null,
+            };
         }
         catch
         {
             return null;
         }
+    }
+
+    private static FileTransportCredentials? ParseFtp(string configJson)
+    {
+        var document = SettingsContractsJsonSerializer.Deserialize<FtpSettingsDocument>(configJson);
+        var validationResult = new FtpSettingsValidator().Validate(document);
+        if (document is null || validationResult.Errors.Count > 0)
+            return null;
+
+        if (string.IsNullOrWhiteSpace(document.Hostname) || string.IsNullOrWhiteSpace(document.Username))
+            return null;
+
+        return new FileTransportCredentials(
+            document.Hostname,
+            document.Port ?? 21,
+            document.Username,
+            document.Password ?? string.Empty,
+            null,
+            document.MapsRootPath);
+    }
+
+    private static FileTransportCredentials? ParseSftp(string configJson)
+    {
+        var document = SettingsContractsJsonSerializer.Deserialize<SftpSettingsDocument>(configJson);
+        var validationResult = new SftpSettingsValidator().Validate(document);
+        if (document is null || validationResult.Errors.Count > 0)
+            return null;
+
+        if (string.IsNullOrWhiteSpace(document.Hostname) || string.IsNullOrWhiteSpace(document.Username))
+            return null;
+
+        return new FileTransportCredentials(
+            document.Hostname,
+            document.Port ?? 22,
+            document.Username,
+            document.Password ?? string.Empty,
+            document.HostKeyFingerprint,
+            document.MapsRootPath);
     }
 }

@@ -14,6 +14,7 @@
 ## Documentation
 * [Development Workflows](/docs/development-workflows.md) - Branch strategy, CI/CD triggers, NuGet publishing, and development flows
 * [Manual Steps](/docs/manual-steps.md) - Post-deployment configuration steps
+* [Platform Settings Contracts](/docs/platform-settings-contracts.md) - Resolver architecture, migration notes, and troubleshooting runbook
 
 ## Overview
 Versioned REST API that bridges the XtremeIdiots Portal with game servers: querying live status, running RCON operations, and syncing maps over FTP. Uses ASP.NET Core 9 with Microsoft.Identity.Web for Entra-protected controllers, Application Insights telemetry with sampling, optional Azure App Configuration, and a generated Repository API client for portal data. Packages abstractions and API clients for reuse across the ecosystem and deploys to Azure App Service via Terraform with OIDC authentication.

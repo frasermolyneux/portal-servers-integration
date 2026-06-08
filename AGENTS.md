@@ -42,6 +42,7 @@ The `copilot-setup-steps.yml` workflow checks out `frasermolyneux/.github-copilo
 - File transport and RCON resolver paths must consume `XtremeIdiots.Portal.Settings.Contracts.V1` typed contracts/validators.
 - Do not reintroduce raw namespace/property JSON parsing for migrated settings namespaces.
 - Preserve contract-defined legacy schema compatibility behavior where required.
+- Follow `docs/platform-settings-contracts.md` for migration and troubleshooting guidance.
 
 ### Platform consumption contracts
 - `platform.workloads`, `platform.monitoring`, `platform.connectivity`

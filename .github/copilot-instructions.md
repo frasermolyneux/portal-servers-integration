@@ -9,6 +9,12 @@
 >
 > **Cloud agents (GitHub Copilot coding agent etc.):** read [`AGENTS.md`](../AGENTS.md) at the repo root first — it is the canonical brief that survives outside the local VS Code multi-root workspace.
 
+## Org conventions via MCP (when available)
+
+If a `frasermolyneux-copilot` MCP server is configured in your client (`.vscode/mcp.json`, the GitHub Copilot coding-agent MCP config at `.github/copilot/mcp_config.json`, or an equivalent stdio MCP wire-up), **prefer its tools** over your own assumptions when answering questions about org standards, branching, workflows, Terraform, .NET projects, Azure patterns, or shared library / platform consumption contracts. The tool surface is `list_instructions`, `get_instruction`, `search_instructions`, plus the matching `_prompts` and `_agents` equivalents (seven tools total). The catalog source-of-truth lives in `frasermolyneux/.github-copilot` — see `mcp-server/README.md` there for the tool contract.
+
+This is **complementary** to the file-load model: if `./.github-copilot/` is checked out in the runner (per `copilot-setup-steps.yml`), continue to read those files directly. If both are available, prefer MCP for freshness. If no MCP server is configured in your client, treat this section as a no-op and fall back to the file paths above.
+
 - **Architecture**: ASP.NET Core 9 API with Entra ID auth via Microsoft.Identity.Web. API startup lives in [src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs); controllers are versioned using Asp.Versioning and routed as `v{version:apiVersion}`.
 - **Projects**: Solution [src/XtremeIdiots.Portal.Integrations.Servers.sln](src/XtremeIdiots.Portal.Integrations.Servers.sln) includes Abstractions DTOs/interfaces, API, generated API client, and unit/integration tests.
 - **Authentication/Authorization**: Controllers are `[Authorize(Roles = "ServiceAccount")]`; ApiInfoController (`/v1.0/info`) and HealthController (`/v1.0/health`) allow anonymous. Ensure Entra audience/authority is configured in appsettings or environment.

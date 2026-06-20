@@ -55,7 +55,6 @@ internal sealed class FileTransportResolver(
 
     private static FileTransportType SelectTransport(GameServerDto gameServer)
     {
-        // Authoritative transport metadata has precedence when explicitly set.
         if (gameServer.FileTransportEnabled)
         {
             if (gameServer.FileTransportType == FileTransportType.Sftp)
@@ -63,10 +62,6 @@ internal sealed class FileTransportResolver(
 
             return FileTransportType.Ftp;
         }
-
-        // Compatibility fallback for legacy payloads that only used FTP flags.
-        if (gameServer.FtpEnabled)
-            return FileTransportType.Ftp;
 
         return FileTransportType.Unknown;
     }

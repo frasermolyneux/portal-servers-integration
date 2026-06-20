@@ -64,6 +64,10 @@ public class FileTransportResolverTests
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
         Assert.NotNull(result.Result?.Errors);
         Assert.Equal("FTP_CREDENTIALS_MISSING", result.Result!.Errors!.First().Code);
+
+        _repositoryApiClient.Verify(
+            x => x.GameServerConfigurations.V1.GetConfiguration(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

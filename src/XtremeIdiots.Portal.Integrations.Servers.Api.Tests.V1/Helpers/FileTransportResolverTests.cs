@@ -47,6 +47,36 @@ public class FileTransportResolverTests
     }
 
     [Fact]
+    public async Task Resolve_WhenTransportTypeIsFtp_UsesFtpNamespaceAndDefaultsPort21()
+    {
+        var gameServerId = Guid.NewGuid();
+        var gameServer = CreateGameServerDto(fileTransportEnabled: true, fileTransportType: FileTransportType.Ftp, ftpEnabled: false);
+        var configuration = CreateConfigurationDto("ftp", "{\"hostname\":\"ftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
+
+        _repositoryApiClient
+            .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(gameServer)));
+
+        _repositoryApiClient
+            .Setup(x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<ConfigurationDto>(HttpStatusCode.OK, new ApiResponse<ConfigurationDto>(configuration)));
+
+        var resolver = CreateResolver();
+
+        var result = await resolver.Resolve(gameServerId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(FileTransportType.Ftp, result.Result!.Data!.TransportType);
+        Assert.Equal("ftp", result.Result.Data.ConfigurationNamespace);
+        Assert.Equal(21, result.Result.Data.Credentials.Port);
+        Assert.Equal("/srv/game", result.Result.Data.Credentials.MapsRootPath);
+
+        _repositoryApiClient.Verify(
+            x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task Resolve_WhenOnlyLegacyFtpFlagIsEnabled_ReturnsBadRequest()
     {
         var gameServerId = Guid.NewGuid();

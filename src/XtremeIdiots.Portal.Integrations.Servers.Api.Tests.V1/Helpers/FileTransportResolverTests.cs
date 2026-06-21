@@ -47,11 +47,11 @@ public class FileTransportResolverTests
     }
 
     [Fact]
-    public async Task Resolve_WhenLegacyFtpEnabled_FallsBackToFtpNamespace()
+    public async Task Resolve_WhenTransportTypeIsFtp_UsesFtpNamespaceAndDefaultsPort21()
     {
         var gameServerId = Guid.NewGuid();
-        var gameServer = CreateGameServerDto(fileTransportEnabled: false, fileTransportType: FileTransportType.Unknown, ftpEnabled: true);
-        var configuration = CreateConfigurationDto("ftp", "{\"hostname\":\"ftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"port\":2121}");
+        var gameServer = CreateGameServerDto(fileTransportEnabled: true, fileTransportType: FileTransportType.Ftp, ftpEnabled: false);
+        var configuration = CreateConfigurationDto("ftp", "{\"hostname\":\"ftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
 
         _repositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
@@ -68,7 +68,36 @@ public class FileTransportResolverTests
         Assert.True(result.IsSuccess);
         Assert.Equal(FileTransportType.Ftp, result.Result!.Data!.TransportType);
         Assert.Equal("ftp", result.Result.Data.ConfigurationNamespace);
-        Assert.Equal(2121, result.Result.Data.Credentials.Port);
+        Assert.Equal(21, result.Result.Data.Credentials.Port);
+        Assert.Equal("/srv/game", result.Result.Data.Credentials.MapsRootPath);
+
+        _repositoryApiClient.Verify(
+            x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Resolve_WhenOnlyLegacyFtpFlagIsEnabled_ReturnsBadRequest()
+    {
+        var gameServerId = Guid.NewGuid();
+        var gameServer = CreateGameServerDto(fileTransportEnabled: false, fileTransportType: FileTransportType.Unknown, ftpEnabled: true);
+
+        _repositoryApiClient
+            .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(gameServer)));
+
+        var resolver = CreateResolver();
+
+        var result = await resolver.Resolve(gameServerId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.NotNull(result.Result?.Errors);
+        Assert.Equal("FTP_CREDENTIALS_MISSING", result.Result!.Errors!.First().Code);
+
+        _repositoryApiClient.Verify(
+            x => x.GameServerConfigurations.V1.GetConfiguration(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -89,6 +118,10 @@ public class FileTransportResolverTests
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
         Assert.NotNull(result.Result?.Errors);
         Assert.Equal("FTP_CREDENTIALS_MISSING", result.Result!.Errors!.First().Code);
+
+        _repositoryApiClient.Verify(
+            x => x.GameServerConfigurations.V1.GetConfiguration(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

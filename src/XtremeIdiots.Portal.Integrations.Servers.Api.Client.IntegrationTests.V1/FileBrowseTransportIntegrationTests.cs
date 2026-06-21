@@ -50,7 +50,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
     }
 
     [Fact]
-    public async Task BrowseDirectory_WhenLegacyFtpFallback_DoesNotUseSftpConfig()
+    public async Task BrowseDirectory_WhenOnlyLegacyFtpFlagIsEnabled_ReturnsCredentialsMissingWithoutConfigLookup()
     {
         // Arrange
         var gameServerId = Guid.NewGuid();
@@ -66,7 +66,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         Assert.Contains("FTP_CREDENTIALS_MISSING", content);
         _factory.MockRepositoryApiClient.Verify(
             x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "ftp", It.IsAny<CancellationToken>()),
-            Times.Once);
+            Times.Never);
         _factory.MockRepositoryApiClient.Verify(
             x => x.GameServerConfigurations.V1.GetConfiguration(gameServerId, "sftp", It.IsAny<CancellationToken>()),
             Times.Never);

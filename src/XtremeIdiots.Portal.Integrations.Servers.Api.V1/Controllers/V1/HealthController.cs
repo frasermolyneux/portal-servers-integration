@@ -18,8 +18,8 @@ public class HealthController : ControllerBase
         _healthCheckService = healthCheckService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetHealth(CancellationToken cancellationToken)
+    [HttpGet("ready")]
+    public async Task<IActionResult> GetReady(CancellationToken cancellationToken)
     {
         var result = await _healthCheckService.CheckHealthAsync(cancellationToken);
 
@@ -36,6 +36,15 @@ public class HealthController : ControllerBase
                 status = e.Value.Status.ToString(),
                 description = e.Value.Description
             })
+        });
+    }
+
+    [HttpGet("live")]
+    public IActionResult GetLive()
+    {
+        return Ok(new
+        {
+            status = HealthStatus.Healthy.ToString(),
         });
     }
 }

@@ -9,7 +9,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 public class HealthControllerTests
 {
     [Fact]
-    public async Task GetHealth_WhenHealthy_Returns200()
+    public async Task GetReady_WhenHealthy_Returns200()
     {
         var mockHealthCheckService = new Mock<HealthCheckService>();
         mockHealthCheckService
@@ -23,14 +23,14 @@ public class HealthControllerTests
 
         var controller = new HealthController(mockHealthCheckService.Object);
 
-        var result = await controller.GetHealth(CancellationToken.None);
+        var result = await controller.GetReady(CancellationToken.None);
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(200, objectResult.StatusCode);
     }
 
     [Fact]
-    public async Task GetHealth_WhenUnhealthy_Returns503()
+    public async Task GetReady_WhenUnhealthy_Returns503()
     {
         var mockHealthCheckService = new Mock<HealthCheckService>();
         mockHealthCheckService
@@ -44,14 +44,14 @@ public class HealthControllerTests
 
         var controller = new HealthController(mockHealthCheckService.Object);
 
-        var result = await controller.GetHealth(CancellationToken.None);
+        var result = await controller.GetReady(CancellationToken.None);
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(503, objectResult.StatusCode);
     }
 
     [Fact]
-    public async Task GetHealth_WhenDegraded_Returns503()
+    public async Task GetReady_WhenDegraded_Returns503()
     {
         var mockHealthCheckService = new Mock<HealthCheckService>();
         mockHealthCheckService
@@ -65,7 +65,7 @@ public class HealthControllerTests
 
         var controller = new HealthController(mockHealthCheckService.Object);
 
-        var result = await controller.GetHealth(CancellationToken.None);
+        var result = await controller.GetReady(CancellationToken.None);
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(503, objectResult.StatusCode);

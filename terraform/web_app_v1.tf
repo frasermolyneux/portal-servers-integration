@@ -27,7 +27,7 @@ resource "azurerm_linux_web_app" "app_v1" {
 
     minimum_tls_version = "1.2"
 
-    health_check_path                 = "/v1.0/health"
+    health_check_path                 = "/v1.0/health/live"
     health_check_eviction_time_in_min = 5
   }
 
@@ -38,7 +38,7 @@ resource "azurerm_linux_web_app" "app_v1" {
 
     "AZURE_CLIENT_ID" = local.servers_integration_identity.client_id
 
-    "minTlsVersion"= "1.2"
+    "minTlsVersion"                              = "1.2"
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = data.azurerm_application_insights.app_insights.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "ASPNETCORE_ENVIRONMENT"                     = var.environment == "prd" ? "Production" : "Development"

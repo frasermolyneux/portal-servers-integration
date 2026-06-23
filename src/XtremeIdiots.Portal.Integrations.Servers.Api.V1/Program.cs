@@ -14,6 +14,7 @@ using MX.Observability.ApplicationInsights.AspNetCore;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,6 +110,7 @@ builder.Services.AddRepositoryApiClient(options => options
     .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
 
 builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"])
     .AddCheck<XtremeIdiots.Portal.Integrations.Servers.Api.V1.HealthChecks.RepositoryApiHealthCheck>(
         name: "repository-api",
         tags: ["dependency"]);

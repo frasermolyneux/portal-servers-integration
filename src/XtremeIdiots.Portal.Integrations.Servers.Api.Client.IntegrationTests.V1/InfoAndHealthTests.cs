@@ -29,7 +29,7 @@ public class InfoAndHealthTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task GetHealth_ReturnsResponse()
     {
-        var response = await _client.GetAsync("/v1.0/health");
+        var response = await _client.GetAsync("/v1.0/health/ready");
 
         // Health may be 200 or 503 depending on health check dependencies,
         // but it should respond (not 404 or 500)

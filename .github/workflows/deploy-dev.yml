@@ -79,14 +79,21 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/deploy-app-service@deploy-app-service/v1.2
+      - uses: frasermolyneux/actions/deploy-app-service@deploy-app-service/v1.3
         with:
           web-artifact-name: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           web-app-name: ${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}
           resource-group-name: ${{ needs.terraform-plan-and-apply-dev.outputs.web_app_resource_group_v1 }}
+          info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
+          expected-version: ${{ needs.build-and-test.outputs.build_version }}
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: frasermolyneux/actions/wait-for-version@wait-for-version/v1.0
+        with:
+          info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
+          expected-version: ${{ needs.build-and-test.outputs.build_version }}
 
   apim-api-import-dev:
     permissions:

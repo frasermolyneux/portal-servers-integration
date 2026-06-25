@@ -51,10 +51,14 @@ public class FakeQueryApi : IQueryApi
         _queriedServerIds.Add(gameServerId);
 
         if (_errorResponses.TryGetValue(gameServerId, out var errorResult))
+        {
             return Task.FromResult(errorResult);
+        }
 
         if (_responses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {

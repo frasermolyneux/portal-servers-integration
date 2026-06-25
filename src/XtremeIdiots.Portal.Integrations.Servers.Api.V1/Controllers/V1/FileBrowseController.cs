@@ -40,17 +40,23 @@ public class FileBrowseController(
         var normalizedPath = NormalizePath(path);
 
         if (ContainsTraversalSegments(normalizedPath))
+        {
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The path contains invalid traversal segments.")).ToBadRequestResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
         if (sessionResult.IsNotFound)
+        {
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to browse directory.")).ToApiResult();
+            }
 
             return new ApiResponse<FtpDirectoryListingDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
@@ -59,7 +65,9 @@ public class FileBrowseController(
 
         var cacheKey = $"{gameServerId}-file-browse-{session.Transport.TransportType}-{normalizedPath}";
         if (memoryCache.TryGetValue<FtpDirectoryListingDto>(cacheKey, out var cached) && cached != null)
+        {
             return new ApiResponse<FtpDirectoryListingDto>(cached).ToApiResult();
+        }
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("FileBrowse");
         operation.Telemetry.Type = session.Transport.TelemetryType;
@@ -105,16 +113,22 @@ public class FileBrowseController(
     private static string NormalizePath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
+        {
             return "/";
+        }
 
         // Normalize separators and ensure leading slash
         var normalized = path.Replace('\\', '/').Trim();
         if (!normalized.StartsWith('/'))
+        {
             normalized = "/" + normalized;
+        }
 
         // Remove trailing slash unless root
         if (normalized.Length > 1 && normalized.EndsWith('/'))
+        {
             normalized = normalized.TrimEnd('/');
+        }
 
         return normalized;
     }
@@ -124,11 +138,15 @@ public class FileBrowseController(
         // Reject path traversal
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (segments.Any(s => s == ".."))
+        {
             return true;
+        }
 
         // Reject Windows absolute paths (e.g. C:, D:) and UNC paths (e.g. //server)
         if (segments.Length > 0 && (segments[0].Contains(':') || path.StartsWith("//")))
+        {
             return true;
+        }
 
         return false;
     }
@@ -136,11 +154,15 @@ public class FileBrowseController(
     private static string? GetParentPath(string path)
     {
         if (path == "/")
+        {
             return null;
+        }
 
         var lastSlash = path.LastIndexOf('/');
         if (lastSlash <= 0)
+        {
             return "/";
+        }
 
         return path[..lastSlash];
     }

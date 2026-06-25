@@ -135,7 +135,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -144,11 +146,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<ServerRconStatusResponseDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -211,7 +211,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -220,11 +222,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<RconMapCollectionDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -278,7 +278,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<RconCurrentMapDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -287,11 +289,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<RconCurrentMapDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -335,7 +335,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -344,11 +346,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -413,7 +413,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -422,11 +424,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -491,7 +491,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -500,11 +502,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -566,7 +566,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -575,11 +577,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -641,7 +641,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -650,11 +652,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -716,7 +716,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -725,11 +727,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -794,12 +794,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.Say(Guid gameServerId, string message)
     {
         if (string.IsNullOrWhiteSpace(message))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -808,11 +812,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -873,12 +875,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.TellPlayer(Guid gameServerId, int clientId, string message)
     {
         if (string.IsNullOrWhiteSpace(message))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -887,11 +893,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -958,12 +962,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.ChangeMap(Guid gameServerId, string mapName)
     {
         if (string.IsNullOrWhiteSpace(mapName))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Map name cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -972,11 +980,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1037,12 +1043,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.KickPlayerByName(Guid gameServerId, string name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1051,11 +1061,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1112,7 +1120,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1121,11 +1131,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1180,12 +1188,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.BanPlayerByName(Guid gameServerId, string name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1194,11 +1206,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1255,7 +1265,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1264,11 +1276,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1323,12 +1333,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.TempBanPlayerByName(Guid gameServerId, string name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1337,11 +1351,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1396,12 +1408,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.UnbanPlayer(Guid gameServerId, string name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Player name cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1410,11 +1426,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1471,7 +1485,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1480,11 +1496,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1535,7 +1549,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1544,11 +1560,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1599,7 +1613,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1608,11 +1624,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<string>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1663,7 +1677,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1672,11 +1688,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1752,7 +1766,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1761,11 +1777,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1841,7 +1855,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1850,11 +1866,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -1928,12 +1942,16 @@ public class RconController(
     async Task<ApiResult> IRconApi.TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName)
     {
         if (string.IsNullOrWhiteSpace(message))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -1942,11 +1960,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -2025,22 +2041,30 @@ public class RconController(
     {
         var playerQuery = request.PlayerQuery?.Trim();
         if (string.IsNullOrWhiteSpace(playerQuery))
+        {
             return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Player query cannot be null or empty.")).ToBadRequestResult();
+        }
 
         var maxSuggestions = request.MaxSuggestions ?? 3;
         if (maxSuggestions is < 1 or > 5)
+        {
             return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Max suggestions must be between 1 and 5.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon", cancellationToken).ConfigureAwait(false);
         var rconPassword = RconConfigResolver.ParsePasswordFromConfig(rconConfigResult?.Result?.Data?.Configuration);
 
         if (string.IsNullOrWhiteSpace(rconPassword))
+        {
             return new ApiResponse<ResolvePlayerResponseDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
+        }
 
         var rconClient = rconClientFactory.CreateInstance(
             gameServerApiResponse.Result.Data.GameType,
@@ -2107,7 +2131,9 @@ public class RconController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         if (gameServerApiResponse.Result.Data.GameType != GameType.CallOfDuty4x)
         {
@@ -2119,7 +2145,9 @@ public class RconController(
         var rconPassword = RconConfigResolver.ParsePasswordFromConfig(rconConfigResult?.Result?.Data?.Configuration);
 
         if (string.IsNullOrWhiteSpace(rconPassword))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -2189,12 +2217,16 @@ public class RconController(
     async Task<ApiResult<DvarValueDto>> IRconApi.GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(dvarName) || !Regex.IsMatch(dvarName, @"^[a-zA-Z_][a-zA-Z0-9_]*$"))
+        {
             return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Dvar name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -2203,11 +2235,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 
@@ -2221,7 +2251,9 @@ public class RconController(
             var normalizedResponse = QuakeColorCodeRegex.Replace(response ?? string.Empty, string.Empty).Trim();
 
             if (normalizedResponse.StartsWith("Bad command or cvar:", StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse<DvarValueDto>(new ApiError(ErrorCodes.DVAR_NOT_FOUND, $"The dvar '{dvarName}' was not found on the game server.")).ToNotFoundResult();
+            }
 
             // Parse the dvar response - Quake3 format: "dvarName" is: "value"
             var dvarMatch = DvarResponseRegex.Match(normalizedResponse);
@@ -2271,16 +2303,22 @@ public class RconController(
     async Task<ApiResult> IRconApi.SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(dvarName) || !Regex.IsMatch(dvarName, @"^[a-zA-Z_][a-zA-Z0-9_]*$"))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Dvar name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();
+        }
 
         // Reject values with characters that could break RCON quoting
         if (value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Value must not contain double quotes or newline characters.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var rconConfigResult = await repositoryApiClient.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon").ConfigureAwait(false);
 
@@ -2289,11 +2327,9 @@ public class RconController(
 
 
         if (string.IsNullOrWhiteSpace(rconPassword))
-
-
+        {
             return new ApiResponse(new ApiError(ErrorCodes.RCON_CREDENTIALS_MISSING, "The game server does not have RCON credentials configured.")).ToBadRequestResult();
-
-
+        }
 
         var rconClient = rconClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.GameServerId, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort, rconPassword);
 

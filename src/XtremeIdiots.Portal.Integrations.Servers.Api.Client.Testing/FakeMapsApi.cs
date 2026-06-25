@@ -43,7 +43,9 @@ public class FakeMapsApi : IMapsApi
         _operationLog.Add(("GetLoadedServerMapsFromHost", gameServerId, null));
 
         if (_loadedMapsResponses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {

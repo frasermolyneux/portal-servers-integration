@@ -42,21 +42,27 @@ public class MapsController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve maps.")).ToApiResult();
+            }
 
             return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
         if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+        {
             return new ApiResponse<ServerMapsCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
+        }
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("GetFileList");
         operation.Telemetry.Type = session.Transport.TelemetryType;
@@ -98,12 +104,16 @@ public class MapsController(
     async Task<ApiResult> IMapsApi.PushServerMapToHost(Guid gameServerId, string mapName)
     {
         if (!IsValidMapName(mapName))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The map name contains invalid path characters.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         // Built-in maps are already present on the server — no FTP upload needed
         if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
@@ -115,24 +125,32 @@ public class MapsController(
         var mapApiResponse = await repositoryApiClient.Maps.V1.GetMap(gameServerApiResponse.Result.Data.GameType, mapName);
 
         if (mapApiResponse.IsNotFound || mapApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.MAP_NOT_FOUND, $"The map '{mapName}' does not exist in the repository.")).ToNotFoundResult();
+        }
 
         if (mapApiResponse.Result.Data.MapFiles.Count == 0)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' does not have any files associated with it.")).ToBadRequestResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to push maps.")).ToApiResult();
+            }
 
             return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
         if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
+        }
 
         try
         {
@@ -178,12 +196,16 @@ public class MapsController(
     async Task<ApiResult> IMapsApi.DeleteServerMapFromHost(Guid gameServerId, string mapName)
     {
         if (!IsValidMapName(mapName))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The map name contains invalid path characters.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         // Built-in maps cannot be removed from the server — they are part of the game installation
         if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
@@ -197,14 +219,18 @@ public class MapsController(
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete maps.")).ToApiResult();
+            }
 
             return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
         if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
+        }
 
         try
         {
@@ -247,29 +273,39 @@ public class MapsController(
     async Task<ApiResult<MapVerificationCollectionDto>> IMapsApi.VerifyServerMaps(Guid gameServerId, List<string> mapNames, CancellationToken cancellationToken)
     {
         if (mapNames == null || mapNames.Count == 0)
+        {
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Map names list cannot be null or empty.")).ToBadRequestResult();
+        }
 
         if (mapNames.Any(mapName => !IsValidMapName(mapName)))
+        {
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "One or more map names contain invalid path characters.")).ToBadRequestResult();
+        }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to verify maps.")).ToApiResult();
+            }
 
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
         if (!TryGetMapsDirectoryPath(session.Transport.Credentials.MapsRootPath, out var mapsDirectoryPath))
+        {
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The configured maps root path is invalid.")).ToBadRequestResult();
+        }
 
         var operation = telemetryClient.StartOperation<DependencyTelemetry>("VerifyServerMaps");
         operation.Telemetry.Type = session.Transport.TelemetryType;
@@ -304,7 +340,9 @@ public class MapsController(
     {
         mapsDirectoryPath = string.Empty;
         if (!TryNormalizePath(mapsRootPath, out var normalizedRoot))
+        {
             return false;
+        }
 
         if (normalizedRoot == "/")
         {
@@ -327,7 +365,9 @@ public class MapsController(
         normalized = "/";
 
         if (string.IsNullOrWhiteSpace(path))
+        {
             return true;
+        }
 
         normalized = path.Replace('\\', '/').Trim();
         if (normalized.Length == 0)
@@ -337,14 +377,20 @@ public class MapsController(
         }
 
         if (!normalized.StartsWith('/'))
+        {
             normalized = "/" + normalized;
+        }
 
         while (normalized.Length > 1 && normalized.EndsWith('/'))
+        {
             normalized = normalized[..^1];
+        }
 
         var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (segments.Any(segment => segment == ".."))
+        {
             return false;
+        }
 
         return true;
     }
@@ -359,17 +405,25 @@ public class MapsController(
     private static bool IsValidMapName(string mapName)
     {
         if (string.IsNullOrWhiteSpace(mapName))
+        {
             return false;
+        }
 
         var normalized = mapName.Trim();
         if (normalized is "." or "..")
+        {
             return false;
+        }
 
         if (mapName.Contains('/') || mapName.Contains('\\'))
+        {
             return false;
+        }
 
         if (mapName.Contains("..", StringComparison.Ordinal))
+        {
             return false;
+        }
 
         return mapName.All(c => !char.IsControl(c));
     }

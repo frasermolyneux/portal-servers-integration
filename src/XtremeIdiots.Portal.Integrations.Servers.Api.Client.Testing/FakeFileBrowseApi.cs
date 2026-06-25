@@ -45,7 +45,9 @@ public class FakeFileBrowseApi : IFileBrowseApi
 
         var key = $"{gameServerId}:{normalizedPath}";
         if (_browseResponses.TryGetValue(key, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {

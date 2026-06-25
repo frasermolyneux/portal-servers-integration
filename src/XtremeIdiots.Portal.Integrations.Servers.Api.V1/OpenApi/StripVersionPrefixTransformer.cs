@@ -24,7 +24,9 @@ public partial class StripVersionPrefixTransformer : IOpenApiDocumentTransformer
 
             // Ensure the path still starts with /
             if (!newPath.StartsWith('/'))
+            {
                 newPath = "/" + newPath;
+            }
 
             updatedPaths.Add(newPath, pathItem);
         }

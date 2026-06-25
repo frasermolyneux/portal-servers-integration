@@ -96,7 +96,9 @@ internal static partial class PlayerResolutionMatcher
     private static string NormalizeCompact(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
             return string.Empty;
+        }
 
         var withoutColorCodes = QuakeColorCodeRegex().Replace(value, string.Empty);
         var lowered = withoutColorCodes.ToLowerInvariant();
@@ -108,7 +110,9 @@ internal static partial class PlayerResolutionMatcher
     private static string NormalizeTokens(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
             return string.Empty;
+        }
 
         var withoutColorCodes = QuakeColorCodeRegex().Replace(value, string.Empty);
         var lowered = withoutColorCodes.ToLowerInvariant();
@@ -121,10 +125,14 @@ internal static partial class PlayerResolutionMatcher
     {
         var normalizedName = NormalizeCompact(player.Name);
         if (string.IsNullOrWhiteSpace(normalizedName))
+        {
             return null;
+        }
 
         if (normalizedName == normalizedQuery)
+        {
             return new MatchResult(player, ExactScore, MatchClass.Exact);
+        }
 
         if (normalizedName.StartsWith(normalizedQuery, StringComparison.Ordinal))
         {
@@ -140,7 +148,9 @@ internal static partial class PlayerResolutionMatcher
 
         var overlap = TokenOverlap(normalizedQueryTokens, NormalizeTokens(player.Name));
         if (overlap <= 0)
+        {
             return null;
+        }
 
         var overlapScore = TokenOverlapScore + (overlap * 100);
         return new MatchResult(player, overlapScore, MatchClass.TokenOverlap);
@@ -149,7 +159,9 @@ internal static partial class PlayerResolutionMatcher
     private static int MatchLengthBonus(string normalizedQuery, string normalizedName)
     {
         if (normalizedName.Length == 0)
+        {
             return 0;
+        }
 
         var ratio = (double)normalizedQuery.Length / normalizedName.Length;
         return (int)Math.Round(ratio * 100, MidpointRounding.AwayFromZero);
@@ -161,7 +173,9 @@ internal static partial class PlayerResolutionMatcher
         var candidateTokens = normalizedName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         if (queryTokens.Length == 0 || candidateTokens.Length == 0)
+        {
             return 0;
+        }
 
         var candidateSet = new HashSet<string>(candidateTokens, StringComparer.Ordinal);
         var overlapCount = queryTokens.Count(candidateSet.Contains);

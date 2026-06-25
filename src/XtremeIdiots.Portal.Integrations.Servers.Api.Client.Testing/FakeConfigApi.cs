@@ -43,7 +43,9 @@ public class FakeConfigApi : IConfigApi
         _operationLog.Add(("GetConfigFile", gameServerId, new { filePath }));
 
         if (_configFileResponses.TryGetValue((gameServerId, filePath), out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {

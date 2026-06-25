@@ -38,7 +38,9 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
         }
 
         if (infoQueryBytes == null)
+        {
             throw new InvalidOperationException("Failed to query source server");
+        }
 
         var serverParams = GetParams(infoQueryBytes);
 
@@ -83,7 +85,10 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
 
             var playerNameArr = new List<byte>();
 
-            while (responseBytes[i] != 0x00) playerNameArr.Add(responseBytes[i++]);
+            while (responseBytes[i] != 0x00)
+            {
+                playerNameArr.Add(responseBytes[i++]);
+            }
 
             i++;
 
@@ -169,7 +174,9 @@ public class SourceQueryClient(ILogger logger) : IQueryClient
                 datagrams.Add(datagramBytes);
 
                 if (udpClient.Available == 0)
+                {
                     Thread.Sleep(500);
+                }
             } while (udpClient.Available > 0);
 
             var responseText = new StringBuilder();

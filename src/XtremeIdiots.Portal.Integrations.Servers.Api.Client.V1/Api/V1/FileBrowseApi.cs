@@ -26,7 +26,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             var request = await CreateRequestAsync($"v1/file-browse/{gameServerId}/browse", Method.Get, cancellationToken);
 
             if (!string.IsNullOrEmpty(path))
+            {
                 request.AddQueryParameter("path", path);
+            }
 
             var response = await ExecuteAsync(request, cancellationToken);
 

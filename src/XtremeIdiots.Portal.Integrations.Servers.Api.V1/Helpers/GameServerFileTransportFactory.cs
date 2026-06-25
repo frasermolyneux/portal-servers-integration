@@ -16,9 +16,11 @@ internal sealed class GameServerFileTransportFactory(
     {
         var resolution = await fileTransportResolver.Resolve(gameServerId, cancellationToken).ConfigureAwait(false);
         if (!resolution.IsSuccess || resolution.Result?.Data == null)
+        {
             return new ApiResult<IGameServerFileTransportSession>(
                 resolution.StatusCode,
                 new ApiResponse<IGameServerFileTransportSession>(resolution.Result?.Errors ?? []));
+        }
 
         try
         {
@@ -66,7 +68,9 @@ internal sealed class GameServerFileTransportFactory(
             client.ValidateCertificate += (_, e) =>
             {
                 if (e.Certificate.GetCertHashString().Equals(configuration["xtremeidiots_ftp_certificate_thumbprint"], StringComparison.OrdinalIgnoreCase))
+                {
                     e.Accept = true;
+                }
             };
 
             try
@@ -111,7 +115,9 @@ internal sealed class GameServerFileTransportFactory(
         public async Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
         {
             if (content.CanSeek)
+            {
                 content.Position = 0;
+            }
 
             await _client.UploadStream(content, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
         }
@@ -184,7 +190,9 @@ internal sealed class GameServerFileTransportFactory(
         private static string NormalizeFingerprint(string? fingerprint)
         {
             if (string.IsNullOrWhiteSpace(fingerprint))
+            {
                 return string.Empty;
+            }
 
             return new string(fingerprint.Where(Uri.IsHexDigit).ToArray()).ToUpperInvariant();
         }
@@ -212,7 +220,9 @@ internal sealed class GameServerFileTransportFactory(
             return Task.Run(() =>
             {
                 if (!_client.Exists(path))
+                {
                     return false;
+                }
 
                 return !_client.GetAttributes(path).IsDirectory;
             }, cancellationToken);
@@ -242,7 +252,9 @@ internal sealed class GameServerFileTransportFactory(
             return Task.Run(() =>
             {
                 if (content.CanSeek)
+                {
                     content.Position = 0;
+                }
 
                 _client.UploadFile(content, path, true);
             }, cancellationToken);
@@ -253,7 +265,9 @@ internal sealed class GameServerFileTransportFactory(
             return Task.Run(() =>
             {
                 if (!_client.Exists(path))
+                {
                     return false;
+                }
 
                 return _client.GetAttributes(path).IsDirectory;
             }, cancellationToken);
@@ -264,7 +278,9 @@ internal sealed class GameServerFileTransportFactory(
             return Task.Run(() =>
             {
                 if (!_client.Exists(path))
+                {
                     _client.CreateDirectory(path);
+                }
             }, cancellationToken);
         }
 
@@ -274,14 +290,20 @@ internal sealed class GameServerFileTransportFactory(
         private void DeleteDirectoryRecursive(string path)
         {
             if (!_client.Exists(path))
+            {
                 return;
+            }
 
             foreach (var item in _client.ListDirectory(path).Where(entry => entry.Name != "." && entry.Name != ".."))
             {
                 if (item.IsDirectory)
+                {
                     DeleteDirectoryRecursive(item.FullName);
+                }
                 else
+                {
                     _client.DeleteFile(item.FullName);
+                }
             }
 
             _client.DeleteDirectory(path);

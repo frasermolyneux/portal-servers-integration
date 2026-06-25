@@ -41,7 +41,9 @@ public class QueryController(
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
+        {
             return new ApiResponse<ServerQueryStatusResponseDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         var queryClient = queryClientFactory.CreateInstance(gameServerApiResponse.Result.Data.GameType, gameServerApiResponse.Result.Data.Hostname, gameServerApiResponse.Result.Data.QueryPort);
 

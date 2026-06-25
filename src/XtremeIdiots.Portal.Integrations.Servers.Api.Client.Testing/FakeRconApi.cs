@@ -68,7 +68,9 @@ public class FakeRconApi : IRconApi
         _operationLog.Add(("GetServerStatus", gameServerId, null));
 
         if (_statusResponses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {
@@ -83,7 +85,9 @@ public class FakeRconApi : IRconApi
         _operationLog.Add(("GetServerMaps", gameServerId, null));
 
         if (_mapsResponses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {
@@ -98,7 +102,9 @@ public class FakeRconApi : IRconApi
         _operationLog.Add(("GetCurrentMap", gameServerId, null));
 
         if (_currentMapResponses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {
@@ -113,7 +119,9 @@ public class FakeRconApi : IRconApi
         _operationLog.Add(("ResolvePlayer", gameServerId, request));
 
         if (_resolvePlayerResponses.TryGetValue(gameServerId, out var result))
+        {
             return Task.FromResult(result);
+        }
 
         return Task.FromResult(DefaultResponseBehavior switch
         {

@@ -54,7 +54,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             var match = PlayerRegex().Match(line);
 
             if (!match.Success)
+            {
                 continue;
+            }
 
             var num = match.Groups[1].Value;
             var name = match.Groups[3].Value;
@@ -234,7 +236,10 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", _serverId, statusPackets.Count);
 
         var response = new StringBuilder();
-        foreach (var packet in statusPackets) response.Append(packet.Body.Trim());
+        foreach (var packet in statusPackets)
+        {
+            response.Append(packet.Body.Trim());
+        }
 
         return response.ToString();
     }
@@ -259,7 +264,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         try
         {
             if (_tcpClient != null && _tcpClient.Connected)
+            {
                 return;
+            }
 
             _logger.LogDebug("[{GameServerId}] Creating a new TcpClient and attempting to authenticate", _serverId);
 
@@ -299,7 +306,10 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
             var bytesToProcess = tempBuffer[..bytesRead];
 
-            if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
+            if (leftoverBytes != null)
+            {
+                bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
+            }
 
             var (packets, leftover) = BytesIntoPackets(bytesToProcess);
             responsePackets.AddRange(packets);
@@ -328,7 +338,10 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
             var bytesToProcess = tempBuffer[..bytesRead];
 
-            if (leftoverBytes != null) bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
+            if (leftoverBytes != null)
+            {
+                bytesToProcess = [.. leftoverBytes, .. bytesToProcess];
+            }
 
             var (packets, leftover) = BytesIntoPackets(bytesToProcess);
             responsePackets.AddRange(packets);
@@ -349,15 +362,21 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
             do
             {
                 if (offset + 4 > bytes.Length)
+                {
                     break;
+                }
 
                 var size = BitConverter.ToInt32(bytes, offset);
 
                 if (size == 0)
+                {
                     break;
+                }
 
                 if (offset + size > bytes.Length)
+                {
                     break;
+                }
 
                 var id = BitConverter.ToInt32(bytes, offset + 4);
                 var type = BitConverter.ToInt32(bytes, offset + 8);

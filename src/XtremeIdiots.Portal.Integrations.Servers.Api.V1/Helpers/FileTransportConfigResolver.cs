@@ -8,7 +8,9 @@ internal static class FileTransportConfigResolver
     public static FileTransportCredentials? Parse(FileTransportType transportType, string? configJson)
     {
         if (string.IsNullOrWhiteSpace(configJson))
+        {
             return null;
+        }
 
         try
         {
@@ -30,10 +32,14 @@ internal static class FileTransportConfigResolver
         var document = SettingsContractsJsonSerializer.Deserialize<FtpSettingsDocument>(configJson);
         var validationResult = new FtpSettingsValidator().Validate(document);
         if (document is null || validationResult.Errors.Count > 0)
+        {
             return null;
+        }
 
         if (string.IsNullOrWhiteSpace(document.Hostname) || string.IsNullOrWhiteSpace(document.Username))
+        {
             return null;
+        }
 
         return new FileTransportCredentials(
             document.Hostname,
@@ -49,10 +55,14 @@ internal static class FileTransportConfigResolver
         var document = SettingsContractsJsonSerializer.Deserialize<SftpSettingsDocument>(configJson);
         var validationResult = new SftpSettingsValidator().Validate(document);
         if (document is null || validationResult.Errors.Count > 0)
+        {
             return null;
+        }
 
         if (string.IsNullOrWhiteSpace(document.Hostname) || string.IsNullOrWhiteSpace(document.Username))
+        {
             return null;
+        }
 
         return new FileTransportCredentials(
             document.Hostname,

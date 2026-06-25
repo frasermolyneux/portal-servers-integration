@@ -34,17 +34,26 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
         var queryResult = Query(GetStatusPacket());
 
         var lines = queryResult[3..].Split('\n');
-        if (lines.Length < 2) return null;
+        if (lines.Length < 2)
+        {
+            return null;
+        }
 
         var serverParams = GetParams(lines[1].Split('\\'));
 
         if (lines.Length <= 2)
+        {
             return Task.FromResult((IQueryResponse)new Quake3QueryResponse(serverParams, new List<IQueryPlayer>()));
+        }
 
         var players = new List<IQueryPlayer>();
         for (var i = 2; i < lines.Length; i++)
         {
-            if (lines[i].Length == 0) continue;
+            if (lines[i].Length == 0)
+            {
+                continue;
+            }
+
             players.Add(ParsePlayer(lines[i]));
         }
 
@@ -78,12 +87,23 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
 
         for (var i = 0; i < parts.Count; i++)
         {
-            if (parts[i].Length == 0) continue;
+            if (parts[i].Length == 0)
+            {
+                continue;
+            }
+
             var key = parts[i++];
             var val = parts[i];
 
-            if (key == "final") break;
-            if (key == "querid") continue;
+            if (key == "final")
+            {
+                break;
+            }
+
+            if (key == "querid")
+            {
+                continue;
+            }
 
             serverParams[key] = val;
         }
@@ -115,7 +135,9 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
                 datagrams.Add(datagramText);
 
                 if (udpClient.Available == 0)
+                {
                     Thread.Sleep(500);
+                }
             } while (udpClient.Available > 0);
 
             var responseText = new StringBuilder();
@@ -123,7 +145,10 @@ public partial class Quake3QueryClient(ILogger logger) : IQueryClient
             foreach (var datagram in datagrams)
             {
                 var text = datagram;
-                if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print")) text = text[10..];
+                if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print"))
+                {
+                    text = text[10..];
+                }
 
                 responseText.Append(text);
             }

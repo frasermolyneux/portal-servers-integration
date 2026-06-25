@@ -63,7 +63,9 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             var match = GameTypeRegex(_gameType).Match(line);
 
             if (!match.Success)
+            {
                 continue;
+            }
 
             var num = match.Groups[1].Value;
             var score = match.Groups[2].Value;
@@ -464,7 +466,10 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         foreach (var packet in packets)
         {
             var text = Encoding.ASCII.GetString(packet);
-            if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print")) text = text[10..];
+            if (text.Length > 4 && text.AsSpan(4, 5).SequenceEqual("print"))
+            {
+                text = text[10..];
+            }
 
             responseText.Append(text);
         }
@@ -532,7 +537,9 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                     if (udpClient.Available == 0)
                     {
                         if (cancellationToken.WaitHandle.WaitOne(500))
+                        {
                             cancellationToken.ThrowIfCancellationRequested();
+                        }
                     }
                 } while (udpClient.Available > 0);
             }

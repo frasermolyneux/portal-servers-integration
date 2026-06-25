@@ -58,7 +58,9 @@ internal sealed class FileTransportResolver(
         if (gameServer.FileTransportEnabled)
         {
             if (gameServer.FileTransportType == FileTransportType.Sftp)
+            {
                 return FileTransportType.Sftp;
+            }
 
             return FileTransportType.Ftp;
         }

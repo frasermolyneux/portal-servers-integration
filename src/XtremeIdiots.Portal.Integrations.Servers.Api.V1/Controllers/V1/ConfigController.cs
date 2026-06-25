@@ -31,9 +31,15 @@ public class ConfigController(
 
     private static bool IsAllowedFilePath(string filePath)
     {
-        if (string.IsNullOrWhiteSpace(filePath)) return false;
-        if (filePath.Contains("..") || filePath.Contains('\\'))
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
             return false;
+        }
+
+        if (filePath.Contains("..") || filePath.Contains('\\'))
+        {
+            return false;
+        }
 
         return SafeConfigFilePathRegex.IsMatch(filePath);
     }
@@ -56,17 +62,23 @@ public class ConfigController(
     async Task<ApiResult<ConfigFileContentDto>> IConfigApi.GetConfigFile(Guid gameServerId, string filePath, CancellationToken cancellationToken)
     {
         if (!IsAllowedFilePath(filePath))
+        {
             return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.INVALID_REQUEST, $"File path '{filePath}' is not valid. Must be a .cfg path (e.g. 'server.cfg' or '/mods/mymod/configs/mapcontrol.cfg'). Backslashes and path traversal (..) are not allowed.")).ToBadRequestResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
         if (sessionResult.IsNotFound)
+        {
             return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to retrieve config file.")).ToApiResult();
+            }
 
             return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
@@ -80,7 +92,9 @@ public class ConfigController(
         try
         {
             if (!await session.FileExists(filePath, cancellationToken).ConfigureAwait(false))
+            {
                 return new ApiResponse<ConfigFileContentDto>(new ApiError(ErrorCodes.CONFIG_FILE_NOT_FOUND, $"The config file '{filePath}' was not found on the server.")).ToNotFoundResult();
+            }
 
             var content = await session.DownloadBytes(filePath, cancellationToken).ConfigureAwait(false);
             var contentString = System.Text.Encoding.UTF8.GetString(content);
@@ -120,24 +134,34 @@ public class ConfigController(
     async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines, CancellationToken cancellationToken)
     {
         if (!IsAllowedFilePath(filePath))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, $"File path '{filePath}' is not valid. Must be a .cfg path (e.g. 'server.cfg' or '/mods/mymod/configs/mapcontrol.cfg'). Backslashes and path traversal (..) are not allowed.")).ToBadRequestResult();
+        }
 
         if (string.IsNullOrWhiteSpace(variableName) || !SafeVariableNameRegex.IsMatch(variableName))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Variable name must be a valid identifier (letters, digits, underscores).")).ToBadRequestResult();
+        }
 
         // Reject values containing characters that would corrupt the config file
         if (value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+        {
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Value must not contain double quotes or newline characters.")).ToBadRequestResult();
+        }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
         if (sessionResult.IsNotFound)
+        {
             return new ApiResponse(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
 
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
             if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+            {
                 return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to update config variable.")).ToApiResult();
+            }
 
             return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
         }
@@ -151,7 +175,9 @@ public class ConfigController(
         try
         {
             if (!await session.FileExists(filePath, cancellationToken).ConfigureAwait(false))
+            {
                 return new ApiResponse(new ApiError(ErrorCodes.CONFIG_FILE_NOT_FOUND, $"The config file '{filePath}' was not found on the server.")).ToNotFoundResult();
+            }
 
             var contentBytes = await session.DownloadBytes(filePath, cancellationToken).ConfigureAwait(false);
             var content = System.Text.Encoding.UTF8.GetString(contentBytes);
@@ -160,7 +186,9 @@ public class ConfigController(
             var match = regex.Match(content);
 
             if (!match.Success)
+            {
                 return new ApiResponse(new ApiError(ErrorCodes.CONFIG_VARIABLE_NOT_FOUND, $"The variable '{variableName}' was not found in the config file '{filePath}'.")).ToBadRequestResult();
+            }
 
             // Detect the file's newline style
             var newline = content.Contains("\r\n") ? "\r\n" : "\n";
@@ -215,7 +243,9 @@ public class ConfigController(
         }
 
         if (varLineIndex < 0)
+        {
             return content; // Variable not found, return unchanged
+        }
 
         // Collect indices of managed comment lines above the variable (may have gaps)
         var managedLineIndices = new HashSet<int>();
@@ -245,19 +275,25 @@ public class ConfigController(
         for (var i = 0; i < varLineIndex; i++)
         {
             if (!managedLineIndices.Contains(i))
+            {
                 result.Add(lines[i]);
+            }
         }
 
         // Insert new managed comment lines (if any)
         foreach (var line in commentLines)
         {
             if (!string.IsNullOrEmpty(line))
+            {
                 result.Add($"{ManagedCommentPrefix}{line}");
+            }
         }
 
         // The variable line and everything after it
         for (var i = varLineIndex; i < lines.Length; i++)
+        {
             result.Add(lines[i]);
+        }
 
         return string.Join(newline, result);
     }

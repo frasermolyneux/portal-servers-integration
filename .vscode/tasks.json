@@ -2,39 +2,39 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "clean",
+            "label": "dotnet: clean",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "clean",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ]
         },
         {
-            "label": "build",
+            "label": "dotnet: build",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
-            "dependsOn": "clean",
+            "dependsOn": "dotnet: clean",
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
         },
         {
-            "label": "test",
+            "label": "dotnet: test",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "test",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
                 "--filter",
                 "FullyQualifiedName!~IntegrationTests",
                 "/property:GenerateFullPaths=true",
@@ -46,12 +46,12 @@
             }
         },
         {
-            "label": "test-integration",
+            "label": "dotnet: test-integration",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "test",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
                 "--filter",
                 "FullyQualifiedName~IntegrationTests",
                 "/property:GenerateFullPaths=true",
@@ -60,6 +60,16 @@
             "group": {
                 "kind": "test"
             }
+        },
+        {
+            "label": "dotnet: format",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "format",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "--verify-no-changes"
+            ]
         }
     ]
 }

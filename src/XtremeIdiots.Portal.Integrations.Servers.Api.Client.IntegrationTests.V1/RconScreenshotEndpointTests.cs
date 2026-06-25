@@ -77,7 +77,7 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, GameType.CallOfDuty4x);
-        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient

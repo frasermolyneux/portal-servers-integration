@@ -108,7 +108,7 @@ public class FileTransportConfigResolverFixtureTests
     [Fact]
     public void Parse_WithUnsupportedSchemaVersion_ReturnsNull()
     {
-        const string payload = """
+        const string payload = /*lang=json,strict*/ """
         {
             "schemaVersion": 999,
             "hostname": "ftp.example.local",

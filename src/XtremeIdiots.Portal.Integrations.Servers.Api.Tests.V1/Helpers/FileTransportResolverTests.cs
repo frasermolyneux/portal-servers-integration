@@ -21,7 +21,7 @@ public class FileTransportResolverTests
     {
         var gameServerId = Guid.NewGuid();
         var gameServer = CreateGameServerDto(fileTransportEnabled: true, fileTransportType: FileTransportType.Sftp, ftpEnabled: false);
-        var configuration = CreateConfigurationDto("sftp", "{\"hostname\":\"sftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
+        var configuration = CreateConfigurationDto("sftp", /*lang=json,strict*/ "{\"hostname\":\"sftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
 
         _repositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
@@ -51,7 +51,7 @@ public class FileTransportResolverTests
     {
         var gameServerId = Guid.NewGuid();
         var gameServer = CreateGameServerDto(fileTransportEnabled: true, fileTransportType: FileTransportType.Ftp, ftpEnabled: false);
-        var configuration = CreateConfigurationDto("ftp", "{\"hostname\":\"ftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
+        var configuration = CreateConfigurationDto("ftp", /*lang=json,strict*/ "{\"hostname\":\"ftp-host\",\"username\":\"demo\",\"password\":\"secret\",\"mapsRootPath\":\"/srv/game\"}");
 
         _repositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))

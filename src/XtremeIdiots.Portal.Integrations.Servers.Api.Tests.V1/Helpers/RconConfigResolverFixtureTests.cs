@@ -44,7 +44,7 @@ public class RconConfigResolverFixtureTests
     [Fact]
     public void ParsePasswordFromConfig_WithUnsupportedSchemaVersion_ReturnsNull()
     {
-        const string payload = """
+        const string payload = /*lang=json,strict*/ """
         {
             "schemaVersion": 999,
             "password": "rcon-secret"
@@ -59,7 +59,7 @@ public class RconConfigResolverFixtureTests
     [Fact]
     public void ParsePasswordFromConfig_WithLegacySupportedSchemaVersion_ReturnsPassword()
     {
-        const string payload = """
+        const string payload = /*lang=json,strict*/ """
         {
             "schemaVersion": 0,
             "password": "legacy-secret"

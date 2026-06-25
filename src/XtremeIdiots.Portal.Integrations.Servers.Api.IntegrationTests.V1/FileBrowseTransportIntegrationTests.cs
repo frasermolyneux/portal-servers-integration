@@ -57,7 +57,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         SetupGameServer(gameServerId, fileTransportEnabled: true, fileTransportType: FileTransportType.Sftp, ftpEnabled: true);
 
         // Deliberately provide only ftp config; resolver should still request sftp and fail with credentials missing.
-        SetupConfiguration(gameServerId, "ftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
+        SetupConfiguration(gameServerId, "ftp", /*lang=json,strict*/ "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
         var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");
@@ -82,7 +82,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         SetupGameServer(gameServerId, fileTransportEnabled: false, fileTransportType: FileTransportType.Unknown, ftpEnabled: true);
 
         // Deliberately provide only sftp config; resolver should not perform any config lookup when transport is not enabled.
-        SetupConfiguration(gameServerId, "sftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
+        SetupConfiguration(gameServerId, "sftp", /*lang=json,strict*/ "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
         var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");

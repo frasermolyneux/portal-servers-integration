@@ -62,7 +62,7 @@ jobs:
       - terraform-state-check-dev
     steps:
       - id: v1-ci
-        uses: frasermolyneux/actions/dotnet-web-ci@dotnet-web-ci/v1.4
+        uses: frasermolyneux/actions/dotnet-web-ci@dotnet-web-ci/v2
         with:
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           dotnet-version: |

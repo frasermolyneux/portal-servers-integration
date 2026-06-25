@@ -84,7 +84,7 @@ public class QueryControllerTests
         mockQueryClient.Setup(x => x.GetServerStatus()).ReturnsAsync(mockQueryResponse.Object);
 
         _mockQueryClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
+            .Setup(x => x.CreateInstance(It.IsAny<Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
             .Returns(mockQueryClient.Object);
 
         var controller = CreateController();
@@ -115,7 +115,7 @@ public class QueryControllerTests
         mockQueryClient.Setup(x => x.GetServerStatus()).ThrowsAsync(new Exception("Connection failed"));
 
         _mockQueryClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
+            .Setup(x => x.CreateInstance(It.IsAny<Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
             .Returns(mockQueryClient.Object);
 
         var controller = CreateController();
@@ -156,7 +156,7 @@ public class QueryControllerTests
         var mockQueryClient = new Mock<IQueryClient>();
 
         _mockQueryClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
+            .Setup(x => x.CreateInstance(It.IsAny<Repository.Abstractions.Constants.V1.GameType>(), "127.0.0.1", 28960))
             .Returns(mockQueryClient.Object);
 
         var controller = CreateController();

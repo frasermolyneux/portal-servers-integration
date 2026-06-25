@@ -43,13 +43,13 @@ public static class ServiceCollectionExtensions
         // Register fakes as singletons
         services.AddSingleton(fakeClient);
         services.AddSingleton<IServersApiClient>(fakeClient);
-        services.AddSingleton<IVersionedQueryApi>(fakeClient.Query);
-        services.AddSingleton<IVersionedRconApi>(fakeClient.Rcon);
-        services.AddSingleton<IVersionedMapsApi>(fakeClient.Maps);
-        services.AddSingleton<IVersionedApiHealthApi>(fakeClient.ApiHealth);
-        services.AddSingleton<IVersionedApiInfoApi>(fakeClient.ApiInfo);
-        services.AddSingleton<IVersionedConfigApi>(fakeClient.Config);
-        services.AddSingleton<IVersionedFileBrowseApi>(fakeClient.FileBrowse);
+        services.AddSingleton(fakeClient.Query);
+        services.AddSingleton(fakeClient.Rcon);
+        services.AddSingleton(fakeClient.Maps);
+        services.AddSingleton(fakeClient.ApiHealth);
+        services.AddSingleton(fakeClient.ApiInfo);
+        services.AddSingleton(fakeClient.Config);
+        services.AddSingleton(fakeClient.FileBrowse);
         services.AddSingleton<IApiHealthApi>(fakeClient.FakeApiHealth);
         services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
         services.AddSingleton<IQueryApi>(fakeClient.FakeQuery);

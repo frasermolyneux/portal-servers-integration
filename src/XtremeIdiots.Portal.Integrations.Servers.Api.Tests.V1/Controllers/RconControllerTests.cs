@@ -56,7 +56,7 @@ public class RconControllerTests
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameServerResult);
 
-        var configJson = JsonConvert.SerializeObject(new { Configuration = "{\"password\":\"secret\"}" });
+        var configJson = JsonConvert.SerializeObject(new { Configuration = /*lang=json,strict*/ "{\"password\":\"secret\"}" });
         var configDto = JsonConvert.DeserializeObject<ConfigurationDto>(configJson)!;
         var configResult = new ApiResult<ConfigurationDto>(HttpStatusCode.OK, new ApiResponse<ConfigurationDto>(configDto));
 
@@ -76,7 +76,7 @@ public class RconControllerTests
         mockRconClient.Setup(x => x.GetDvar("unknown_dvar")).ReturnsAsync("^1Bad command or cvar: unknown_dvar");
 
         _mockRconClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
 
         var controller = CreateController();
@@ -99,7 +99,7 @@ public class RconControllerTests
         mockRconClient.Setup(x => x.GetDvar("sv_hostname")).ReturnsAsync("\"sv_hostname\" is: \"^1Xtreme ^7Idiots\"");
 
         _mockRconClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
 
         var controller = CreateController();
@@ -123,7 +123,7 @@ public class RconControllerTests
         mockRconClient.Setup(x => x.GetDvar("g_motd")).ReturnsAsync("\"g_motd\" is: \"^aWelcome ^ZHome\"");
 
         _mockRconClientFactory
-            .Setup(x => x.CreateInstance(It.IsAny<XtremeIdiots.Portal.Repository.Abstractions.Constants.V1.GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
 
         var controller = CreateController();

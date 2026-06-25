@@ -55,7 +55,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         // Arrange
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, fileTransportEnabled: false, fileTransportType: FileTransportType.Unknown, ftpEnabled: true);
-        SetupConfiguration(gameServerId, "sftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
+        SetupConfiguration(gameServerId, "sftp", /*lang=json,strict*/ "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
         var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");
@@ -78,7 +78,7 @@ public class FileBrowseTransportIntegrationTests : IClassFixture<CustomWebApplic
         // Arrange
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, fileTransportEnabled: true, fileTransportType: FileTransportType.Sftp, ftpEnabled: true);
-        SetupConfiguration(gameServerId, "ftp", "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
+        SetupConfiguration(gameServerId, "ftp", /*lang=json,strict*/ "{\"hostname\":\"localhost\",\"username\":\"demo\",\"password\":\"secret\"}");
 
         // Act
         var response = await _client.GetAsync($"/v1.0/file-browse/{gameServerId}/browse");

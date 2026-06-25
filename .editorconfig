@@ -1,0 +1,110 @@
+root = true
+
+[*.{cs,vb}]
+dotnet_analyzer_diagnostic.category-naming.severity = warning
+dotnet_analyzer_diagnostic.category-style.severity = warning
+dotnet_analyzer_diagnostic.category-maintainability.severity = warning
+dotnet_analyzer_diagnostic.category-formatting.severity = warning
+dotnet_analyzer_diagnostic.category-security.severity = warning
+dotnet_analyzer_diagnostic.category-performance.severity = warning
+dotnet_analyzer_diagnostic.category-reliability.severity = warning
+dotnet_analyzer_diagnostic.category-usage.severity = warning
+
+# Lower-noise categories can start at suggestion.
+dotnet_analyzer_diagnostic.category-design.severity = suggestion
+dotnet_analyzer_diagnostic.category-globalization.severity = suggestion
+
+# C# style baseline.
+csharp_using_directive_placement = outside_namespace:warning
+csharp_style_var_for_built_in_types = true:warning
+csharp_style_var_when_type_is_apparent = true:warning
+csharp_style_var_elsewhere = true:warning
+csharp_style_namespace_declarations = file_scoped:warning
+
+# .NET style baseline.
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_object_initializer = true:warning
+dotnet_style_collection_initializer = true:warning
+dotnet_style_prefer_auto_properties = true:warning
+dotnet_style_null_propagation = true:warning
+dotnet_style_namespace_match_folder = true:warning
+
+# Public contract XML documentation backlog exists; keep strict compiler warnings while not blocking rollout.
+dotnet_diagnostic.CS1591.severity = suggestion
+
+# Legacy versioned API namespaces intentionally use V1 naming.
+dotnet_diagnostic.IDE0130.severity = suggestion
+dotnet_diagnostic.CA1720.severity = suggestion
+
+# Defer broad style/perf/nullability churn in existing code during standards rollout.
+dotnet_diagnostic.CA1001.severity = suggestion
+dotnet_diagnostic.CA1305.severity = suggestion
+dotnet_diagnostic.CA1310.severity = suggestion
+dotnet_diagnostic.CA1707.severity = suggestion
+dotnet_diagnostic.CA1716.severity = suggestion
+dotnet_diagnostic.CA1725.severity = suggestion
+dotnet_diagnostic.CA1727.severity = suggestion
+dotnet_diagnostic.CA1806.severity = suggestion
+dotnet_diagnostic.CA1822.severity = suggestion
+dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA1854.severity = suggestion
+dotnet_diagnostic.CA1859.severity = suggestion
+dotnet_diagnostic.CA1860.severity = suggestion
+dotnet_diagnostic.CA1873.severity = suggestion
+dotnet_diagnostic.CA2016.severity = suggestion
+dotnet_diagnostic.CA2254.severity = suggestion
+dotnet_diagnostic.CA1816.severity = suggestion
+dotnet_diagnostic.CA2201.severity = suggestion
+dotnet_diagnostic.CS8600.severity = suggestion
+dotnet_diagnostic.CS8601.severity = suggestion
+dotnet_diagnostic.CS8602.severity = suggestion
+dotnet_diagnostic.CS8603.severity = suggestion
+dotnet_diagnostic.CS8604.severity = suggestion
+dotnet_diagnostic.CS8618.severity = suggestion
+dotnet_diagnostic.CS8634.severity = suggestion
+dotnet_diagnostic.CS9124.severity = suggestion
+dotnet_diagnostic.CS1573.severity = suggestion
+dotnet_diagnostic.IDE0007.severity = suggestion
+dotnet_diagnostic.IDE0011.severity = suggestion
+dotnet_diagnostic.IDE0022.severity = suggestion
+dotnet_diagnostic.IDE0028.severity = suggestion
+dotnet_diagnostic.IDE0042.severity = suggestion
+dotnet_diagnostic.IDE0040.severity = suggestion
+dotnet_diagnostic.IDE0046.severity = suggestion
+dotnet_diagnostic.IDE0052.severity = suggestion
+dotnet_diagnostic.IDE0058.severity = suggestion
+dotnet_diagnostic.IDE0059.severity = suggestion
+dotnet_diagnostic.IDE0004.severity = suggestion
+dotnet_diagnostic.IDE0072.severity = suggestion
+dotnet_diagnostic.IDE0078.severity = suggestion
+dotnet_diagnostic.IDE0161.severity = suggestion
+dotnet_diagnostic.IDE0290.severity = suggestion
+dotnet_diagnostic.IDE0300.severity = suggestion
+dotnet_diagnostic.IDE0305.severity = suggestion
+dotnet_diagnostic.IDE0370.severity = suggestion
+dotnet_diagnostic.SYSLIB1045.severity = suggestion
+
+dotnet_diagnostic.xUnit1042.severity = suggestion
+
+# Avoid IDE0005 build coupling to GenerateDocumentationFile during standards rollout.
+dotnet_diagnostic.IDE0005.severity = none
+
+[**/*Tests.cs]
+# Keep descriptive xUnit method names with underscores for readability in test code.
+dotnet_diagnostic.CA1707.severity = none
+
+[*.g.cs]
+dotnet_analyzer_diagnostic.severity = none
+
+[*.Designer.cs]
+dotnet_analyzer_diagnostic.severity = none
+
+[*.generated.cs]
+dotnet_analyzer_diagnostic.severity = none
+
+[*.AssemblyInfo.cs]
+dotnet_analyzer_diagnostic.severity = none

@@ -94,7 +94,7 @@ public class RconResolvePlayerEndpointTests : IClassFixture<CustomWebApplication
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, GameType.CallOfDuty4x);
-        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.Setup(x => x.GetPlayers()).Returns([
@@ -123,7 +123,7 @@ public class RconResolvePlayerEndpointTests : IClassFixture<CustomWebApplication
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, GameType.CallOfDuty4x);
-        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.Setup(x => x.GetPlayers()).Returns([
@@ -151,7 +151,7 @@ public class RconResolvePlayerEndpointTests : IClassFixture<CustomWebApplication
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, GameType.CallOfDuty4x);
-        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.Setup(x => x.GetPlayers()).Returns([

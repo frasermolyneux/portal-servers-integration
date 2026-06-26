@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Linq;
 using Asp.Versioning;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
@@ -33,6 +34,10 @@ public class RconController(
     TelemetryClient telemetryClient,
     IAuditLogger auditLogger) : Controller, IRconApi
 {
+    private const int MinVisibleMessageLength = 8;
+    private const int DefaultRconMaxMessageLength = 130;
+    private const int DefaultRconMessagePrefixLength = 0;
+
     private static readonly Regex DvarResponseRegex = new(@"""([^""]+)""\s+is:\s+""([^""]*)""", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex MultiWhitespaceRegex = new(@"\s+", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -97,6 +102,264 @@ public class RconController(
         var withoutColors = QuakeColorCodeRegex.Replace(playerName, string.Empty);
         var collapsedWhitespace = MultiWhitespaceRegex.Replace(withoutColors, " ");
         return collapsedWhitespace.Trim();
+    }
+
+    private static IReadOnlyList<string> ExtractMessages(string? message, IReadOnlyCollection<string>? messages)
+    {
+        var result = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            result.Add(message.Trim());
+        }
+
+        if (messages is null)
+        {
+            return result;
+        }
+
+        foreach (var entry in messages)
+        {
+            if (!string.IsNullOrWhiteSpace(entry))
+            {
+                result.Add(entry.Trim());
+            }
+        }
+
+        return result;
+    }
+
+    private static List<string> ExpandMessagesForTransport(IReadOnlyList<string> messages, int maxMessageLength, int prefixLength)
+    {
+        var visibleMessageLength = Math.Max(MinVisibleMessageLength, maxMessageLength - Math.Max(0, prefixLength));
+        var expanded = new List<string>();
+
+        foreach (var message in messages)
+        {
+            expanded.AddRange(SplitMessageForVisibleLength(message, visibleMessageLength));
+        }
+
+        return expanded;
+    }
+
+    private static IEnumerable<string> SplitMessageForVisibleLength(string message, int visibleMessageLength)
+    {
+        if (message.Length <= visibleMessageLength)
+        {
+            yield return message;
+            yield break;
+        }
+
+        var totalParts = 1;
+        var payloadLength = 1;
+
+        while (true)
+        {
+            var digits = DigitCount(totalParts);
+            var suffixLength = 4 + (2 * digits); // e.g. " (1/3)"
+            payloadLength = visibleMessageLength - suffixLength;
+
+            if (payloadLength < 1)
+            {
+                throw new InvalidOperationException("Visible message budget is too small to include split suffix.");
+            }
+
+            var recalculated = (int)Math.Ceiling((double)message.Length / payloadLength);
+            if (recalculated == totalParts)
+            {
+                break;
+            }
+
+            totalParts = recalculated;
+        }
+
+        for (var i = 0; i < totalParts; i++)
+        {
+            var index = i + 1;
+            var start = i * payloadLength;
+            var length = Math.Min(payloadLength, message.Length - start);
+            var segment = message.Substring(start, length);
+            yield return $"{segment} ({index}/{totalParts})";
+        }
+    }
+
+    private static int DigitCount(int value)
+    {
+        return value <= 0 ? 1 : (int)Math.Floor(Math.Log10(value)) + 1;
+    }
+
+    private static (int MaxMessageLength, int MessagePrefixLength) GetMessageBudgetFromRconConfig(string? configJson)
+    {
+        var maxMessageLength = DefaultRconMaxMessageLength;
+        var messagePrefixLength = DefaultRconMessagePrefixLength;
+
+        if (string.IsNullOrWhiteSpace(configJson))
+        {
+            return (maxMessageLength, messagePrefixLength);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(configJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return (maxMessageLength, messagePrefixLength);
+            }
+
+            if (TryGetIntPropertyIgnoreCase(document.RootElement, "maxMessageLength", out var configuredMax)
+                && configuredMax is >= 16 and <= 512)
+            {
+                maxMessageLength = configuredMax;
+            }
+
+            if (TryGetIntPropertyIgnoreCase(document.RootElement, "messagePrefixLength", out var configuredPrefix)
+                && configuredPrefix >= 0)
+            {
+                messagePrefixLength = configuredPrefix;
+            }
+
+            if (messagePrefixLength >= maxMessageLength)
+            {
+                messagePrefixLength = maxMessageLength - 1;
+            }
+        }
+        catch
+        {
+            // Ignore malformed optional message budget settings and use defaults.
+        }
+
+        return (maxMessageLength, messagePrefixLength);
+    }
+
+    private static bool TryGetIntPropertyIgnoreCase(JsonElement root, string propertyName, out int value)
+    {
+        foreach (var property in root.EnumerateObject())
+        {
+            if (!string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (property.Value.ValueKind == JsonValueKind.Number && property.Value.TryGetInt32(out value))
+            {
+                return true;
+            }
+
+            break;
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static IReadOnlyList<string>? ParseRequestMessages(JsonElement? requestBody)
+    {
+        if (!requestBody.HasValue)
+        {
+            return null;
+        }
+
+        var body = requestBody.Value;
+
+        if (body.ValueKind == JsonValueKind.String)
+        {
+            var single = body.GetString();
+            return string.IsNullOrWhiteSpace(single) ? [] : [single.Trim()];
+        }
+
+        if (body.ValueKind == JsonValueKind.Array)
+        {
+            var entries = new List<string>();
+            foreach (var item in body.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var value = item.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    entries.Add(value.Trim());
+                }
+            }
+
+            return entries;
+        }
+
+        if (body.ValueKind == JsonValueKind.Object)
+        {
+            string? single = null;
+            var multi = new List<string>();
+
+            foreach (var property in body.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "message", StringComparison.OrdinalIgnoreCase)
+                    && property.Value.ValueKind == JsonValueKind.String)
+                {
+                    single = property.Value.GetString();
+                    continue;
+                }
+
+                if (!string.Equals(property.Name, "messages", StringComparison.OrdinalIgnoreCase)
+                    || property.Value.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var item in property.Value.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    var value = item.GetString();
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        multi.Add(value.Trim());
+                    }
+                }
+            }
+
+            return ExtractMessages(single, multi);
+        }
+
+        return null;
+    }
+
+    private static bool TryGetRequestMessages(JsonElement? requestBody, out IReadOnlyList<string>? messages)
+    {
+        messages = ParseRequestMessages(requestBody);
+
+        if (!requestBody.HasValue)
+        {
+            return false;
+        }
+
+        return requestBody.Value.ValueKind is JsonValueKind.String or JsonValueKind.Array or JsonValueKind.Object;
+    }
+
+    private static string? ParseExpectedPlayerName(JsonElement? requestBody)
+    {
+        if (!requestBody.HasValue || requestBody.Value.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        foreach (var property in requestBody.Value.EnumerateObject())
+        {
+            if (!string.Equals(property.Name, "expectedPlayerName", StringComparison.OrdinalIgnoreCase)
+                || property.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var value = property.Value.GetString();
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        return null;
     }
 
     private async Task TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken cancellationToken = default)
@@ -779,23 +1042,29 @@ public class RconController(
 
     [HttpPost]
     [Route("rcon/{gameServerId}/say")]
-    public async Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest? request)
+    public async Task<IActionResult> Say(Guid gameServerId, [FromBody] JsonElement? requestBody)
     {
-        if (request == null)
+        if (!TryGetRequestMessages(requestBody, out var messages))
         {
             return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
         }
 
-        var response = await ((IRconApi)this).Say(gameServerId, request.Message);
+        var response = await ((IRconApi)this).Say(gameServerId, messages ?? []);
 
         return response.ToHttpResult();
     }
 
     async Task<ApiResult> IRconApi.Say(Guid gameServerId, string message)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        return await ((IRconApi)this).Say(gameServerId, new[] { message }).ConfigureAwait(false);
+    }
+
+    async Task<ApiResult> IRconApi.Say(Guid gameServerId, IReadOnlyCollection<string> messages)
+    {
+        var sourceMessages = ExtractMessages(null, messages);
+        if (sourceMessages.Count == 0)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "At least one message is required.")).ToBadRequestResult();
         }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
@@ -824,17 +1093,44 @@ public class RconController(
 
         try
         {
-            await rconClient.Say(message);
+            var (maxMessageLength, messagePrefixLength) = GetMessageBudgetFromRconConfig(rconConfigResult?.Result?.Data?.Configuration);
+            var chunks = ExpandMessagesForTransport(sourceMessages, maxMessageLength, messagePrefixLength);
+
+            var sentCount = 0;
+            var failureCount = 0;
+
+            foreach (var chunk in chunks)
+            {
+                try
+                {
+                    await rconClient.Say(chunk).ConfigureAwait(false);
+                    sentCount++;
+                }
+                catch (Exception ex)
+                {
+                    failureCount++;
+                    logger.LogWarning(ex, "Failed to send say chunk {ChunkIndex} for game server {GameServerId}", sentCount + failureCount, gameServerId);
+                }
+            }
+
+            if (sentCount == 0)
+            {
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to the game server via RCON.")).ToApiResult();
+            }
 
             auditLogger.LogAudit(AuditEvent.ServerAction("RconSay", AuditAction.Execute)
                 .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
                 .WithSource("RconController")
-                .WithProperty("Message", message)
+                .WithProperty("RequestedMessages", sourceMessages.Count.ToString())
+                .WithProperty("SentMessages", sentCount.ToString())
+                .WithProperty("FailedMessages", failureCount.ToString())
                 .Build());
 
             await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconSay", new
             {
-                Message = message
+                RequestedMessages = sourceMessages,
+                SentMessages = sentCount,
+                FailedMessages = failureCount
             }).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();
@@ -865,18 +1161,29 @@ public class RconController(
 
     [HttpPost]
     [Route("rcon/{gameServerId}/tell/{clientId}")]
-    public async Task<IActionResult> TellPlayer(Guid gameServerId, int clientId, [FromBody] string message)
+    public async Task<IActionResult> TellPlayer(Guid gameServerId, int clientId, [FromBody] JsonElement? requestBody)
     {
-        var response = await ((IRconApi)this).TellPlayer(gameServerId, clientId, message);
+        if (!TryGetRequestMessages(requestBody, out var messages))
+        {
+            return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+        }
+
+        var response = await ((IRconApi)this).TellPlayer(gameServerId, clientId, messages ?? []);
 
         return response.ToHttpResult();
     }
 
     async Task<ApiResult> IRconApi.TellPlayer(Guid gameServerId, int clientId, string message)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        return await ((IRconApi)this).TellPlayer(gameServerId, clientId, new[] { message }).ConfigureAwait(false);
+    }
+
+    async Task<ApiResult> IRconApi.TellPlayer(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages)
+    {
+        var sourceMessages = ExtractMessages(null, messages);
+        if (sourceMessages.Count == 0)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "At least one message is required.")).ToBadRequestResult();
         }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
@@ -905,18 +1212,46 @@ public class RconController(
 
         try
         {
-            await rconClient.TellPlayer(clientId, message);
+            var (maxMessageLength, messagePrefixLength) = GetMessageBudgetFromRconConfig(rconConfigResult?.Result?.Data?.Configuration);
+            var chunks = ExpandMessagesForTransport(sourceMessages, maxMessageLength, messagePrefixLength);
+
+            var sentCount = 0;
+            var failureCount = 0;
+
+            foreach (var chunk in chunks)
+            {
+                try
+                {
+                    await rconClient.TellPlayer(clientId, chunk).ConfigureAwait(false);
+                    sentCount++;
+                }
+                catch (Exception ex)
+                {
+                    failureCount++;
+                    logger.LogWarning(ex, "Failed to send tell chunk {ChunkIndex} for game server {GameServerId}, client {ClientId}", sentCount + failureCount, gameServerId, clientId);
+                }
+            }
+
+            if (sentCount == 0)
+            {
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to player on the game server via RCON.")).ToApiResult();
+            }
 
             auditLogger.LogAudit(AuditEvent.ServerAction("RconTellPlayer", AuditAction.Execute)
                 .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
                 .WithTarget(clientId.ToString(), "Player")
                 .WithSource("RconController")
+                .WithProperty("RequestedMessages", sourceMessages.Count.ToString())
+                .WithProperty("SentMessages", sentCount.ToString())
+                .WithProperty("FailedMessages", failureCount.ToString())
                 .Build());
 
             await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTellPlayer", new
             {
                 ClientId = clientId,
-                Message = message
+                RequestedMessages = sourceMessages,
+                SentMessages = sentCount,
+                FailedMessages = failureCount
             }).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();
@@ -1932,18 +2267,30 @@ public class RconController(
 
     [HttpPost]
     [Route("rcon/{gameServerId}/tell/{clientId}/verify")]
-    public async Task<IActionResult> TellPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] TellPlayerWithVerificationRequest request)
+    public async Task<IActionResult> TellPlayerWithVerification(Guid gameServerId, int clientId, [FromBody] JsonElement? requestBody)
     {
-        var response = await ((IRconApi)this).TellPlayerWithVerification(gameServerId, clientId, request.Message, request.ExpectedPlayerName);
+        if (!TryGetRequestMessages(requestBody, out var messages))
+        {
+            return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+        }
+
+        var expectedPlayerName = ParseExpectedPlayerName(requestBody);
+        var response = await ((IRconApi)this).TellPlayerWithVerification(gameServerId, clientId, messages ?? [], expectedPlayerName);
 
         return response.ToHttpResult();
     }
 
     async Task<ApiResult> IRconApi.TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        return await ((IRconApi)this).TellPlayerWithVerification(gameServerId, clientId, new[] { message }, expectedPlayerName).ConfigureAwait(false);
+    }
+
+    async Task<ApiResult> IRconApi.TellPlayerWithVerification(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages, string? expectedPlayerName)
+    {
+        var sourceMessages = ExtractMessages(null, messages);
+        if (sourceMessages.Count == 0)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message cannot be null or empty.")).ToBadRequestResult();
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "At least one message is required.")).ToBadRequestResult();
         }
 
         var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
@@ -1982,19 +2329,47 @@ public class RconController(
 
         try
         {
-            await rconClient.TellPlayer(clientId, message);
+            var (maxMessageLength, messagePrefixLength) = GetMessageBudgetFromRconConfig(rconConfigResult?.Result?.Data?.Configuration);
+            var chunks = ExpandMessagesForTransport(sourceMessages, maxMessageLength, messagePrefixLength);
+
+            var sentCount = 0;
+            var failureCount = 0;
+
+            foreach (var chunk in chunks)
+            {
+                try
+                {
+                    await rconClient.TellPlayer(clientId, chunk).ConfigureAwait(false);
+                    sentCount++;
+                }
+                catch (Exception ex)
+                {
+                    failureCount++;
+                    logger.LogWarning(ex, "Failed to send verified tell chunk {ChunkIndex} for game server {GameServerId}, client {ClientId}", sentCount + failureCount, gameServerId, clientId);
+                }
+            }
+
+            if (sentCount == 0)
+            {
+                return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to send message to player on the game server via RCON.")).ToApiResult();
+            }
 
             auditLogger.LogAudit(AuditEvent.ServerAction("RconTellPlayerWithVerification", AuditAction.Execute)
                 .WithGameContext(gameServerApiResponse.Result.Data.GameType.ToString(), gameServerApiResponse.Result.Data.GameServerId)
                 .WithTarget(clientId.ToString(), "Player", expectedPlayerName)
                 .WithSource("RconController")
+                .WithProperty("RequestedMessages", sourceMessages.Count.ToString())
+                .WithProperty("SentMessages", sentCount.ToString())
+                .WithProperty("FailedMessages", failureCount.ToString())
                 .Build());
 
             await TryWriteOperatorEventAsync(gameServerApiResponse.Result.Data.GameServerId, "RconTellPlayerWithVerification", new
             {
                 ClientId = clientId,
                 ExpectedPlayerName = expectedPlayerName,
-                Message = message
+                RequestedMessages = sourceMessages,
+                SentMessages = sentCount,
+                FailedMessages = failureCount
             }).ConfigureAwait(false);
 
             return new ApiResponse().ToApiResult();

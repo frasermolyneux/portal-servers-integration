@@ -56,12 +56,27 @@ public interface IRconApi
     Task<ApiResult> Say(Guid gameServerId, string message);
 
     /// <summary>
+    /// Broadcasts multiple messages to all players on the server.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="messages">The messages to broadcast</param>
+    Task<ApiResult> Say(Guid gameServerId, IReadOnlyCollection<string> messages);
+
+    /// <summary>
     /// Sends a message to a specific player
     /// </summary>
     /// <param name="gameServerId">The ID of the game server</param>
     /// <param name="clientId">The client ID to send message to</param>
     /// <param name="message">The message to send</param>
     Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, string message);
+
+    /// <summary>
+    /// Sends multiple messages to a specific player.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="clientId">The client ID to send message to</param>
+    /// <param name="messages">The messages to send</param>
+    Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages);
 
     /// <summary>
     /// Changes the current map
@@ -161,6 +176,15 @@ public interface IRconApi
     /// <param name="message">The message to send</param>
     /// <param name="expectedPlayerName">Optional player name to verify before sending message. If provided and doesn't match, operation will fail.</param>
     Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName);
+
+    /// <summary>
+    /// Sends multiple messages to a specific player with optional name verification.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="clientId">The client ID to send message to</param>
+    /// <param name="messages">The messages to send</param>
+    /// <param name="expectedPlayerName">Optional player name to verify before sending message. If provided and doesn't match, operation will fail.</param>
+    Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages, string? expectedPlayerName);
 
     /// <summary>
     /// Gets the value of a server dvar (dynamic variable)

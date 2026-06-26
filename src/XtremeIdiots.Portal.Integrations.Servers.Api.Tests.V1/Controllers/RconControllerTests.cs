@@ -1,11 +1,13 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
 using MX.Observability.ApplicationInsights.Auditing;
 using Newtonsoft.Json;
 using System.Net;
+using System.Text.Json;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
@@ -22,6 +24,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 [Trait("Category", "Unit")]
 public class RconControllerTests
 {
+    private static readonly string[] SayMessageBatch = ["one", "two", "three"];
+    private static readonly string[] TellMessageBatch = ["first", "second", "third"];
+
     private readonly Mock<ILogger<RconController>> _mockLogger = new();
     private readonly Mock<IRepositoryApiClient> _mockRepositoryApiClient = new() { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IVersionedGameServersEventsApi> _mockVersionedGameServerEventsApi = new();
@@ -298,6 +303,290 @@ public class RconControllerTests
     }
 
     [Fact]
+    public async Task Say_WhenMessageExceedsLimit_SplitsMessageWithSuffixAndReturnsSuccess()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.Setup(x => x.Say(It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var longMessage = new string('A', 400);
+
+        // Act
+        var result = await ((IRconApi)controller).Say(gameServerId, longMessage);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.Verify(x => x.Say(It.Is<string>(m => m.EndsWith("(1/4)"))), Times.Once);
+        mockRconClient.Verify(x => x.Say(It.Is<string>(m => m.EndsWith("(2/4)"))), Times.Once);
+        mockRconClient.Verify(x => x.Say(It.Is<string>(m => m.EndsWith("(3/4)"))), Times.Once);
+        mockRconClient.Verify(x => x.Say(It.Is<string>(m => m.EndsWith("(4/4)"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Say_WithMessageList_UsesBestEffortAndReturnsSuccessWhenAtLeastOneChunkSends()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .SetupSequence(x => x.Say(It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("boom"))
+            .Returns(Task.CompletedTask)
+            .Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).Say(gameServerId, SayMessageBatch);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.Verify(x => x.Say(It.IsAny<string>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task Say_Action_WithStringBody_ForwardsTrimmedMessage()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.Say(It.IsAny<string>()))
+            .Callback(forwardedMessages.Add)
+            .Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "\"  hello world  \"");
+
+        // Act
+        var result = await controller.Say(gameServerId, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["hello world"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task Say_Action_WithArrayBody_ForwardsTrimmedStringEntriesOnly()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.Say(It.IsAny<string>()))
+            .Callback(forwardedMessages.Add)
+            .Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "[\" first \", 123, null, \"\", \" second\"]");
+
+        // Act
+        var result = await controller.Say(gameServerId, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["first", "second"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task Say_Action_WithObjectBody_ForwardsMessageCollection()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.Say(It.IsAny<string>()))
+            .Callback(forwardedMessages.Add)
+            .Returns(Task.CompletedTask);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "{\"messages\":[\" one \",\"two\"],\"message\":\"ignored\"}");
+
+        // Act
+        var result = await controller.Say(gameServerId, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["one", "two"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task Say_Action_WithNullBody_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Say(Guid.NewGuid(), null);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Say_Action_WithInvalidBodyKind_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "true");
+
+        // Act
+        var result = await controller.Say(Guid.NewGuid(), requestBody);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task TellPlayer_Action_WithStringBody_ForwardsTrimmedMessage()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(7, It.IsAny<string>()))
+            .Callback<int, string>((_, message) => forwardedMessages.Add(message))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "\"  hello world  \"");
+
+        // Act
+        var result = await controller.TellPlayer(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["hello world"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task TellPlayer_Action_WithArrayBody_ForwardsTrimmedStringEntriesOnly()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(7, It.IsAny<string>()))
+            .Callback<int, string>((_, message) => forwardedMessages.Add(message))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "[\" first \",123,null,\"\",\" second\"]");
+
+        // Act
+        var result = await controller.TellPlayer(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["first", "second"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task TellPlayer_Action_WithObjectBody_ForwardsMessageCollection()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var forwardedMessages = new List<string>();
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(7, It.IsAny<string>()))
+            .Callback<int, string>((_, message) => forwardedMessages.Add(message))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "{\"messages\":[\" one \",\"two\"],\"message\":\"ignored\"}");
+
+        // Act
+        var result = await controller.TellPlayer(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["one", "two"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task TellPlayer_Action_WithNullBody_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.TellPlayer(Guid.NewGuid(), 7, null);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task TellPlayer_Action_WithInvalidBodyKind_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "false");
+
+        // Act
+        var result = await controller.TellPlayer(Guid.NewGuid(), 7, requestBody);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
     public async Task TellPlayerWithVerification_WhenNamesOnlyDifferByColorCodesAndWhitespace_ReturnsSuccess()
     {
         // Arrange
@@ -312,7 +601,7 @@ public class RconControllerTests
             ]);
 
         mockRconClient
-            .Setup(x => x.TellPlayer(3, "hello"))
+            .Setup(x => x.TellPlayer(3, It.IsAny<string>()))
             .ReturnsAsync("Tell command sent to player");
 
         _mockRconClientFactory
@@ -328,6 +617,140 @@ public class RconControllerTests
         // Assert
         Assert.True(result.IsSuccess);
         mockRconClient.Verify(x => x.TellPlayer(3, "hello"), Times.Once);
+    }
+
+    [Fact]
+    public async Task TellPlayerWithVerification_WithMessageList_SendsEachMessageInBestEffortMode()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(3, "^1Totty>XI<Adm^7", "2310346613733334073")
+            ]);
+
+        mockRconClient
+            .SetupSequence(x => x.TellPlayer(3, It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("chunk failed"))
+            .ReturnsAsync("ok")
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller)
+            .TellPlayerWithVerification(gameServerId, 3, TellMessageBatch, "Totty>XI<Adm");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.Verify(x => x.TellPlayer(3, It.IsAny<string>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task TellPlayerWithVerification_Action_WithObjectBody_ForwardsMessageAndExpectedName()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(7, "^1Alpha^7", "2310346613733334073")
+            ]);
+
+        var forwardedMessages = new List<string>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(7, It.IsAny<string>()))
+            .Callback<int, string>((_, message) => forwardedMessages.Add(message))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "{\"message\":\"  hello  \",\"expectedPlayerName\":\"  Alpha  \"}");
+
+        // Act
+        var result = await controller.TellPlayerWithVerification(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["hello"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task TellPlayerWithVerification_Action_WithMessageListBody_ForwardsAllMessages()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(7, "^1Alpha^7", "2310346613733334073")
+            ]);
+
+        var forwardedMessages = new List<string>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(7, It.IsAny<string>()))
+            .Callback<int, string>((_, message) => forwardedMessages.Add(message))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "{\"messages\":[\" one \",\"two\"],\"expectedPlayerName\":\"Alpha\"}");
+
+        // Act
+        var result = await controller.TellPlayerWithVerification(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(["one", "two"], forwardedMessages);
+    }
+
+    [Fact]
+    public async Task TellPlayerWithVerification_Action_WithMismatchedExpectedName_ReturnsBadRequest()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.GetPlayers())
+            .Returns([
+                CreateRconPlayer(7, "^1Alpha^7", "2310346613733334073")
+            ]);
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+        var requestBody = ParseJsonElement(/*lang=json,strict*/ "{\"message\":\"hello\",\"expectedPlayerName\":\"Beta\"}");
+
+        // Act
+        var result = await controller.TellPlayerWithVerification(gameServerId, 7, requestBody);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        mockRconClient.Verify(x => x.TellPlayer(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -372,5 +795,10 @@ public class RconControllerTests
         mockPlayer.SetupProperty(x => x.Rate, 25000);
 
         return mockPlayer.Object;
+    }
+
+    private static JsonElement ParseJsonElement(string json)
+    {
+        return System.Text.Json.JsonSerializer.Deserialize<JsonElement>(json);
     }
 }

@@ -4,6 +4,7 @@ using MX.Api.Client;
 using MX.Api.Client.Auth;
 using MX.Api.Client.Configuration;
 using MX.Api.Client.Extensions;
+using Newtonsoft.Json;
 using RestSharp;
 
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
@@ -98,7 +99,16 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> Say(Guid gameServerId, string message)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/say", Method.Post);
-            request.AddJsonBody(new SayRequest { Message = message });
+            AddJsonStringBody(request, message);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> Say(Guid gameServerId, IReadOnlyCollection<string> messages)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/say", Method.Post);
+            request.AddJsonBody(new SayRequest { Messages = messages });
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();
@@ -107,7 +117,21 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, string message)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tell/{clientId}", Method.Post);
-            request.AddJsonBody(message);
+            AddJsonStringBody(request, message);
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        private static void AddJsonStringBody(RestRequest request, string value)
+        {
+            request.AddParameter("application/json", JsonConvert.SerializeObject(value), ParameterType.RequestBody);
+        }
+
+        public async Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tell/{clientId}", Method.Post);
+            request.AddJsonBody(new SayRequest { Messages = messages });
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();
@@ -228,7 +252,16 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public async Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tell/{clientId}/verify", Method.Post);
-            request.AddJsonBody(new { Message = message, ExpectedPlayerName = expectedPlayerName });
+            request.AddJsonBody(new TellPlayerWithVerificationRequest { Message = message, ExpectedPlayerName = expectedPlayerName });
+            var response = await ExecuteAsync(request);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages, string? expectedPlayerName)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/tell/{clientId}/verify", Method.Post);
+            request.AddJsonBody(new TellPlayerWithVerificationRequest { Messages = messages, ExpectedPlayerName = expectedPlayerName });
             var response = await ExecuteAsync(request);
 
             return response.ToApiResult();

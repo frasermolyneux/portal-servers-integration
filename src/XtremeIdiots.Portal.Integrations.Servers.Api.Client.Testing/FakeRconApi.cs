@@ -178,8 +178,14 @@ public class FakeRconApi : IRconApi
     public Task<ApiResult> Say(Guid gameServerId, string message) =>
         LogAndReturnSuccess("Say", gameServerId, new { message });
 
+    public Task<ApiResult> Say(Guid gameServerId, IReadOnlyCollection<string> messages) =>
+        LogAndReturnSuccess("SayMany", gameServerId, new { messages = messages.ToArray() });
+
     public Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, string message) =>
         LogAndReturnSuccess("TellPlayer", gameServerId, new { clientId, message });
+
+    public Task<ApiResult> TellPlayer(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages) =>
+        LogAndReturnSuccess("TellPlayerMany", gameServerId, new { clientId, messages = messages.ToArray() });
 
     public Task<ApiResult> ChangeMap(Guid gameServerId, string mapName) =>
         LogAndReturnSuccess("ChangeMap", gameServerId, new { mapName });
@@ -222,6 +228,9 @@ public class FakeRconApi : IRconApi
 
     public Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, string message, string? expectedPlayerName) =>
         LogAndReturnSuccess("TellPlayerWithVerification", gameServerId, new { clientId, message, expectedPlayerName });
+
+    public Task<ApiResult> TellPlayerWithVerification(Guid gameServerId, int clientId, IReadOnlyCollection<string> messages, string? expectedPlayerName) =>
+        LogAndReturnSuccess("TellPlayerWithVerificationMany", gameServerId, new { clientId, messages = messages.ToArray(), expectedPlayerName });
 
     public Task<ApiResult<DvarValueDto>> GetDvar(Guid gameServerId, string dvarName, CancellationToken cancellationToken = default)
     {

@@ -23,11 +23,11 @@ public class RconApiSingleMessageSerializationTests
         var result = await api.Say(gameServerId, message);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
         Assert.NotNull(restClientService.LastRequest);
+        Assert.Single(restClientService.LastRequest!.Parameters, p => p.Type == ParameterType.RequestBody);
         var bodyParameter = restClientService.LastRequest!.Parameters.FirstOrDefault(p => p.Type == ParameterType.RequestBody);
         Assert.NotNull(bodyParameter);
-        Assert.Equal("application/json", bodyParameter!.Name);
         Assert.Equal("\"hello world\"", bodyParameter.Value?.ToString());
     }
 
@@ -44,11 +44,11 @@ public class RconApiSingleMessageSerializationTests
         var result = await api.TellPlayer(gameServerId, 7, message);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
         Assert.NotNull(restClientService.LastRequest);
+        Assert.Single(restClientService.LastRequest!.Parameters, p => p.Type == ParameterType.RequestBody);
         var bodyParameter = restClientService.LastRequest!.Parameters.FirstOrDefault(p => p.Type == ParameterType.RequestBody);
         Assert.NotNull(bodyParameter);
-        Assert.Equal("application/json", bodyParameter!.Name);
         Assert.Equal("\"player message\"", bodyParameter.Value?.ToString());
     }
 

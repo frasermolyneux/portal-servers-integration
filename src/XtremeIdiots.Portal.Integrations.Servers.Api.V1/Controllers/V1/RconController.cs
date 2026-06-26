@@ -322,7 +322,12 @@ public class RconController(
                 }
             }
 
-            return ExtractMessages(single, multi);
+            if (multi.Count > 0)
+            {
+                return multi;
+            }
+
+            return ExtractMessages(single, null);
         }
 
         return null;
@@ -2276,6 +2281,11 @@ public class RconController(
 
         var expectedPlayerName = ParseExpectedPlayerName(requestBody);
         var response = await ((IRconApi)this).TellPlayerWithVerification(gameServerId, clientId, messages ?? [], expectedPlayerName);
+
+        if (response.StatusCode == HttpStatusCode.BadRequest && response.Result != null)
+        {
+            return BadRequest(response.Result);
+        }
 
         return response.ToHttpResult();
     }

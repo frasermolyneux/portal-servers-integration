@@ -749,7 +749,9 @@ public class RconControllerTests
         var result = await controller.TellPlayerWithVerification(gameServerId, 7, requestBody);
 
         // Assert
-        Assert.IsType<BadRequestObjectResult>(result);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var responseBody = Assert.IsType<ApiResponse>(badRequest.Value);
+        Assert.Equal(ErrorCodes.PLAYER_VERIFICATION_FAILED, responseBody.Errors?.SingleOrDefault()?.Code);
         mockRconClient.Verify(x => x.TellPlayer(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
     }
 

@@ -12,7 +12,12 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 {
     private readonly ILogger _logger = logger;
 
-    [GeneratedRegex("^\\#\\s([0-9]+)\\s([0-9]+)\\s\\\"(.+)\\\"\\s([STEAM0-9:_]+)\\s+([0-9:]+)\\s([0-9]+)\\s([0-9]+)\\s([a-z]+)\\s([0-9]+)\\s((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})", RegexOptions.None, 1000)]
+    private const string Ipv4Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])";
+    private const string BracketedIpv6Pattern = @"\[(?:[0-9A-Fa-f:.%]+)\]";
+    private const string BareIpv6Pattern = @"(?:[0-9A-Fa-f]{0,4}:){2,}[0-9A-Fa-f:%.]*";
+    private const string IpAddressPattern = @"(?<ip>(?:" + BracketedIpv6Pattern + @"|" + Ipv4Pattern + @"|" + BareIpv6Pattern + @"))";
+
+    [GeneratedRegex("^\\#\\s(?<num>[0-9]+)\\s(?<userid>[0-9]+)\\s\\\"(?<name>.+)\\\"\\s(?<guid>[STEAM0-9:_]+)\\s+(?<connected>[0-9:]+)\\s(?<ping>[0-9]+)\\s(?<loss>[0-9]+)\\s(?<state>[a-z]+)\\s(?<rate>[0-9]+)\\s" + IpAddressPattern + ":?(?<addressPort>-?[0-9]{1,5})", RegexOptions.None, 1000)]
     private static partial Regex PlayerRegex();
 
     [GeneratedRegex(@"map\s*:\s*(\S+)", RegexOptions.Compiled, 1000)]
@@ -58,12 +63,12 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
                 continue;
             }
 
-            var num = match.Groups[1].Value;
-            var name = match.Groups[3].Value;
-            var guid = match.Groups[4].Value;
-            var ping = match.Groups[6].Value;
-            var rate = match.Groups[9].Value;
-            var ipAddress = match.Groups[10].Value;
+            var num = match.Groups["num"].Value;
+            var name = match.Groups["name"].Value;
+            var guid = match.Groups["guid"].Value;
+            var ping = match.Groups["ping"].Value;
+            var rate = match.Groups["rate"].Value;
+            var ipAddress = NormalizeIpAddress(match.Groups["ip"].Value);
 
             int.TryParse(num, out int numInt);
             int.TryParse(ping, out int pingInt);
@@ -83,6 +88,16 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         }
 
         return players;
+    }
+
+    private static string NormalizeIpAddress(string ipAddress)
+    {
+        if (ipAddress.Length > 2 && ipAddress[0] == '[' && ipAddress[^1] == ']')
+        {
+            return ipAddress[1..^1];
+        }
+
+        return ipAddress;
     }
 
     public Task<string> GetCurrentMap()

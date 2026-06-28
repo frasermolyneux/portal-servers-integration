@@ -481,6 +481,39 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         }
 
         [Fact]
+        public async Task GetPlayers_Cod4x_ParsesBracketedIpv6Address()
+        {
+            // Arrange
+            _rconClient.Configure(
+                GameType.CallOfDuty4x,
+                _testServerId,
+                "127.0.0.1",
+                _mockServer.Port,
+                TestRconPassword
+            );
+
+            var statusResponse =
+                "map: mp_farm\n" +
+                "num score ping playerid          steamid          name            lastmsg address                               qport rate\n" +
+                "--- ----- ---- ----------------- ---------------- --------------- ------- ------------------------------------- ----- -----\n" +
+                " 29   700   76 2310346615250149339 0 srt4fun 0 [2607:9b00:a200::10]:28960 40417 25000\n";
+
+            _mockServer.RegisterCommandHandler("status", _ =>
+                MockUdpServer.CreateQuake3Response(statusResponse));
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var players = _rconClient.GetPlayers();
+
+            // Assert
+            Assert.Single(players);
+            Assert.Equal("2310346615250149339", players[0].Guid);
+            Assert.Equal("srt4fun", players[0].Name);
+            Assert.Equal("2607:9b00:a200::10", players[0].IpAddress);
+        }
+
+        [Fact]
         public async Task GetPlayers_Cod4x_ToleratesPrimZmbiCnctPingStates()
         {
             // Arrange — connecting / zombie / primed players in CoD4x show alphabetic ping states.

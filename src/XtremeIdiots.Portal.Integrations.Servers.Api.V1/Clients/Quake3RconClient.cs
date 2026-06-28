@@ -15,19 +15,24 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
 {
     private readonly ILogger _logger = logger;
 
+    private const string Ipv4Pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])";
+    private const string BracketedIpv6Pattern = @"\[(?:[0-9A-Fa-f:.%]+)\]";
+    private const string BareIpv6Pattern = @"(?:[0-9A-Fa-f]{0,4}:){2,}[0-9A-Fa-f:%.]*";
+    private const string IpAddressPattern = @"(?<ip>(?:" + BracketedIpv6Pattern + @"|" + Ipv4Pattern + @"|" + BareIpv6Pattern + @"))";
+
     [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
     private static partial Regex MapRegex();
 
-    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    [GeneratedRegex(@"^\s*(?<num>[0-9]+)\s+(?<score>[0-9-]+)\s+(?<ping>[0-9]+)\s+(?<guid>[0-9]+)\s+(?<name>.*?)\s+(?<lastmsg>[0-9]+?)\s+" + IpAddressPattern + @":?(?<addressPort>-?[0-9]{1,5})\s*(?<qPort>-?[0-9]{1,5})\s+(?<rate>[0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty2PlayerRegex();
 
-    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9a-f]{32})\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    [GeneratedRegex(@"^\s*(?<num>[0-9]+)\s+(?<score>[0-9-]+)\s+(?<ping>[0-9]+)\s+(?<guid>[0-9a-f]{32})\s+(?<name>.*?)\s+(?<lastmsg>[0-9]+?)\s+" + IpAddressPattern + @":?(?<addressPort>-?[0-9]{1,5})\s*(?<qPort>-?[0-9]{1,5})\s+(?<rate>[0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty4PlayerRegex();
 
-    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+|PRIM|ZMBI|CNCT)\s+([0-9]{19})\s+(?:[0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    [GeneratedRegex(@"^\s*(?<num>[0-9]+)\s+(?<score>[0-9-]+)\s+(?<ping>[0-9]+|PRIM|ZMBI|CNCT)\s+(?<guid>[0-9]{19})\s+(?:[0-9]+)\s+(?<name>.*?)\s+(?<lastmsg>[0-9]+?)\s+" + IpAddressPattern + @":?(?<addressPort>-?[0-9]{1,5})\s*(?<qPort>-?[0-9]{1,5})\s+(?<rate>[0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty4xPlayerRegex();
 
-    [GeneratedRegex(@"^\s*([0-9]+)\s+([0-9-]+)\s+([0-9]+)\s+([0-9]+)\s+(.*?)\s+([0-9]+?)\s*((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])):?(-?[0-9]{1,5})\s*(-?[0-9]{1,5})\s+([0-9]+)$", RegexOptions.None, 1000)]
+    [GeneratedRegex(@"^\s*(?<num>[0-9]+)\s+(?<score>[0-9-]+)\s+(?<ping>[0-9]+)\s+(?<guid>[0-9]+)\s+(?<name>.*?)\s+(?<lastmsg>[0-9]+?)\s+" + IpAddressPattern + @":?(?<addressPort>-?[0-9]{1,5})\s*(?<qPort>-?[0-9]{1,5})\s+(?<rate>[0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty5PlayerRegex();
 
     private GameType _gameType;
@@ -67,14 +72,14 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                 continue;
             }
 
-            var num = match.Groups[1].Value;
-            var score = match.Groups[2].Value;
-            var ping = match.Groups[3].Value;
-            var guid = match.Groups[4].Value;
-            var name = match.Groups[5].Value.Trim();
-            var ipAddress = match.Groups[7].Value;
-            var qPort = match.Groups[9].Value;
-            var rate = match.Groups[10].Value;
+            var num = match.Groups["num"].Value;
+            var score = match.Groups["score"].Value;
+            var ping = match.Groups["ping"].Value;
+            var guid = match.Groups["guid"].Value;
+            var name = match.Groups["name"].Value.Trim();
+            var ipAddress = NormalizeIpAddress(match.Groups["ip"].Value);
+            var qPort = match.Groups["qPort"].Value;
+            var rate = match.Groups["rate"].Value;
 
             int.TryParse(num, out int numInt);
             int.TryParse(score, out int scoreInt);
@@ -487,6 +492,16 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             GameType.CallOfDuty5 => CallOfDuty5PlayerRegex(),
             _ => throw new NotSupportedException($"Game type {gameType} is not supported")
         };
+    }
+
+    private static string NormalizeIpAddress(string ipAddress)
+    {
+        if (ipAddress.Length > 2 && ipAddress[0] == '[' && ipAddress[^1] == ']')
+        {
+            return ipAddress[1..^1];
+        }
+
+        return ipAddress;
     }
 
     private static byte[] ExecuteCommandPacket(string rconPassword, string command)

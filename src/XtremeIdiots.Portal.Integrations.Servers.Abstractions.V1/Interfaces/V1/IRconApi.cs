@@ -1,4 +1,5 @@
-﻿using MX.Api.Abstractions;
+﻿using System.Net;
+using MX.Api.Abstractions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 
@@ -204,12 +205,45 @@ public interface IRconApi
     Task<ApiResult> SetDvar(Guid gameServerId, string dvarName, string value, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Triggers a CoD4x screenshot for a player identifier.
+    /// Triggers a screenshot for a player identifier.
     /// </summary>
     /// <param name="gameServerId">The ID of the game server</param>
     /// <param name="request">Screenshot request payload</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Applies a CoD4x permanent ban by player identifier.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="request">CoD4x permanent ban request payload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new ApiResult(HttpStatusCode.BadRequest, new ApiResponse(new ApiError("OPERATION_NOT_IMPLEMENTED", "This IRconApi implementation does not support CoD4x identifier-based bans."))));
+    }
+
+    /// <summary>
+    /// Applies a CoD4x temporary ban by player identifier.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="request">CoD4x temporary ban request payload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new ApiResult(HttpStatusCode.BadRequest, new ApiResponse(new ApiError("OPERATION_NOT_IMPLEMENTED", "This IRconApi implementation does not support CoD4x identifier-based temporary bans."))));
+    }
+
+    /// <summary>
+    /// Removes a CoD4x ban by player identifier.
+    /// </summary>
+    /// <param name="gameServerId">The ID of the game server</param>
+    /// <param name="request">CoD4x unban request payload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<ApiResult> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new ApiResult(HttpStatusCode.BadRequest, new ApiResponse(new ApiError("OPERATION_NOT_IMPLEMENTED", "This IRconApi implementation does not support CoD4x identifier-based unban operations."))));
+    }
 
     /// <summary>
     /// Resolves a player from a free-form query against current live server players.

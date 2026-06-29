@@ -150,7 +150,9 @@ public class RconControllerTests
 
         var trimmedIdentifier = "2310346615957836592";
         var mockRconClient = new Mock<IRconClient>();
-        mockRconClient.Setup(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>())).ReturnsAsync("ok");
+        mockRconClient
+            .Setup(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("ok");
 
         _mockRconClientFactory
             .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
@@ -163,7 +165,8 @@ public class RconControllerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        mockRconClient.Verify(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>()), Times.Once);
+        mockRconClient
+            .Verify(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -187,15 +190,302 @@ public class RconControllerTests
         // Arrange
         var gameServerId = Guid.NewGuid();
         SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4);
+
+        var trimmedIdentifier = "2310346615957836592";
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
         var controller = CreateController();
 
         // Act
-        var result = await ((IRconApi)controller).TakeScreenshot(gameServerId, new TakeScreenshotRequestDto { PlayerIdentifier = "2310346615957836592" });
+        var result = await ((IRconApi)controller).TakeScreenshot(gameServerId, new TakeScreenshotRequestDto { PlayerIdentifier = trimmedIdentifier });
 
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
         Assert.Equal(ErrorCodes.OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE, result.Result?.Errors?.Single().Code);
+        mockRconClient.Verify(x => x.TakeScreenshot(trimmedIdentifier, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TakeScreenshot_WhenRconClientThrowsNotImplementedForCoD4x_ReturnsOperationNotImplemented()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TakeScreenshot("2310346615957836592", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new NotImplementedException("not supported"));
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).TakeScreenshot(gameServerId, new TakeScreenshotRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        // Assert
+        Assert.NotNull(result.Result?.Errors);
+        Assert.Equal(ErrorCodes.OPERATION_NOT_IMPLEMENTED, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task BanPlayerByPlayerIdentifier_WhenIdentifierIsInvalid_ReturnsBadRequestWithStableErrorCode()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).BanPlayerByPlayerIdentifier(Guid.NewGuid(), new CoD4xPermBanRequestDto
+        {
+            PlayerIdentifier = "abc"
+        });
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_PLAYER_IDENTIFIER, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task BanPlayerByPlayerIdentifier_WhenServerIsNotCoD4x_ReturnsBadRequestWithStableErrorCode()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4);
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).BanPlayerByPlayerIdentifier(gameServerId, new CoD4xPermBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task BanPlayerByPlayerIdentifier_WhenValidRequestForCoD4x_ReturnsSuccessAndCallsRcon()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).BanPlayerByPlayerIdentifier(gameServerId, new CoD4xPermBanRequestDto
+        {
+            PlayerIdentifier = " 2310346615957836592 "
+        });
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
+    }
+
+    [Fact]
+    public async Task BanPlayerByPlayerIdentifier_WhenClientDoesNotImplementCoD4xCapability_ReturnsOperationNotImplemented()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).BanPlayerByPlayerIdentifier(gameServerId, new CoD4xPermBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        // Assert
+        Assert.NotNull(result.Result?.Errors);
+        Assert.Equal(ErrorCodes.OPERATION_NOT_IMPLEMENTED, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task TempBanPlayerByPlayerIdentifier_WhenDurationIsInvalid_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).TempBanPlayerByPlayerIdentifier(Guid.NewGuid(), new CoD4xTempBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592",
+            DurationMinutes = 0
+        });
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_REQUEST, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task TempBanPlayerByPlayerIdentifier_WhenDurationExceedsMax_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).TempBanPlayerByPlayerIdentifier(Guid.NewGuid(), new CoD4xTempBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592",
+            DurationMinutes = 525601
+        });
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_REQUEST, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task TempBanPlayerByPlayerIdentifier_WhenValidRequestForCoD4x_ReturnsSuccessAndCallsRcon()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).TempBanPlayerByPlayerIdentifier(gameServerId, new CoD4xTempBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592",
+            DurationMinutes = 15
+        });
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15), Times.Once);
+    }
+
+    [Fact]
+    public async Task TempBanPlayerByPlayerIdentifier_WhenClientDoesNotImplementCoD4xCapability_ReturnsOperationNotImplemented()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).TempBanPlayerByPlayerIdentifier(gameServerId, new CoD4xTempBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592",
+            DurationMinutes = 15
+        });
+
+        // Assert
+        Assert.NotNull(result.Result?.Errors);
+        Assert.Equal(ErrorCodes.OPERATION_NOT_IMPLEMENTED, result.Result?.Errors?.Single().Code);
+    }
+
+    [Fact]
+    public async Task UnbanPlayerByPlayerIdentifier_WhenValidRequestForCoD4x_ReturnsSuccessAndCallsRcon()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"))
+            .ReturnsAsync("ok");
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).UnbanPlayerByPlayerIdentifier(gameServerId, new CoD4xUnbanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
+    }
+
+    [Fact]
+    public async Task UnbanPlayerByPlayerIdentifier_WhenClientDoesNotImplementCoD4xCapability_ReturnsOperationNotImplemented()
+    {
+        // Arrange
+        var gameServerId = Guid.NewGuid();
+        SetupValidServerAndRconConfig(gameServerId, GameType.CallOfDuty4x);
+
+        var mockRconClient = new Mock<IRconClient>();
+
+        _mockRconClientFactory
+            .Setup(x => x.CreateInstance(It.IsAny<GameType>(), gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await ((IRconApi)controller).UnbanPlayerByPlayerIdentifier(gameServerId, new CoD4xUnbanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        // Assert
+        Assert.NotNull(result.Result?.Errors);
+        Assert.Equal(ErrorCodes.OPERATION_NOT_IMPLEMENTED, result.Result?.Errors?.Single().Code);
     }
 
     [Fact]

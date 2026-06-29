@@ -42,13 +42,25 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var responseBody = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+        Assert.Equal(ErrorCodes.INVALID_PLAYER_IDENTIFIER, responseBody?.Errors?.Single().Code);
     }
 
     [Fact]
-    public async Task TakeScreenshot_WhenServerIsNotCoD4x_ReturnsBadRequestWithStableErrorCode()
+    public async Task TakeScreenshot_WhenServerIsNotCoD4x_ReturnsBadRequest()
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, GameType.CallOfDuty4);
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TakeScreenshot("2310346615957836592", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("screenshot queued");
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
 
         var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/screenshot", new TakeScreenshotRequestDto
         {
@@ -56,6 +68,9 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var responseBody = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+        Assert.Equal(ErrorCodes.OPERATION_NOT_SUPPORTED_FOR_GAME_TYPE, responseBody?.Errors?.Single().Code);
+        mockRconClient.Verify(x => x.TakeScreenshot("2310346615957836592", It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -94,7 +109,8 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        mockRconClient.Verify(x => x.TakeScreenshot("2310346615957836592", It.IsAny<CancellationToken>()), Times.Once);
+        mockRconClient
+            .Verify(x => x.TakeScreenshot("2310346615957836592", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private void SetupGameServer(Guid gameServerId, GameType gameType)

@@ -17,6 +17,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         IRconApi V1 { get; }
     }
 
+    public interface IVersionedCoD4xRconApi
+    {
+        ICoD4xRconApi V1 { get; }
+    }
+
     public interface IVersionedApiHealthApi
     {
         IApiHealthApi V1 { get; }

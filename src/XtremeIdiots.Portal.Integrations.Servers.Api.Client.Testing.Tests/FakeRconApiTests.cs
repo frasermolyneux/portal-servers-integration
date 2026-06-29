@@ -109,6 +109,52 @@ public class FakeRconApiTests
     }
 
     [Fact]
+    public async Task BanPlayerByPlayerIdentifier_LogsOperation()
+    {
+        var serverId = Guid.NewGuid();
+
+        await _fakeApi.BanPlayerByPlayerIdentifier(serverId, new CoD4xPermBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        var log = Assert.Single(_fakeApi.OperationLog);
+        Assert.Equal("BanPlayerByPlayerIdentifier", log.Operation);
+        Assert.Equal(serverId, log.ServerId);
+    }
+
+    [Fact]
+    public async Task TempBanPlayerByPlayerIdentifier_LogsOperation()
+    {
+        var serverId = Guid.NewGuid();
+
+        await _fakeApi.TempBanPlayerByPlayerIdentifier(serverId, new CoD4xTempBanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592",
+            DurationMinutes = 15
+        });
+
+        var log = Assert.Single(_fakeApi.OperationLog);
+        Assert.Equal("TempBanPlayerByPlayerIdentifier", log.Operation);
+        Assert.Equal(serverId, log.ServerId);
+    }
+
+    [Fact]
+    public async Task UnbanPlayerByPlayerIdentifier_LogsOperation()
+    {
+        var serverId = Guid.NewGuid();
+
+        await _fakeApi.UnbanPlayerByPlayerIdentifier(serverId, new CoD4xUnbanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        var log = Assert.Single(_fakeApi.OperationLog);
+        Assert.Equal("UnbanPlayerByPlayerIdentifier", log.Operation);
+        Assert.Equal(serverId, log.ServerId);
+    }
+
+    [Fact]
     public async Task ResolvePlayer_WithConfiguredResponse_ReturnsCannedData()
     {
         var serverId = Guid.NewGuid();

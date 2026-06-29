@@ -248,4 +248,13 @@ public class FakeRconApi : IRconApi
 
     public Task<ApiResult> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) =>
         LogAndReturnSuccess("TakeScreenshot", gameServerId, new { request.PlayerIdentifier });
+
+    public Task<ApiResult> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnSuccess("BanPlayerByPlayerIdentifier", gameServerId, new { request.PlayerIdentifier });
+
+    public Task<ApiResult> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnSuccess("TempBanPlayerByPlayerIdentifier", gameServerId, new { request.PlayerIdentifier, request.DurationMinutes });
+
+    public Task<ApiResult> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnSuccess("UnbanPlayerByPlayerIdentifier", gameServerId, new { request.PlayerIdentifier });
 }

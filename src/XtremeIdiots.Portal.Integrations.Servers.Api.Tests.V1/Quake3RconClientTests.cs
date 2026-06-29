@@ -276,6 +276,91 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         }
 
         [Fact]
+        public async Task BanPlayerByPlayerIdentifier_SendsCorrectCommandForCoD4x()
+        {
+            // Arrange
+            var cod4xRconClient = new CallOfDuty4xRconClient(new Mock<ILogger<CallOfDuty4xRconClient>>().Object);
+            cod4xRconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+
+            var playerIdentifier = "2310346615957836592";
+            var expectedResponse = "permban queued";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler($"permban {playerIdentifier}", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response(expectedResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = await cod4xRconClient.BanPlayerByPlayerIdentifier(playerIdentifier);
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+            Assert.Contains(expectedResponse, result);
+        }
+
+        [Fact]
+        public async Task TempBanPlayerByPlayerIdentifier_SendsCorrectCommandForCoD4x()
+        {
+            // Arrange
+            var cod4xRconClient = new CallOfDuty4xRconClient(new Mock<ILogger<CallOfDuty4xRconClient>>().Object);
+            cod4xRconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+
+            var playerIdentifier = "2310346615957836592";
+            const int durationMinutes = 15;
+            var expectedResponse = "tempban queued";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler($"tempban {playerIdentifier} {durationMinutes}", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response(expectedResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = await cod4xRconClient.TempBanPlayerByPlayerIdentifier(playerIdentifier, durationMinutes);
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+            Assert.Contains(expectedResponse, result);
+        }
+
+        [Fact]
+        public async Task UnbanPlayerByPlayerIdentifier_SendsCorrectCommandForCoD4x()
+        {
+            // Arrange
+            var cod4xRconClient = new CallOfDuty4xRconClient(new Mock<ILogger<CallOfDuty4xRconClient>>().Object);
+            cod4xRconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+
+            var playerIdentifier = "2310346615957836592";
+            var expectedResponse = "unban queued";
+            var commandReceived = false;
+
+            _mockServer.RegisterCommandHandler($"unban {playerIdentifier}", cmd =>
+            {
+                commandReceived = true;
+                return MockUdpServer.CreateQuake3Response(expectedResponse);
+            });
+            _mockServer.Start();
+            await Task.Delay(100);
+
+            // Act
+            var result = await cod4xRconClient.UnbanPlayerByPlayerIdentifier(playerIdentifier);
+
+            // Assert
+            await Task.Delay(200);
+            Assert.True(commandReceived, "Expected command was not received by mock server");
+            Assert.Contains(expectedResponse, result);
+        }
+
+        [Fact]
         public async Task GetServerInfo_SendsCorrectCommand()
         {
             // Arrange

@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IServersApiClient>();
         services.RemoveAll<IVersionedQueryApi>();
         services.RemoveAll<IVersionedRconApi>();
+        services.RemoveAll<IVersionedCoD4xRconApi>();
         services.RemoveAll<IVersionedMapsApi>();
         services.RemoveAll<IVersionedApiHealthApi>();
         services.RemoveAll<IVersionedApiInfoApi>();
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IApiInfoApi>();
         services.RemoveAll<IQueryApi>();
         services.RemoveAll<IRconApi>();
+        services.RemoveAll<ICoD4xRconApi>();
         services.RemoveAll<IMapsApi>();
         services.RemoveAll<IConfigApi>();
         services.RemoveAll<IFileBrowseApi>();
@@ -45,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IServersApiClient>(fakeClient);
         services.AddSingleton(fakeClient.Query);
         services.AddSingleton(fakeClient.Rcon);
+        services.AddSingleton(fakeClient.CoD4xRcon);
         services.AddSingleton(fakeClient.Maps);
         services.AddSingleton(fakeClient.ApiHealth);
         services.AddSingleton(fakeClient.ApiInfo);
@@ -54,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
         services.AddSingleton<IQueryApi>(fakeClient.FakeQuery);
         services.AddSingleton<IRconApi>(fakeClient.FakeRcon);
+        services.AddSingleton<ICoD4xRconApi>(fakeClient.FakeCoD4xRcon);
         services.AddSingleton<IMapsApi>(fakeClient.FakeMaps);
         services.AddSingleton<IConfigApi>(fakeClient.FakeConfig);
         services.AddSingleton<IFileBrowseApi>(fakeClient.FakeFileBrowse);

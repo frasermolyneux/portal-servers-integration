@@ -293,6 +293,33 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult();
         }
 
+        public async Task<ApiResult> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto requestDto, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/permban", Method.Post, cancellationToken);
+            request.AddJsonBody(requestDto);
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto requestDto, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/tempban", Method.Post, cancellationToken);
+            request.AddJsonBody(requestDto);
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult();
+        }
+
+        public async Task<ApiResult> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto requestDto, CancellationToken cancellationToken = default)
+        {
+            var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/unban", Method.Post, cancellationToken);
+            request.AddJsonBody(requestDto);
+            var response = await ExecuteAsync(request, cancellationToken);
+
+            return response.ToApiResult();
+        }
+
         public async Task<ApiResult<ResolvePlayerResponseDto>> ResolvePlayer(Guid gameServerId, ResolvePlayerRequestDto requestDto, CancellationToken cancellationToken = default)
         {
             var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/resolve-player", Method.Post, cancellationToken);

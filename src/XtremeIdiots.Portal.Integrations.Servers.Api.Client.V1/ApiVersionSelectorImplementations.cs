@@ -32,6 +32,16 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IRconApi V1 { get; }
     }
 
+    public class VersionedCoD4xRconApi : IVersionedCoD4xRconApi
+    {
+        public VersionedCoD4xRconApi(ICoD4xRconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public ICoD4xRconApi V1 { get; }
+    }
+
     public class VersionedApiHealthApi : IVersionedApiHealthApi
     {
         public VersionedApiHealthApi(IApiHealthApi v1Api)

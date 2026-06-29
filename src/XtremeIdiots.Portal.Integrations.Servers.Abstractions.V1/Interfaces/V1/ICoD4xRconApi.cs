@@ -18,6 +18,7 @@ public interface ICoD4xRconApi
     Task<ApiResult<string>> Status(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> MiniStatus(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> DumpUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<string>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default);
 

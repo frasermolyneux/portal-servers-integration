@@ -75,6 +75,11 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         return ExecuteCommand($"dumpuser {FormatCommandTarget(userId)}", "Attempting CoD4x dumpuser for target {Target}", "Failed to execute CoD4x dumpuser command", userId);
     }
 
+    public Task<string> DumpBanList()
+    {
+        return ExecuteCommand("dumpbanlist", "Attempting CoD4x dumpbanlist command", "Failed to execute CoD4x dumpbanlist command");
+    }
+
     public Task<string> ServerInfo()
     {
         return ExecuteCommand("serverinfo", "Attempting CoD4x serverinfo command", "Failed to execute CoD4x serverinfo command");

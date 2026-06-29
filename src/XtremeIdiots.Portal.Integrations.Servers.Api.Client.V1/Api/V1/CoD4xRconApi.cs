@@ -76,6 +76,9 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> DumpUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "dump-user", request, cancellationToken);
 
+    public Task<ApiResult<string>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        GetString(gameServerId, "dumpbanlist", cancellationToken);
+
     public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) =>
         GetString(gameServerId, "server-info", cancellationToken);
 

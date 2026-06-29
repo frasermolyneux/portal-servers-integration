@@ -15,6 +15,7 @@ public interface ICallOfDuty4xRconClient
     Task<string> Status();
     Task<string> MiniStatus();
     Task<string> DumpUser(string userId);
+    Task<string> DumpBanList();
     Task<string> ServerInfo();
     Task<string> SystemInfo();
 

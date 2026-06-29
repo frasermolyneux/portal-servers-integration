@@ -118,6 +118,11 @@ public class CoD4xRconController(
         ExecuteAction(gameServerId, "RconCoD4xDumpUser", null, request, RequireTarget, (client, dto, ct) => client.DumpUser(dto.Target!), HttpContext.RequestAborted);
 
     [HttpGet]
+    [Route("rcon/{gameServerId}/cod4x/dumpbanlist")]
+    public Task<IActionResult> DumpBanList(Guid gameServerId) =>
+        ExecuteAction(gameServerId, "RconCoD4xDumpBanList", null, ct => ct.DumpBanList(), HttpContext.RequestAborted);
+
+    [HttpGet]
     [Route("rcon/{gameServerId}/cod4x/server-info")]
     public Task<IActionResult> ServerInfo(Guid gameServerId) =>
         ExecuteAction(gameServerId, "RconCoD4xServerInfo", null, ct => ct.ServerInfo(), HttpContext.RequestAborted);

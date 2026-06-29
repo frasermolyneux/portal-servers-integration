@@ -163,6 +163,29 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
     }
 
     [Fact]
+    public async Task CoD4xDumpBanList_WhenValidRequest_ReturnsOkAndCallsRconClient()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.DumpBanList())
+            .ReturnsAsync("banlist");
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var response = await _client.GetAsync($"/v1.0/rcon/{gameServerId}/cod4x/dumpbanlist");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.DumpBanList(), Times.Once);
+    }
+
+    [Fact]
     public async Task CoD4xSet_WhenDvarNameMissing_ReturnsBadRequest()
     {
         var gameServerId = Guid.NewGuid();

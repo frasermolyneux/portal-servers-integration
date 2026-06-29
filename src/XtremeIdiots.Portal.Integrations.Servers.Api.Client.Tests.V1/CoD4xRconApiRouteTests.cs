@@ -46,6 +46,21 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task DumpBanList_UsesCod4xDumpBanListRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateApi(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.DumpBanList(gameServerId);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod4x/dumpbanlist", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Get, restClientService.LastRequest.Method);
+    }
+
+    [Fact]
     public async Task AdminChangePassword_UsesCod4xAdminRoute()
     {
         var restClientService = new FakeRestClientService();

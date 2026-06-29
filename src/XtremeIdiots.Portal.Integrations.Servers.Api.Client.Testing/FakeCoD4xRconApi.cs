@@ -26,6 +26,17 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
         DefaultResponseBehavior = DefaultBehavior.ReturnGenericSuccess;
     }
 
+    private Task<ApiResult<T>> LogAndReturnTyped<T>(string operation, Guid gameServerId, T successValue, object? parameters = null)
+    {
+        _operationLog.Add((operation, gameServerId, parameters));
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<T>(HttpStatusCode.OK, new ApiResponse<T>(successValue)),
+            DefaultBehavior.ReturnError => new ApiResult<T>(HttpStatusCode.InternalServerError, new ApiResponse<T>(new ApiError("FAILED", "Operation failed"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
+
     private Task<ApiResult<string>> LogAndReturn(string operation, Guid gameServerId, object? parameters = null)
     {
         _operationLog.Add((operation, gameServerId, parameters));
@@ -37,19 +48,24 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
         });
     }
 
-    public Task<ApiResult<string>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("PermBan", gameServerId, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("PermBan", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "AddedOffline", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
     public Task<ApiResult<string>> BanUser(Guid gameServerId, CoD4xTargetReasonRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("BanUser", gameServerId, request);
     public Task<ApiResult<string>> BanClient(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("BanClient", gameServerId, request);
-    public Task<ApiResult<string>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("TempBan", gameServerId, request);
-    public Task<ApiResult<string>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("Unban", gameServerId, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("TempBan", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "AddedOffline", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("Unban", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "Removed", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
     public Task<ApiResult<string>> UnbanUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("UnbanUser", gameServerId, request);
     public Task<ApiResult<string>> Kick(Guid gameServerId, CoD4xTargetReasonRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("Kick", gameServerId, request);
     public Task<ApiResult<string>> ClientKick(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ClientKick", gameServerId, request);
     public Task<ApiResult<string>> OnlyKick(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("OnlyKick", gameServerId, request);
-    public Task<ApiResult<string>> Status(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("Status", gameServerId);
+    public Task<ApiResult<CoD4xStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("Status", gameServerId, new CoD4xStatusResponseDto());
     public Task<ApiResult<string>> MiniStatus(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("MiniStatus", gameServerId);
     public Task<ApiResult<string>> DumpUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("DumpUser", gameServerId, request);
-    public Task<ApiResult<string>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("DumpBanList", gameServerId);
+    public Task<ApiResult<CoD4xBanListResponseDto>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("DumpBanList", gameServerId, new CoD4xBanListResponseDto());
     public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("ServerInfo", gameServerId);
     public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("SystemInfo", gameServerId);
     public Task<ApiResult<string>> ScreenSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ScreenSay", gameServerId, request);
@@ -83,7 +99,10 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
     public Task<ApiResult<string>> Plugins(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("Plugins", gameServerId);
     public Task<ApiResult<string>> PluginInfo(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("PluginInfo", gameServerId, request);
     public Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("TakeScreenshot", gameServerId, request);
-    public Task<ApiResult<string>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("BanPlayerByPlayerIdentifier", gameServerId, request);
-    public Task<ApiResult<string>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("TempBanPlayerByPlayerIdentifier", gameServerId, request);
-    public Task<ApiResult<string>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("UnbanPlayerByPlayerIdentifier", gameServerId, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("BanPlayerByPlayerIdentifier", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "AddedOffline", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("TempBanPlayerByPlayerIdentifier", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "AddedOffline", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("UnbanPlayerByPlayerIdentifier", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "Removed", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);
 }

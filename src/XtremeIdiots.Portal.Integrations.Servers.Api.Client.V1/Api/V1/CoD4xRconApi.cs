@@ -21,14 +21,14 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     {
     }
 
-    private async Task<ApiResult<string>> GetString(Guid gameServerId, string route, CancellationToken cancellationToken = default)
+    private async Task<ApiResult<TResponse>> GetResponse<TResponse>(Guid gameServerId, string route, CancellationToken cancellationToken = default)
     {
         var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/{route}", Method.Get, cancellationToken).ConfigureAwait(false);
         var response = await ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
-        return response.ToApiResult<string>();
+        return response.ToApiResult<TResponse>();
     }
 
-    private async Task<ApiResult<string>> PostString(Guid gameServerId, string route, object? body = null, CancellationToken cancellationToken = default)
+    private async Task<ApiResult<TResponse>> PostResponse<TResponse>(Guid gameServerId, string route, object? body = null, CancellationToken cancellationToken = default)
     {
         var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/{route}", Method.Post, cancellationToken).ConfigureAwait(false);
         if (body != null)
@@ -37,11 +37,17 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
         }
 
         var response = await ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
-        return response.ToApiResult<string>();
+        return response.ToApiResult<TResponse>();
     }
 
-    public Task<ApiResult<string>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "permban", request, cancellationToken);
+    private Task<ApiResult<string>> GetString(Guid gameServerId, string route, CancellationToken cancellationToken = default) =>
+        GetResponse<string>(gameServerId, route, cancellationToken);
+
+    private Task<ApiResult<string>> PostString(Guid gameServerId, string route, object? body = null, CancellationToken cancellationToken = default) =>
+        PostResponse<string>(gameServerId, route, body, cancellationToken);
+
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "permban", request, cancellationToken);
 
     public Task<ApiResult<string>> BanUser(Guid gameServerId, CoD4xTargetReasonRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "ban-user", request, cancellationToken);
@@ -49,11 +55,11 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> BanClient(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "ban-client", request, cancellationToken);
 
-    public Task<ApiResult<string>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "tempban", request, cancellationToken);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "tempban", request, cancellationToken);
 
-    public Task<ApiResult<string>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "unban", request, cancellationToken);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "unban", request, cancellationToken);
 
     public Task<ApiResult<string>> UnbanUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "unban-user", request, cancellationToken);
@@ -67,8 +73,8 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> OnlyKick(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "only-kick", request, cancellationToken);
 
-    public Task<ApiResult<string>> Status(Guid gameServerId, CancellationToken cancellationToken = default) =>
-        GetString(gameServerId, "status", cancellationToken);
+    public Task<ApiResult<CoD4xStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        GetResponse<CoD4xStatusResponseDto>(gameServerId, "status", cancellationToken);
 
     public Task<ApiResult<string>> MiniStatus(Guid gameServerId, CancellationToken cancellationToken = default) =>
         GetString(gameServerId, "ministatus", cancellationToken);
@@ -76,8 +82,8 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> DumpUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "dump-user", request, cancellationToken);
 
-    public Task<ApiResult<string>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default) =>
-        GetString(gameServerId, "dumpbanlist", cancellationToken);
+    public Task<ApiResult<CoD4xBanListResponseDto>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        GetResponse<CoD4xBanListResponseDto>(gameServerId, "dumpbanlist", cancellationToken);
 
     public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) =>
         GetString(gameServerId, "server-info", cancellationToken);
@@ -178,12 +184,12 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "screenshot", request, cancellationToken);
 
-    public Task<ApiResult<string>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "permban", request, cancellationToken);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "permban", request, cancellationToken);
 
-    public Task<ApiResult<string>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "tempban", request, cancellationToken);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "tempban", request, cancellationToken);
 
-    public Task<ApiResult<string>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "unban", request, cancellationToken);
+    public Task<ApiResult<CoD4xBanCommandResponseDto>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default) =>
+        PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "unban", request, cancellationToken);
 }

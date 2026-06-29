@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Net;
 using Asp.Versioning;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
@@ -33,43 +34,54 @@ public class CoD4xRconController(
 {
     private const int MaxCoD4xTempBanDurationMinutes = 525600;
     private static readonly Regex CoD4xPlayerIdentifierRegex = new(@"^[0-9]{17,21}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xStatusPlayerRegex = new(@"^\s*(?<num>\d+)\s+(?<score>-?\d+)\s+(?<ping>CNCT|ZMBI|PRIM|\d+)\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<steamid>\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<name>.+?)\s+(?<lastmsg>\d+)\s+(?<address>\[?[0-9a-fA-F:.]+\]?:\d+)\s+(?<qport>\d+)\s+(?<rate>\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xDumpBanListEntryRegex = new(@"^(?<index>\d+) playerid: (?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); nick: (?<nick>.*?); adminsteamid: (?<admin>System/Rcon|\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); expire: (?<expire>Never|.+?); reason: (?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xDumpBanListCountRegex = new(@"^(?<count>\d+) Active bans$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xBanAddedOnlineRegex = new(@"^(?:attempting to add Banrecord for player:|Banrecord added for player:)\s*(?<name>.+)\s+id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xBanAddedOfflineRegex = new(@"^Banrecord added for id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xUnbanRemovedRegex = new(@"^Removing ban for Nick:\s*(?<nick>.*),\s*PlayerID:\s*(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+),\s*Banreason:\s*(?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xErrorRegex = new(@"^Error:\s*(?<error>.+)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex QuakeColorCodeRegex = new(@"\^[0-9A-Za-z]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly char[] InvalidTargetCharacters = ['"', ';', '\r', '\n'];
     private static readonly char[] InvalidCommandTextCharacters = [';', '\r', '\n'];
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/permban")]
     public Task<IActionResult> PermBan(Guid gameServerId, [FromBody] CoD4xPermBanRequestDto? request) =>
-        ExecuteAction(
+        ExecuteStructuredAction(
             gameServerId,
             "RconCoD4xPermBan",
             AuditAction.Moderate,
             request,
             RequireCoD4xPermBan,
             (client, dto, ct) => client.BanPlayerByPlayerIdentifier(dto.PlayerIdentifier!),
+            result => ParseBanCommandResponse(result, "PermBan"),
             HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/tempban")]
     public Task<IActionResult> TempBan(Guid gameServerId, [FromBody] CoD4xTempBanRequestDto? request) =>
-        ExecuteAction(
+        ExecuteStructuredAction(
             gameServerId,
             "RconCoD4xTempBan",
             AuditAction.Moderate,
             request,
             RequireCoD4xTempBan,
             (client, dto, ct) => client.TempBanPlayerByPlayerIdentifier(dto.PlayerIdentifier!, dto.DurationMinutes),
+            result => ParseBanCommandResponse(result, "TempBan"),
             HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/unban")]
     public Task<IActionResult> Unban(Guid gameServerId, [FromBody] CoD4xUnbanRequestDto? request) =>
-        ExecuteAction(
+        ExecuteStructuredAction(
             gameServerId,
             "RconCoD4xUnban",
             AuditAction.Moderate,
             request,
             RequireCoD4xUnban,
             (client, dto, ct) => client.UnbanPlayerByPlayerIdentifier(dto.PlayerIdentifier!),
+            result => ParseBanCommandResponse(result, "Unban"),
             HttpContext.RequestAborted);
 
     [HttpPost]
@@ -105,7 +117,13 @@ public class CoD4xRconController(
     [HttpGet]
     [Route("rcon/{gameServerId}/cod4x/status")]
     public Task<IActionResult> Status(Guid gameServerId) =>
-        ExecuteAction(gameServerId, "RconCoD4xStatus", null, ct => ct.Status(), HttpContext.RequestAborted);
+        ExecuteStructuredAction(
+            gameServerId,
+            "RconCoD4xStatus",
+            null,
+            (client, ct) => client.Status(),
+            ParseStatusResponse,
+            HttpContext.RequestAborted);
 
     [HttpGet]
     [Route("rcon/{gameServerId}/cod4x/ministatus")]
@@ -120,7 +138,13 @@ public class CoD4xRconController(
     [HttpGet]
     [Route("rcon/{gameServerId}/cod4x/dumpbanlist")]
     public Task<IActionResult> DumpBanList(Guid gameServerId) =>
-        ExecuteAction(gameServerId, "RconCoD4xDumpBanList", null, ct => ct.DumpBanList(), HttpContext.RequestAborted);
+        ExecuteStructuredAction(
+            gameServerId,
+            "RconCoD4xDumpBanList",
+            null,
+            (client, ct) => client.DumpBanList(),
+            ParseBanListResponse,
+            HttpContext.RequestAborted);
 
     [HttpGet]
     [Route("rcon/{gameServerId}/cod4x/server-info")]
@@ -312,6 +336,269 @@ public class CoD4xRconController(
         var operationContext = BuildOperationContext(normalizedRequest);
         var response = await ExecuteAction(gameServerId, operationName, auditAction, (client, ct) => execute(client, normalizedRequest, ct), operationContext, cancellationToken).ConfigureAwait(false);
         return response.ToHttpResult();
+    }
+
+    private async Task<IActionResult> ExecuteStructuredAction<TRequest, TResponse>(
+        Guid gameServerId,
+        string operationName,
+        AuditAction? auditAction,
+        TRequest? request,
+        Func<TRequest, ApiResult<string>?> validate,
+        Func<ICallOfDuty4xRconClient, TRequest, CancellationToken, Task<string>> execute,
+        Func<string, TResponse> parse,
+        CancellationToken cancellationToken)
+        where TRequest : class
+    {
+        if (request == null)
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validation = validate(request);
+        if (validation != null)
+        {
+            return validation.ToHttpResult();
+        }
+
+        var normalizedRequest = NormalizeRequest(request);
+        var operationContext = BuildOperationContext(normalizedRequest);
+        var rawResult = await ExecuteAction(gameServerId, operationName, auditAction, (client, ct) => execute(client, normalizedRequest, ct), operationContext, cancellationToken).ConfigureAwait(false);
+        return MapStructuredResult(rawResult, parse).ToHttpResult();
+    }
+
+    private async Task<IActionResult> ExecuteStructuredAction<TResponse>(
+        Guid gameServerId,
+        string operationName,
+        AuditAction? auditAction,
+        Func<ICallOfDuty4xRconClient, CancellationToken, Task<string>> execute,
+        Func<string, TResponse> parse,
+        CancellationToken cancellationToken)
+    {
+        var rawResult = await ExecuteAction(gameServerId, operationName, auditAction, execute, null, cancellationToken).ConfigureAwait(false);
+        return MapStructuredResult(rawResult, parse).ToHttpResult();
+    }
+
+    private static ApiResult<TResponse> MapStructuredResult<TResponse>(ApiResult<string> rawResult, Func<string, TResponse> parse)
+    {
+        if (!rawResult.IsSuccess)
+        {
+            var error = rawResult.Result?.Errors?.FirstOrDefault();
+            if (error != null)
+            {
+                return new ApiResult<TResponse>(rawResult.StatusCode, new ApiResponse<TResponse>(new ApiError(error.Code, error.Message)));
+            }
+
+            return new ApiResult<TResponse>(rawResult.StatusCode, new ApiResponse<TResponse>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute CoD4x command via RCON.")));
+        }
+
+        try
+        {
+            var structuredResult = parse(rawResult.Result?.Data ?? string.Empty);
+            return new ApiResult<TResponse>(rawResult.StatusCode, new ApiResponse<TResponse>(structuredResult));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return new ApiResult<TResponse>(HttpStatusCode.InternalServerError, new ApiResponse<TResponse>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to parse CoD4x command response due to regex timeout.")));
+        }
+        catch (Exception)
+        {
+            return new ApiResult<TResponse>(HttpStatusCode.InternalServerError, new ApiResponse<TResponse>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to parse CoD4x command response.")));
+        }
+    }
+
+    private static CoD4xBanCommandResponseDto ParseBanCommandResponse(string result, string operation)
+    {
+        var lines = result.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var line in lines)
+        {
+            var errorMatch = CoD4xErrorRegex.Match(line);
+            if (errorMatch.Success)
+            {
+                return new CoD4xBanCommandResponseDto
+                {
+                    Outcome = "Error",
+                    IsSuccess = false,
+                    ErrorMessage = errorMatch.Groups["error"].Value,
+                    RawResponse = result
+                };
+            }
+        }
+
+        foreach (var line in lines)
+        {
+            var addedOnlineMatch = CoD4xBanAddedOnlineRegex.Match(line);
+            if (addedOnlineMatch.Success)
+            {
+                return new CoD4xBanCommandResponseDto
+                {
+                    Outcome = "AddedOnline",
+                    IsSuccess = true,
+                    PlayerIdentifier = addedOnlineMatch.Groups["playerid"].Value,
+                    PlayerName = addedOnlineMatch.Groups["name"].Value,
+                    RawResponse = result
+                };
+            }
+
+            var addedOfflineMatch = CoD4xBanAddedOfflineRegex.Match(line);
+            if (addedOfflineMatch.Success)
+            {
+                return new CoD4xBanCommandResponseDto
+                {
+                    Outcome = "AddedOffline",
+                    IsSuccess = true,
+                    PlayerIdentifier = addedOfflineMatch.Groups["playerid"].Value,
+                    RawResponse = result
+                };
+            }
+
+            var removedMatch = CoD4xUnbanRemovedRegex.Match(line);
+            if (removedMatch.Success)
+            {
+                return new CoD4xBanCommandResponseDto
+                {
+                    Outcome = "Removed",
+                    IsSuccess = true,
+                    PlayerIdentifier = removedMatch.Groups["playerid"].Value,
+                    PlayerName = removedMatch.Groups["nick"].Value,
+                    BanReason = removedMatch.Groups["reason"].Value,
+                    RawResponse = result
+                };
+            }
+        }
+
+        if (string.Equals(operation, "Unban", StringComparison.OrdinalIgnoreCase)
+            && lines.Length == 0)
+        {
+            return new CoD4xBanCommandResponseDto
+            {
+                Outcome = "NoMatch",
+                IsSuccess = false,
+                RawResponse = result
+            };
+        }
+
+        return new CoD4xBanCommandResponseDto
+        {
+            Outcome = lines.Length == 0 ? "Empty" : "Unknown",
+            IsSuccess = false,
+            RawResponse = result
+        };
+    }
+
+    private static CoD4xBanListResponseDto ParseBanListResponse(string result)
+    {
+        var response = new CoD4xBanListResponseDto { RawResponse = result };
+        var lines = result.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var line in lines)
+        {
+            var entryMatch = CoD4xDumpBanListEntryRegex.Match(line);
+            if (entryMatch.Success)
+            {
+                _ = int.TryParse(entryMatch.Groups["index"].Value, out var index);
+
+                response.Entries.Add(new CoD4xBanEntryDto
+                {
+                    Index = index,
+                    PlayerIdentifier = entryMatch.Groups["playerid"].Value,
+                    Nick = entryMatch.Groups["nick"].Value,
+                    AdminSteamId = entryMatch.Groups["admin"].Value,
+                    Expire = entryMatch.Groups["expire"].Value,
+                    IsPermanent = string.Equals(entryMatch.Groups["expire"].Value, "Never", StringComparison.OrdinalIgnoreCase),
+                    Reason = entryMatch.Groups["reason"].Value
+                });
+
+                continue;
+            }
+
+            var countMatch = CoD4xDumpBanListCountRegex.Match(line);
+            if (countMatch.Success && int.TryParse(countMatch.Groups["count"].Value, out var activeCount))
+            {
+                response.ActiveBanCount = activeCount;
+            }
+        }
+
+        if (response.ActiveBanCount == 0 && response.Entries.Count > 0)
+        {
+            response.ActiveBanCount = response.Entries.Count;
+        }
+
+        return response;
+    }
+
+    private static CoD4xStatusResponseDto ParseStatusResponse(string result)
+    {
+        var response = new CoD4xStatusResponseDto { RawResponse = result };
+        var lines = result.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var line in lines)
+        {
+            var separatorIndex = line.IndexOf(':');
+            if (separatorIndex > 0)
+            {
+                var key = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim();
+
+                switch (key.ToLowerInvariant())
+                {
+                    case "hostname":
+                        response.Hostname = value;
+                        break;
+                    case "version":
+                        response.Version = value;
+                        break;
+                    case "udp/ip":
+                        response.UdpEndpoint = value;
+                        break;
+                    case "os":
+                        response.OperatingSystem = value;
+                        break;
+                    case "type":
+                        response.ServerType = value;
+                        break;
+                    case "map":
+                        response.MapName = value;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            var playerMatch = CoD4xStatusPlayerRegex.Match(line);
+            if (!playerMatch.Success)
+            {
+                continue;
+            }
+
+            _ = int.TryParse(playerMatch.Groups["num"].Value, out var num);
+            _ = int.TryParse(playerMatch.Groups["score"].Value, out var score);
+            var pingRaw = playerMatch.Groups["ping"].Value;
+            _ = int.TryParse(pingRaw, out var pingValue);
+            _ = int.TryParse(playerMatch.Groups["lastmsg"].Value, out var lastMessageSeconds);
+            _ = int.TryParse(playerMatch.Groups["qport"].Value, out var qport);
+            _ = int.TryParse(playerMatch.Groups["rate"].Value, out var rate);
+
+            var rawName = playerMatch.Groups["name"].Value.Trim();
+
+            response.Players.Add(new CoD4xStatusPlayerDto
+            {
+                Num = num,
+                Score = score,
+                PingRaw = pingRaw,
+                Ping = int.TryParse(pingRaw, out _) ? pingValue : null,
+                PlayerIdentifier = playerMatch.Groups["playerid"].Value,
+                SteamId = playerMatch.Groups["steamid"].Value,
+                RawName = rawName,
+                Name = QuakeColorCodeRegex.Replace(rawName, string.Empty),
+                LastMessageSeconds = lastMessageSeconds,
+                Address = playerMatch.Groups["address"].Value,
+                QPort = qport,
+                Rate = rate
+            });
+        }
+
+        return response;
     }
 
     private async Task<IActionResult> ExecuteAction(

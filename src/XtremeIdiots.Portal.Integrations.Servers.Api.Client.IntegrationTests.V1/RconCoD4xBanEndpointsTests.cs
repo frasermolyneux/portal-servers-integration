@@ -81,7 +81,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Setup(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"))
-            .ReturnsAsync("permban queued");
+            .ReturnsAsync("Banrecord added for id: 2310346615957836592");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
@@ -93,6 +93,10 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"outcome\":\"AddedOffline\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isSuccess\":true", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"playerIdentifier\":\"2310346615957836592\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
     }
@@ -151,7 +155,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Setup(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15))
-            .ReturnsAsync("tempban queued");
+            .ReturnsAsync("Banrecord added for player: ^1Fraser id: 2310346615957836592");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
@@ -164,6 +168,10 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"outcome\":\"AddedOnline\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isSuccess\":true", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"playerName\":\"^1Fraser\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15), Times.Once);
     }
@@ -219,7 +227,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Setup(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"))
-            .ReturnsAsync("unban queued");
+            .ReturnsAsync("Removing ban for Nick: Fraser, PlayerID: 2310346615957836592, Banreason: test ban");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
@@ -231,6 +239,10 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"outcome\":\"Removed\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isSuccess\":true", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"banReason\":\"test ban\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
     }

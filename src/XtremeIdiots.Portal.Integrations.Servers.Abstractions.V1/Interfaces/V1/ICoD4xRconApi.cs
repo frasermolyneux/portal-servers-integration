@@ -5,20 +5,20 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 
 public interface ICoD4xRconApi
 {
-    Task<ApiResult<string>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> BanUser(Guid gameServerId, CoD4xTargetReasonRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> BanClient(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> TempBan(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> Unban(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> UnbanUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> Kick(Guid gameServerId, CoD4xTargetReasonRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> ClientKick(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> OnlyKick(Guid gameServerId, CoD4xClientReasonRequestDto request, CancellationToken cancellationToken = default);
 
-    Task<ApiResult<string>> Status(Guid gameServerId, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> MiniStatus(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> DumpUser(Guid gameServerId, CoD4xTargetRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanListResponseDto>> DumpBanList(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default);
 
@@ -59,7 +59,7 @@ public interface ICoD4xRconApi
     Task<ApiResult<string>> PluginInfo(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default);
 
     Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default);
-    Task<ApiResult<string>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> TempBanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xTempBanRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<CoD4xBanCommandResponseDto>> UnbanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xUnbanRequestDto request, CancellationToken cancellationToken = default);
 }

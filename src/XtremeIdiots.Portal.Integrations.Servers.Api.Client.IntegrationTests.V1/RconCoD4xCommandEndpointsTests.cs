@@ -149,7 +149,12 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Setup(x => x.Status())
-            .ReturnsAsync("status");
+            .ReturnsAsync(
+                "hostname: ^1XI Test Server\n" +
+                "version: CoD4x 21.1\n" +
+                "map: mp_crash\n" +
+                "num score ping playerid steamid name lastmsg address qport rate\n" +
+                "0 42 50 2310346615957836592 2310346615957836592 ^1Fraser 0 127.0.0.1:28960 28960 25000");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
@@ -158,6 +163,11 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         var response = await _client.GetAsync($"/v1.0/rcon/{gameServerId}/cod4x/status");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"hostname\":\"^1XI Test Server\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"mapName\":\"mp_crash\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"rawName\":\"^1Fraser\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"name\":\"Fraser\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.Status(), Times.Once);
     }
@@ -172,7 +182,9 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Setup(x => x.DumpBanList())
-            .ReturnsAsync("banlist");
+            .ReturnsAsync(
+                "0 playerid: 2310346615957836592; nick: Fraser; adminsteamid: System/Rcon; expire: Never; reason: test ban\n" +
+                "1 Active bans");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
@@ -181,6 +193,10 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         var response = await _client.GetAsync($"/v1.0/rcon/{gameServerId}/cod4x/dumpbanlist");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"activeBanCount\":1", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"playerIdentifier\":\"2310346615957836592\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isPermanent\":true", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.DumpBanList(), Times.Once);
     }

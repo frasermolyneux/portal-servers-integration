@@ -22,16 +22,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IQueryApi V1 { get; }
     }
 
-    public class VersionedRconApi : IVersionedRconApi
-    {
-        public VersionedRconApi(IRconApi v1Api)
-        {
-            V1 = v1Api;
-        }
-
-        public IRconApi V1 { get; }
-    }
-
     public class VersionedCoD4xRconApi : IVersionedCoD4xRconApi
     {
         public VersionedCoD4xRconApi(ICoD4xRconApi v1Api)

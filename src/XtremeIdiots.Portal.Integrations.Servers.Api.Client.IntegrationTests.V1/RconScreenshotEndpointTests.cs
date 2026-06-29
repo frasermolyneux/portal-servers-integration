@@ -36,7 +36,7 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
     {
         var gameServerId = Guid.NewGuid();
 
-        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/screenshot", new TakeScreenshotRequestDto
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/screenshot", new TakeScreenshotRequestDto
         {
             PlayerIdentifier = "invalid id"
         });
@@ -62,7 +62,7 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4, gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
 
-        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/screenshot", new TakeScreenshotRequestDto
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/screenshot", new TakeScreenshotRequestDto
         {
             PlayerIdentifier = "2310346615957836592"
         });
@@ -79,7 +79,7 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
         var gameServerId = Guid.NewGuid();
         SetupGameServerNotFound(gameServerId);
 
-        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/screenshot", new TakeScreenshotRequestDto
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/screenshot", new TakeScreenshotRequestDto
         {
             PlayerIdentifier = "2310346615957836592"
         });
@@ -103,7 +103,7 @@ public class RconScreenshotEndpointTests : IClassFixture<CustomWebApplicationFac
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
 
-        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/screenshot", new TakeScreenshotRequestDto
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/screenshot", new TakeScreenshotRequestDto
         {
             PlayerIdentifier = " 2310346615957836592 "
         });

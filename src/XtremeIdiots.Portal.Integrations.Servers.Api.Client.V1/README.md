@@ -1,6 +1,6 @@
 # XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
-Authenticated REST client for the XtremeIdiots Portal Servers API. Provides DI registration, token management, retry policies, and versioned access to server query, RCON, and map management endpoints.
+Authenticated REST client for the XtremeIdiots Portal Servers API. Provides DI registration, token management, retry policies, and versioned access to server query, game-specific RCON, and map management endpoints.
 
 ## Installation
 
@@ -41,14 +41,14 @@ public class ServerMonitorService
         return null;
     }
 
-    public async Task KickPlayer(Guid serverId, string playerNum, string reason)
+    public async Task RestartCod4Server(Guid serverId)
     {
-        await _client.Rcon.V1.KickPlayer(serverId, playerNum, reason);
+        await _client.Cod4Rcon.V1.Restart(serverId);
     }
 
-    public async Task ChangeMap(Guid serverId, string mapName)
+    public async Task RotateCoD4xMap(Guid serverId)
     {
-        await _client.Rcon.V1.ChangeMap(serverId, mapName);
+        await _client.CoD4xRcon.V1.MapRotate(serverId);
     }
 }
 ```
@@ -57,12 +57,13 @@ public class ServerMonitorService
 
 The `IServersApiClient` exposes versioned APIs:
 
-| Property | Description |
-|----------|-------------|
-| `Query` | Server status queries (player counts, map info) |
-| `Rcon` | Remote console commands (kick, ban, say, map changes) |
-| `Maps` | Server map file management (load, push, delete) |
-| `Root` | API metadata endpoint |
+| Property                                                                                  | Description                                     |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `Query`                                                                                   | Server status queries (player counts, map info) |
+| `CoD4xRcon`, `Cod2Rcon`, `Cod4Rcon`, `Cod5Rcon`, `InsurgencyRcon`, `RustRcon`, `L4d2Rcon` | Game-specific remote console commands           |
+| `Maps`                                                                                    | Server map file management (load, push, delete) |
+| `ApiHealth`, `ApiInfo`                                                                    | API health and metadata endpoints               |
+| `Config`, `FileBrowse`, `Files`                                                           | Configuration and file-management endpoints     |
 
 ## Testing
 

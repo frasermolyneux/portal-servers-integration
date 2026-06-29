@@ -4,62 +4,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     {
         public ServersApiClient(
             IVersionedQueryApi queryApiClient,
-            IVersionedRconApi rconApiClient,
-            IVersionedMapsApi mapsApiClient,
-            IVersionedApiHealthApi apiHealth,
-            IVersionedApiInfoApi apiInfo,
-            IVersionedConfigApi config,
-            IVersionedFileBrowseApi fileBrowse)
-            : this(
-                queryApiClient,
-                rconApiClient,
-                NotSupportedVersionedCoD4xRconApi.Instance,
-                NotSupportedVersionedCod2RconApi.Instance,
-                NotSupportedVersionedCod4RconApi.Instance,
-                NotSupportedVersionedCod5RconApi.Instance,
-                NotSupportedVersionedInsurgencyRconApi.Instance,
-                NotSupportedVersionedRustRconApi.Instance,
-                NotSupportedVersionedL4d2RconApi.Instance,
-                mapsApiClient,
-                apiHealth,
-                apiInfo,
-                config,
-                fileBrowse,
-                NotSupportedVersionedFilesApi.Instance)
-        {
-        }
-
-        public ServersApiClient(
-            IVersionedQueryApi queryApiClient,
-            IVersionedRconApi rconApiClient,
-            IVersionedCoD4xRconApi coD4xRconApiClient,
-            IVersionedMapsApi mapsApiClient,
-            IVersionedApiHealthApi apiHealth,
-            IVersionedApiInfoApi apiInfo,
-            IVersionedConfigApi config,
-            IVersionedFileBrowseApi fileBrowse)
-            : this(
-                queryApiClient,
-                rconApiClient,
-                coD4xRconApiClient,
-                NotSupportedVersionedCod2RconApi.Instance,
-                NotSupportedVersionedCod4RconApi.Instance,
-                NotSupportedVersionedCod5RconApi.Instance,
-                NotSupportedVersionedInsurgencyRconApi.Instance,
-                NotSupportedVersionedRustRconApi.Instance,
-                NotSupportedVersionedL4d2RconApi.Instance,
-                mapsApiClient,
-                apiHealth,
-                apiInfo,
-                config,
-                fileBrowse,
-                NotSupportedVersionedFilesApi.Instance)
-        {
-        }
-
-        public ServersApiClient(
-            IVersionedQueryApi queryApiClient,
-            IVersionedRconApi rconApiClient,
             IVersionedCoD4xRconApi coD4xRconApiClient,
             IVersionedCod2RconApi cod2RconApiClient,
             IVersionedCod4RconApi cod4RconApiClient,
@@ -75,7 +19,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             IVersionedFilesApi files)
         {
             Query = queryApiClient;
-            Rcon = rconApiClient;
             CoD4xRcon = coD4xRconApiClient;
             Cod2Rcon = cod2RconApiClient;
             Cod4Rcon = cod4RconApiClient;
@@ -92,7 +35,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         }
 
         public IVersionedQueryApi Query { get; }
-        public IVersionedRconApi Rcon { get; }
         public IVersionedCoD4xRconApi CoD4xRcon { get; }
         public IVersionedCod2RconApi Cod2Rcon { get; }
         public IVersionedCod4RconApi Cod4Rcon { get; }

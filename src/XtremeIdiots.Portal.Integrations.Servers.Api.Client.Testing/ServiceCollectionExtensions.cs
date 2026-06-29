@@ -26,7 +26,6 @@ public static class ServiceCollectionExtensions
         // Remove real implementations
         services.RemoveAll<IServersApiClient>();
         services.RemoveAll<IVersionedQueryApi>();
-        services.RemoveAll<IVersionedRconApi>();
         services.RemoveAll<IVersionedCoD4xRconApi>();
         services.RemoveAll<IVersionedCod2RconApi>();
         services.RemoveAll<IVersionedCod4RconApi>();
@@ -43,7 +42,6 @@ public static class ServiceCollectionExtensions
         services.RemoveAll<IApiHealthApi>();
         services.RemoveAll<IApiInfoApi>();
         services.RemoveAll<IQueryApi>();
-        services.RemoveAll<IRconApi>();
         services.RemoveAll<ICoD4xRconApi>();
         services.RemoveAll<ICod2RconApi>();
         services.RemoveAll<ICod4RconApi>();
@@ -60,7 +58,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(fakeClient);
         services.AddSingleton<IServersApiClient>(fakeClient);
         services.AddSingleton(fakeClient.Query);
-        services.AddSingleton(fakeClient.Rcon);
         services.AddSingleton(fakeClient.CoD4xRcon);
         services.AddSingleton(fakeClient.Cod2Rcon);
         services.AddSingleton(fakeClient.Cod4Rcon);
@@ -77,7 +74,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IApiHealthApi>(fakeClient.FakeApiHealth);
         services.AddSingleton<IApiInfoApi>(fakeClient.FakeApiInfo);
         services.AddSingleton<IQueryApi>(fakeClient.FakeQuery);
-        services.AddSingleton<IRconApi>(fakeClient.FakeRcon);
         services.AddSingleton<ICoD4xRconApi>(fakeClient.FakeCoD4xRcon);
         services.AddSingleton<ICod2RconApi>(fakeClient.FakeCod2Rcon);
         services.AddSingleton<ICod4RconApi>(fakeClient.FakeCod4Rcon);

@@ -19,7 +19,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IServersApiClient>());
         Assert.NotNull(provider.GetService<FakeServersApiClient>());
         Assert.NotNull(provider.GetService<IVersionedQueryApi>());
-        Assert.NotNull(provider.GetService<IVersionedRconApi>());
         Assert.NotNull(provider.GetService<IVersionedCoD4xRconApi>());
         Assert.NotNull(provider.GetService<IVersionedCod2RconApi>());
         Assert.NotNull(provider.GetService<IVersionedCod4RconApi>());
@@ -36,7 +35,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IApiHealthApi>());
         Assert.NotNull(provider.GetService<IApiInfoApi>());
         Assert.NotNull(provider.GetService<IQueryApi>());
-        Assert.NotNull(provider.GetService<IRconApi>());
         Assert.NotNull(provider.GetService<ICoD4xRconApi>());
         Assert.NotNull(provider.GetService<ICod2RconApi>());
         Assert.NotNull(provider.GetService<ICod4RconApi>());
@@ -77,7 +75,6 @@ public class ServiceCollectionExtensionsTests
         var client = provider.GetRequiredService<IServersApiClient>();
 
         Assert.NotNull(client.Query);
-        Assert.NotNull(client.Rcon);
         Assert.NotNull(client.CoD4xRcon);
         Assert.NotNull(client.Cod2Rcon);
         Assert.NotNull(client.Cod4Rcon);

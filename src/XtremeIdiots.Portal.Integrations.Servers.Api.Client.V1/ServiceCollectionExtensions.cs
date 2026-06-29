@@ -10,7 +10,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         {
             // Register V1 API implementations using the new typed pattern
             serviceCollection.AddTypedApiClient<IQueryApi, QueryApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<IRconApi, RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<ICoD4xRconApi, CoD4xRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<ICod2RconApi, Cod2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<ICod4RconApi, Cod4RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
@@ -37,7 +36,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
-            serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
             serviceCollection.AddScoped<IVersionedCoD4xRconApi, VersionedCoD4xRconApi>();
             serviceCollection.AddScoped<IVersionedCod2RconApi, VersionedCod2RconApi>();
             serviceCollection.AddScoped<IVersionedCod4RconApi, VersionedCod4RconApi>();

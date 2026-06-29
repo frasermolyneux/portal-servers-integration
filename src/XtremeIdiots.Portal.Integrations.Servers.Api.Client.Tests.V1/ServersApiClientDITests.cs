@@ -2,9 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MX.Api.Client.Auth;
 using MX.Api.Client.Configuration;
-using System.Net;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
-using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1;
@@ -27,7 +25,7 @@ public class ServersApiClientDITests
 
         Assert.NotNull(client);
         Assert.NotNull(client.Query);
-        Assert.NotNull(client.Rcon);
+        Assert.NotNull(client.CoD4xRcon);
         Assert.NotNull(client.Cod2Rcon);
         Assert.NotNull(client.Cod4Rcon);
         Assert.NotNull(client.Cod5Rcon);
@@ -57,23 +55,6 @@ public class ServersApiClientDITests
 
         Assert.NotNull(queryApi);
         Assert.NotNull(queryApi.V1);
-    }
-
-    [Fact]
-    public void ServersApiClient_RconApi_CanBeResolved()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddServersApiClient(options =>
-        {
-            options.WithBaseUrl("https://localhost");
-        });
-
-        var provider = services.BuildServiceProvider();
-        var rconApi = provider.GetRequiredService<IVersionedRconApi>();
-
-        Assert.NotNull(rconApi);
-        Assert.NotNull(rconApi.V1);
     }
 
     [Fact]
@@ -244,123 +225,5 @@ public class ServersApiClientDITests
 
         Assert.NotNull(filesApi);
         Assert.NotNull(filesApi.V1);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultCoD4xSelector_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.CoD4xRcon.V1.Status(Guid.NewGuid());
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultCod2Selector_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.Cod2Rcon.V1.Restart(Guid.NewGuid());
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultCod2Selector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.Cod2Rcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultCod4Selector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.Cod4Rcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultCod5Selector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.Cod5Rcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultInsurgencySelector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.InsurgencyRcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultRustSelector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.RustRcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task LegacyServersApiClient_DefaultL4d2Selector_Say_ReturnsApiResultFailure()
-    {
-        IServersApiClient client = new LegacyServersApiClient();
-
-        var response = await client.L4d2Rcon.V1.Say(Guid.NewGuid(), new SayRequest { Message = "test" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task ServersApiClient_LegacyConstructor_UsesNotSupportedCoD4xFallback()
-    {
-        var query = new Mock<IVersionedQueryApi>().Object;
-        var rcon = new Mock<IVersionedRconApi>().Object;
-        var maps = new Mock<IVersionedMapsApi>().Object;
-        var apiHealth = new Mock<IVersionedApiHealthApi>().Object;
-        var apiInfo = new Mock<IVersionedApiInfoApi>().Object;
-        var config = new Mock<IVersionedConfigApi>().Object;
-        var fileBrowse = new Mock<IVersionedFileBrowseApi>().Object;
-
-        var client = new ServersApiClient(query, rcon, maps, apiHealth, apiInfo, config, fileBrowse);
-
-        var response = await client.CoD4xRcon.V1.Status(Guid.NewGuid());
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("OPERATION_NOT_IMPLEMENTED", response.Result?.Errors?.FirstOrDefault()?.Code);
-    }
-
-    private sealed class LegacyServersApiClient : IServersApiClient
-    {
-        public IVersionedQueryApi Query => throw new NotImplementedException();
-        public IVersionedRconApi Rcon => throw new NotImplementedException();
-        public IVersionedMapsApi Maps => throw new NotImplementedException();
-        public IVersionedApiHealthApi ApiHealth => throw new NotImplementedException();
-        public IVersionedApiInfoApi ApiInfo => throw new NotImplementedException();
-        public IVersionedConfigApi Config => throw new NotImplementedException();
-        public IVersionedFileBrowseApi FileBrowse => throw new NotImplementedException();
     }
 }

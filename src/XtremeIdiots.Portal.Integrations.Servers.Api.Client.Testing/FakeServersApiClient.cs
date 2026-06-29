@@ -10,7 +10,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
 public class FakeServersApiClient : IServersApiClient
 {
     public FakeQueryApi FakeQuery { get; } = new();
-    public FakeRconApi FakeRcon { get; } = new();
     public FakeCoD4xRconApi FakeCoD4xRcon { get; } = new();
     public FakeCod2RconApi FakeCod2Rcon { get; } = new();
     public FakeCod4RconApi FakeCod4Rcon { get; } = new();
@@ -26,7 +25,6 @@ public class FakeServersApiClient : IServersApiClient
     public FakeFilesApi FakeFiles { get; } = new();
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
-    private readonly Lazy<IVersionedRconApi> _versionedRcon;
     private readonly Lazy<IVersionedCoD4xRconApi> _versionedCoD4xRcon;
     private readonly Lazy<IVersionedCod2RconApi> _versionedCod2Rcon;
     private readonly Lazy<IVersionedCod4RconApi> _versionedCod4Rcon;
@@ -44,7 +42,6 @@ public class FakeServersApiClient : IServersApiClient
     public FakeServersApiClient()
     {
         _versionedQuery = new Lazy<IVersionedQueryApi>(() => new FakeVersionedQueryApi(FakeQuery));
-        _versionedRcon = new Lazy<IVersionedRconApi>(() => new FakeVersionedRconApi(FakeRcon));
         _versionedCoD4xRcon = new Lazy<IVersionedCoD4xRconApi>(() => new FakeVersionedCoD4xRconApi(FakeCoD4xRcon));
         _versionedCod2Rcon = new Lazy<IVersionedCod2RconApi>(() => new FakeVersionedCod2RconApi(FakeCod2Rcon));
         _versionedCod4Rcon = new Lazy<IVersionedCod4RconApi>(() => new FakeVersionedCod4RconApi(FakeCod4Rcon));
@@ -61,7 +58,6 @@ public class FakeServersApiClient : IServersApiClient
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
-    public IVersionedRconApi Rcon => _versionedRcon.Value;
     public IVersionedCoD4xRconApi CoD4xRcon => _versionedCoD4xRcon.Value;
     public IVersionedCod2RconApi Cod2Rcon => _versionedCod2Rcon.Value;
     public IVersionedCod4RconApi Cod4Rcon => _versionedCod4Rcon.Value;
@@ -79,7 +75,6 @@ public class FakeServersApiClient : IServersApiClient
     public void Reset()
     {
         FakeQuery.Reset();
-        FakeRcon.Reset();
         FakeCoD4xRcon.Reset();
         FakeCod2Rcon.Reset();
         FakeCod4Rcon.Reset();
@@ -98,11 +93,6 @@ public class FakeServersApiClient : IServersApiClient
     private sealed class FakeVersionedQueryApi(IQueryApi v1) : IVersionedQueryApi
     {
         public IQueryApi V1 => v1;
-    }
-
-    private sealed class FakeVersionedRconApi(IRconApi v1) : IVersionedRconApi
-    {
-        public IRconApi V1 => v1;
     }
 
     private sealed class FakeVersionedCoD4xRconApi(ICoD4xRconApi v1) : IVersionedCoD4xRconApi

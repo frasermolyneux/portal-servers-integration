@@ -8,9 +8,10 @@ The testing package provides:
 
 - **`FakeServersApiClient`** — In-memory fake of `IServersApiClient` composing individual API fakes
 - **`FakeQueryApi`** — Fake implementation of `IQueryApi` with canned responses and call tracking
-- **`FakeRconApi`** — Fake implementation of `IRconApi` with operation logging
+- **Game-specific fake RCON APIs** — `FakeCoD4xRconApi`, `FakeCod2RconApi`, `FakeCod4RconApi`, `FakeCod5RconApi`, `FakeInsurgencyRconApi`, `FakeRustRconApi`, `FakeL4d2RconApi`
 - **`FakeMapsApi`** — Fake implementation of `IMapsApi` with operation logging
-- **`FakeRootApi`** — Fake implementation of `IRootApi` with configurable status codes
+- **`FakeApiHealthApi` / `FakeApiInfoApi`** — Fake implementations of API health and info endpoints
+- **`FakeConfigApi` / `FakeFileBrowseApi` / `FakeFilesApi`** — Fake implementations for config and file-management endpoints
 - **`ServersDtoFactory`** — Static factory methods for creating test DTOs with sensible defaults
 - **`ServiceCollectionExtensions`** — `AddFakeServersApiClient()` DI extension for integration tests
 
@@ -49,8 +50,7 @@ builder.ConfigureTestServices(services =>
     {
         fake.FakeQuery.AddResponse(serverId,
             ServersDtoFactory.CreateQueryStatusResponse(serverName: "Test Server"));
-        fake.FakeRcon.AddStatusResponse(serverId,
-            ServersDtoFactory.CreateRconStatusResponse());
+        fake.FakeCoD4xRcon.SetDefaultBehavior(DefaultBehavior.ReturnGenericSuccess);
     });
 });
 ```
@@ -72,14 +72,14 @@ fakeClient.FakeQuery.SetDefaultBehavior(DefaultBehavior.ReturnError);
 
 ## Operation Tracking
 
-`FakeRconApi` and `FakeMapsApi` log all operations for verification:
+Game-specific RCON fakes and `FakeMapsApi` log all operations for verification:
 
 ```csharp
-await fakeClient.Rcon.V1.KickPlayer(serverId, 5);
-await fakeClient.Rcon.V1.Say(serverId, "Hello");
+await fakeClient.Cod4Rcon.V1.Restart(serverId);
+await fakeClient.Cod4Rcon.V1.NextMap(serverId);
 
-Assert.Equal(2, fakeClient.FakeRcon.OperationLog.Count);
-Assert.Equal("KickPlayer", fakeClient.FakeRcon.OperationLog.First().Operation);
+Assert.Equal(2, fakeClient.FakeCod4Rcon.OperationLog.Count);
+Assert.Equal("Cod4.Restart", fakeClient.FakeCod4Rcon.OperationLog.First().Operation);
 ```
 
 ## DTO Factories

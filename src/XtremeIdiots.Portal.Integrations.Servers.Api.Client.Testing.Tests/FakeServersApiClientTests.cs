@@ -21,13 +21,6 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
-    public void Rcon_DelegatesToFakeRcon()
-    {
-        var fake = new FakeServersApiClient();
-        Assert.Same(fake.FakeRcon, fake.Rcon.V1);
-    }
-
-    [Fact]
     public void Cod2Rcon_DelegatesToFakeCod2Rcon()
     {
         var fake = new FakeServersApiClient();
@@ -118,14 +111,12 @@ public class FakeServersApiClientTests
         var serverId = Guid.NewGuid();
 
         fake.FakeQuery.AddResponse(serverId, ServersDtoFactory.CreateQueryStatusResponse());
-        fake.FakeRcon.AddStatusResponse(serverId, ServersDtoFactory.CreateRconStatusResponse());
         fake.FakeMaps.AddLoadedMapsResponse(serverId, ServersDtoFactory.CreateServerMapsCollection());
         fake.FakeFiles.AddListEntriesResponse(serverId, "/", new("/", null, []));
 
         fake.Reset();
 
         Assert.Empty(fake.FakeQuery.QueriedServerIds);
-        Assert.Empty(fake.FakeRcon.OperationLog);
         Assert.Empty(fake.FakeMaps.OperationLog);
         Assert.Empty(fake.FakeFiles.OperationLog);
     }

@@ -174,6 +174,7 @@ public class FileBrowseControllerTests
         public Task<byte[]> DownloadBytes(string path, CancellationToken cancellationToken = default) => Task.FromResult(Array.Empty<byte>());
         public Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteFile(string path, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<bool> DirectoryExists(string path, CancellationToken cancellationToken = default) => Task.FromResult(true);
         public Task CreateDirectory(string path, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteDirectory(string path, CancellationToken cancellationToken = default) => Task.CompletedTask;

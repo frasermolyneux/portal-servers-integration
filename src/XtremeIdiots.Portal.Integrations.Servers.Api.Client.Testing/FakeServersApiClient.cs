@@ -23,6 +23,7 @@ public class FakeServersApiClient : IServersApiClient
     public FakeApiInfoApi FakeApiInfo { get; } = new();
     public FakeConfigApi FakeConfig { get; } = new();
     public FakeFileBrowseApi FakeFileBrowse { get; } = new();
+    public FakeFilesApi FakeFiles { get; } = new();
 
     private readonly Lazy<IVersionedQueryApi> _versionedQuery;
     private readonly Lazy<IVersionedRconApi> _versionedRcon;
@@ -38,6 +39,7 @@ public class FakeServersApiClient : IServersApiClient
     private readonly Lazy<IVersionedApiInfoApi> _versionedApiInfo;
     private readonly Lazy<IVersionedConfigApi> _versionedConfig;
     private readonly Lazy<IVersionedFileBrowseApi> _versionedFileBrowse;
+    private readonly Lazy<IVersionedFilesApi> _versionedFiles;
 
     public FakeServersApiClient()
     {
@@ -55,6 +57,7 @@ public class FakeServersApiClient : IServersApiClient
         _versionedApiInfo = new Lazy<IVersionedApiInfoApi>(() => new FakeVersionedApiInfoApi(FakeApiInfo));
         _versionedConfig = new Lazy<IVersionedConfigApi>(() => new FakeVersionedConfigApi(FakeConfig));
         _versionedFileBrowse = new Lazy<IVersionedFileBrowseApi>(() => new FakeVersionedFileBrowseApi(FakeFileBrowse));
+        _versionedFiles = new Lazy<IVersionedFilesApi>(() => new FakeVersionedFilesApi(FakeFiles));
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
@@ -71,6 +74,7 @@ public class FakeServersApiClient : IServersApiClient
     public IVersionedApiInfoApi ApiInfo => _versionedApiInfo.Value;
     public IVersionedConfigApi Config => _versionedConfig.Value;
     public IVersionedFileBrowseApi FileBrowse => _versionedFileBrowse.Value;
+    public IVersionedFilesApi Files => _versionedFiles.Value;
 
     public void Reset()
     {
@@ -88,6 +92,7 @@ public class FakeServersApiClient : IServersApiClient
         FakeApiInfo.Reset();
         FakeConfig.Reset();
         FakeFileBrowse.Reset();
+        FakeFiles.Reset();
     }
 
     private sealed class FakeVersionedQueryApi(IQueryApi v1) : IVersionedQueryApi
@@ -158,5 +163,10 @@ public class FakeServersApiClient : IServersApiClient
     private sealed class FakeVersionedFileBrowseApi(IFileBrowseApi v1) : IVersionedFileBrowseApi
     {
         public IFileBrowseApi V1 => v1;
+    }
+
+    private sealed class FakeVersionedFilesApi(IFilesApi v1) : IVersionedFilesApi
+    {
+        public IFilesApi V1 => v1;
     }
 }

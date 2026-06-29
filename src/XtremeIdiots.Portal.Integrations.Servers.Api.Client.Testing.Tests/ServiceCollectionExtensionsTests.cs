@@ -32,6 +32,7 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IVersionedApiInfoApi>());
         Assert.NotNull(provider.GetService<IVersionedConfigApi>());
         Assert.NotNull(provider.GetService<IVersionedFileBrowseApi>());
+        Assert.NotNull(provider.GetService<IVersionedFilesApi>());
         Assert.NotNull(provider.GetService<IApiHealthApi>());
         Assert.NotNull(provider.GetService<IApiInfoApi>());
         Assert.NotNull(provider.GetService<IQueryApi>());
@@ -46,6 +47,7 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IMapsApi>());
         Assert.NotNull(provider.GetService<IConfigApi>());
         Assert.NotNull(provider.GetService<IFileBrowseApi>());
+        Assert.NotNull(provider.GetService<IFilesApi>());
     }
 
     [Fact]
@@ -88,5 +90,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(client.ApiInfo);
         Assert.NotNull(client.Config);
         Assert.NotNull(client.FileBrowse);
+        Assert.NotNull(client.Files);
     }
 }

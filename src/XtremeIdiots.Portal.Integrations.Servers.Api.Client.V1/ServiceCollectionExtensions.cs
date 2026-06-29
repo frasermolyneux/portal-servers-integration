@@ -32,6 +32,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             // Register transport-neutral browse endpoint.
             serviceCollection.AddTypedApiClient<IFileBrowseApi, FileBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
+            // Register transport-neutral generic files endpoints.
+            serviceCollection.AddTypedApiClient<IFilesApi, FilesApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
             serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
@@ -47,6 +50,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddScoped<IVersionedApiInfoApi, VersionedApiInfoApi>();
             serviceCollection.AddScoped<IVersionedConfigApi, VersionedConfigApi>();
             serviceCollection.AddScoped<IVersionedFileBrowseApi, VersionedFileBrowseApi>();
+            serviceCollection.AddScoped<IVersionedFilesApi, VersionedFilesApi>();
 
             // Register the unified client as scoped
             serviceCollection.AddScoped<IServersApiClient, ServersApiClient>();

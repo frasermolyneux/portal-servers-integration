@@ -141,4 +141,14 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 
         public IFileBrowseApi V1 { get; }
     }
+
+    public class VersionedFilesApi : IVersionedFilesApi
+    {
+        public VersionedFilesApi(IFilesApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IFilesApi V1 { get; }
+    }
 }

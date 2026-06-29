@@ -29,6 +29,7 @@ public interface IGameServerFileTransportSession : IAsyncDisposable
     Task<byte[]> DownloadBytes(string path, CancellationToken cancellationToken = default);
     Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default);
     Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default);
+    Task DeleteFile(string path, CancellationToken cancellationToken = default);
     Task<bool> DirectoryExists(string path, CancellationToken cancellationToken = default);
     Task CreateDirectory(string path, CancellationToken cancellationToken = default);
     Task DeleteDirectory(string path, CancellationToken cancellationToken = default);

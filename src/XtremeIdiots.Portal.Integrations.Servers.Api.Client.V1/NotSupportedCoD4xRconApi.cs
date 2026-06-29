@@ -97,6 +97,19 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IL4d2RconApi V1 => NotSupportedApi;
     }
 
+    internal sealed class NotSupportedVersionedFilesApi : IVersionedFilesApi
+    {
+        private static readonly IFilesApi NotSupportedApi = NotSupportedApiProxyFactory.Create<IFilesApi>();
+
+        private NotSupportedVersionedFilesApi()
+        {
+        }
+
+        public static IVersionedFilesApi Instance { get; } = new NotSupportedVersionedFilesApi();
+
+        public IFilesApi V1 => NotSupportedApi;
+    }
+
     internal static class NotSupportedApiProxyFactory
     {
         public static TApi Create<TApi>() where TApi : class

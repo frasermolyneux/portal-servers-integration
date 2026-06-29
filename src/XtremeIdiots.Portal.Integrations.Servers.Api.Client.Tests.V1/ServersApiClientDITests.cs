@@ -37,6 +37,9 @@ public class ServersApiClientDITests
         Assert.NotNull(client.Maps);
         Assert.NotNull(client.ApiHealth);
         Assert.NotNull(client.ApiInfo);
+        Assert.NotNull(client.Config);
+        Assert.NotNull(client.FileBrowse);
+        Assert.NotNull(client.Files);
     }
 
     [Fact]
@@ -224,6 +227,23 @@ public class ServersApiClientDITests
 
         Assert.NotNull(apiInfo);
         Assert.NotNull(apiInfo.V1);
+    }
+
+    [Fact]
+    public void ServersApiClient_FilesApi_CanBeResolved()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddServersApiClient(options =>
+        {
+            options.WithBaseUrl("https://localhost");
+        });
+
+        var provider = services.BuildServiceProvider();
+        var filesApi = provider.GetRequiredService<IVersionedFilesApi>();
+
+        Assert.NotNull(filesApi);
+        Assert.NotNull(filesApi.V1);
     }
 
     [Fact]

@@ -105,6 +105,13 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
+    public void Files_DelegatesToFakeFiles()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeFiles, fake.Files.V1);
+    }
+
+    [Fact]
     public void Reset_ClearsAllFakeState()
     {
         var fake = new FakeServersApiClient();
@@ -113,11 +120,13 @@ public class FakeServersApiClientTests
         fake.FakeQuery.AddResponse(serverId, ServersDtoFactory.CreateQueryStatusResponse());
         fake.FakeRcon.AddStatusResponse(serverId, ServersDtoFactory.CreateRconStatusResponse());
         fake.FakeMaps.AddLoadedMapsResponse(serverId, ServersDtoFactory.CreateServerMapsCollection());
+        fake.FakeFiles.AddListEntriesResponse(serverId, "/", new("/", null, []));
 
         fake.Reset();
 
         Assert.Empty(fake.FakeQuery.QueriedServerIds);
         Assert.Empty(fake.FakeRcon.OperationLog);
         Assert.Empty(fake.FakeMaps.OperationLog);
+        Assert.Empty(fake.FakeFiles.OperationLog);
     }
 }

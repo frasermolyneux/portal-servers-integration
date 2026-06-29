@@ -24,7 +24,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
                 apiHealth,
                 apiInfo,
                 config,
-                fileBrowse)
+                fileBrowse,
+                NotSupportedVersionedFilesApi.Instance)
         {
         }
 
@@ -51,7 +52,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
                 apiHealth,
                 apiInfo,
                 config,
-                fileBrowse)
+                fileBrowse,
+                NotSupportedVersionedFilesApi.Instance)
         {
         }
 
@@ -69,7 +71,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             IVersionedApiHealthApi apiHealth,
             IVersionedApiInfoApi apiInfo,
             IVersionedConfigApi config,
-            IVersionedFileBrowseApi fileBrowse)
+            IVersionedFileBrowseApi fileBrowse,
+            IVersionedFilesApi files)
         {
             Query = queryApiClient;
             Rcon = rconApiClient;
@@ -85,6 +88,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             ApiInfo = apiInfo;
             Config = config;
             FileBrowse = fileBrowse;
+            Files = files;
         }
 
         public IVersionedQueryApi Query { get; }
@@ -101,5 +105,6 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IVersionedApiInfoApi ApiInfo { get; }
         public IVersionedConfigApi Config { get; }
         public IVersionedFileBrowseApi FileBrowse { get; }
+        public IVersionedFilesApi Files { get; }
     }
 }

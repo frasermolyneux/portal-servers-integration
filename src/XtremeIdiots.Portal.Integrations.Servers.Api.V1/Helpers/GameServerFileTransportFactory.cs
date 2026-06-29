@@ -122,6 +122,9 @@ internal sealed class GameServerFileTransportFactory(
             await _client.UploadStream(content, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
         }
 
+        public Task DeleteFile(string path, CancellationToken cancellationToken = default)
+            => _client.DeleteFile(path, cancellationToken);
+
         public Task<bool> DirectoryExists(string path, CancellationToken cancellationToken = default)
             => _client.DirectoryExists(path, cancellationToken);
 
@@ -259,6 +262,9 @@ internal sealed class GameServerFileTransportFactory(
                 _client.UploadFile(content, path, true);
             }, cancellationToken);
         }
+
+        public Task DeleteFile(string path, CancellationToken cancellationToken = default)
+            => Task.Run(() => _client.DeleteFile(path), cancellationToken);
 
         public Task<bool> DirectoryExists(string path, CancellationToken cancellationToken = default)
         {

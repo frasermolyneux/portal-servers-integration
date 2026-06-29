@@ -12,6 +12,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddTypedApiClient<IQueryApi, QueryApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<IRconApi, RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<ICoD4xRconApi, CoD4xRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<ICod2RconApi, Cod2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<ICod4RconApi, Cod4RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<ICod5RconApi, Cod5RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IInsurgencyRconApi, InsurgencyRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IRustRconApi, RustRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IL4d2RconApi, L4d2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
             serviceCollection.AddTypedApiClient<IMapsApi, MapsApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
 
             // Register API info endpoint
@@ -30,6 +36,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();
             serviceCollection.AddScoped<IVersionedRconApi, VersionedRconApi>();
             serviceCollection.AddScoped<IVersionedCoD4xRconApi, VersionedCoD4xRconApi>();
+            serviceCollection.AddScoped<IVersionedCod2RconApi, VersionedCod2RconApi>();
+            serviceCollection.AddScoped<IVersionedCod4RconApi, VersionedCod4RconApi>();
+            serviceCollection.AddScoped<IVersionedCod5RconApi, VersionedCod5RconApi>();
+            serviceCollection.AddScoped<IVersionedInsurgencyRconApi, VersionedInsurgencyRconApi>();
+            serviceCollection.AddScoped<IVersionedRustRconApi, VersionedRustRconApi>();
+            serviceCollection.AddScoped<IVersionedL4d2RconApi, VersionedL4d2RconApi>();
             serviceCollection.AddScoped<IVersionedMapsApi, VersionedMapsApi>();
             serviceCollection.AddScoped<IVersionedApiHealthApi, VersionedApiHealthApi>();
             serviceCollection.AddScoped<IVersionedApiInfoApi, VersionedApiInfoApi>();

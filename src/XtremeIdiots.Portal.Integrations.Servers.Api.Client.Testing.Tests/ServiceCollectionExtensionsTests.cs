@@ -21,6 +21,12 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IVersionedQueryApi>());
         Assert.NotNull(provider.GetService<IVersionedRconApi>());
         Assert.NotNull(provider.GetService<IVersionedCoD4xRconApi>());
+        Assert.NotNull(provider.GetService<IVersionedCod2RconApi>());
+        Assert.NotNull(provider.GetService<IVersionedCod4RconApi>());
+        Assert.NotNull(provider.GetService<IVersionedCod5RconApi>());
+        Assert.NotNull(provider.GetService<IVersionedInsurgencyRconApi>());
+        Assert.NotNull(provider.GetService<IVersionedRustRconApi>());
+        Assert.NotNull(provider.GetService<IVersionedL4d2RconApi>());
         Assert.NotNull(provider.GetService<IVersionedMapsApi>());
         Assert.NotNull(provider.GetService<IVersionedApiHealthApi>());
         Assert.NotNull(provider.GetService<IVersionedApiInfoApi>());
@@ -31,6 +37,12 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetService<IQueryApi>());
         Assert.NotNull(provider.GetService<IRconApi>());
         Assert.NotNull(provider.GetService<ICoD4xRconApi>());
+        Assert.NotNull(provider.GetService<ICod2RconApi>());
+        Assert.NotNull(provider.GetService<ICod4RconApi>());
+        Assert.NotNull(provider.GetService<ICod5RconApi>());
+        Assert.NotNull(provider.GetService<IInsurgencyRconApi>());
+        Assert.NotNull(provider.GetService<IRustRconApi>());
+        Assert.NotNull(provider.GetService<IL4d2RconApi>());
         Assert.NotNull(provider.GetService<IMapsApi>());
         Assert.NotNull(provider.GetService<IConfigApi>());
         Assert.NotNull(provider.GetService<IFileBrowseApi>());
@@ -65,6 +77,12 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(client.Query);
         Assert.NotNull(client.Rcon);
         Assert.NotNull(client.CoD4xRcon);
+        Assert.NotNull(client.Cod2Rcon);
+        Assert.NotNull(client.Cod4Rcon);
+        Assert.NotNull(client.Cod5Rcon);
+        Assert.NotNull(client.InsurgencyRcon);
+        Assert.NotNull(client.RustRcon);
+        Assert.NotNull(client.L4d2Rcon);
         Assert.NotNull(client.Maps);
         Assert.NotNull(client.ApiHealth);
         Assert.NotNull(client.ApiInfo);

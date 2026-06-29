@@ -134,6 +134,16 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
     public Task Say(string message)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        _logger.LogDebug("[{GameServerId}] Attempting to send source chat message to the server", _serverId);
+
+        CreateConnection();
+
+        // Source servers expect messages wrapped in quotes for the `say` command.
+        var safeMessage = message.Replace("\"", "\\\"", StringComparison.Ordinal);
+        GetCommandPackets($"say \"{safeMessage}\"");
+
         return Task.CompletedTask;
     }
 

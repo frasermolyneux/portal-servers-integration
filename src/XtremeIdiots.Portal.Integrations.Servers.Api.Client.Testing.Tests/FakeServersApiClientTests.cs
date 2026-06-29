@@ -28,6 +28,48 @@ public class FakeServersApiClientTests
     }
 
     [Fact]
+    public void Cod2Rcon_DelegatesToFakeCod2Rcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeCod2Rcon, fake.Cod2Rcon.V1);
+    }
+
+    [Fact]
+    public void Cod4Rcon_DelegatesToFakeCod4Rcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeCod4Rcon, fake.Cod4Rcon.V1);
+    }
+
+    [Fact]
+    public void Cod5Rcon_DelegatesToFakeCod5Rcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeCod5Rcon, fake.Cod5Rcon.V1);
+    }
+
+    [Fact]
+    public void InsurgencyRcon_DelegatesToFakeInsurgencyRcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeInsurgencyRcon, fake.InsurgencyRcon.V1);
+    }
+
+    [Fact]
+    public void RustRcon_DelegatesToFakeRustRcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeRustRcon, fake.RustRcon.V1);
+    }
+
+    [Fact]
+    public void L4d2Rcon_DelegatesToFakeL4d2Rcon()
+    {
+        var fake = new FakeServersApiClient();
+        Assert.Same(fake.FakeL4d2Rcon, fake.L4d2Rcon.V1);
+    }
+
+    [Fact]
     public void Maps_DelegatesToFakeMaps()
     {
         var fake = new FakeServersApiClient();

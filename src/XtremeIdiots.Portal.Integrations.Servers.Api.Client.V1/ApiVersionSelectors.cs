@@ -22,6 +22,36 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         ICoD4xRconApi V1 { get; }
     }
 
+    public interface IVersionedCod2RconApi
+    {
+        ICod2RconApi V1 { get; }
+    }
+
+    public interface IVersionedCod4RconApi
+    {
+        ICod4RconApi V1 { get; }
+    }
+
+    public interface IVersionedCod5RconApi
+    {
+        ICod5RconApi V1 { get; }
+    }
+
+    public interface IVersionedInsurgencyRconApi
+    {
+        IInsurgencyRconApi V1 { get; }
+    }
+
+    public interface IVersionedRustRconApi
+    {
+        IRustRconApi V1 { get; }
+    }
+
+    public interface IVersionedL4d2RconApi
+    {
+        IL4d2RconApi V1 { get; }
+    }
+
     public interface IVersionedApiHealthApi
     {
         IApiHealthApi V1 { get; }

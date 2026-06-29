@@ -42,6 +42,66 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public ICoD4xRconApi V1 { get; }
     }
 
+    public class VersionedCod2RconApi : IVersionedCod2RconApi
+    {
+        public VersionedCod2RconApi(ICod2RconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public ICod2RconApi V1 { get; }
+    }
+
+    public class VersionedCod4RconApi : IVersionedCod4RconApi
+    {
+        public VersionedCod4RconApi(ICod4RconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public ICod4RconApi V1 { get; }
+    }
+
+    public class VersionedCod5RconApi : IVersionedCod5RconApi
+    {
+        public VersionedCod5RconApi(ICod5RconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public ICod5RconApi V1 { get; }
+    }
+
+    public class VersionedInsurgencyRconApi : IVersionedInsurgencyRconApi
+    {
+        public VersionedInsurgencyRconApi(IInsurgencyRconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IInsurgencyRconApi V1 { get; }
+    }
+
+    public class VersionedRustRconApi : IVersionedRustRconApi
+    {
+        public VersionedRustRconApi(IRustRconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IRustRconApi V1 { get; }
+    }
+
+    public class VersionedL4d2RconApi : IVersionedL4d2RconApi
+    {
+        public VersionedL4d2RconApi(IL4d2RconApi v1Api)
+        {
+            V1 = v1Api;
+        }
+
+        public IL4d2RconApi V1 { get; }
+    }
+
     public class VersionedApiHealthApi : IVersionedApiHealthApi
     {
         public VersionedApiHealthApi(IApiHealthApi v1Api)

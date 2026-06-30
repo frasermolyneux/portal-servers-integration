@@ -64,7 +64,7 @@ jobs:
         ARM_USE_AZUREAD: true
         ARM_USE_OIDC: true
 
-    - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v1.2
+    - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v1.3
       with:
         terraform-folder: "terraform"
         terraform-var-file: "tfvars/dev.tfvars"

@@ -1,3 +1,5 @@
+using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
+
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 
 public interface ICallOfDuty4xRconClient
@@ -27,6 +29,7 @@ public interface ICallOfDuty4xRconClient
     Task<string> ConTell(string client, string message);
 
     Task<string> Map(string mapName);
+    Task<List<Quake3QueryMap>> GetMaps();
     Task<string> MapRestart();
     Task<string> FastRestart();
     Task<string> MapRotate();

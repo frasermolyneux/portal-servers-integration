@@ -109,6 +109,9 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> Map(Guid gameServerId, CoD4xMapRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "map", request, cancellationToken);
 
+    public Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        GetResponse<RconMapCollectionDto>(gameServerId, "maps", cancellationToken);
+
     public Task<ApiResult<string>> MapRestart(Guid gameServerId, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "map-restart", cancellationToken: cancellationToken);
 

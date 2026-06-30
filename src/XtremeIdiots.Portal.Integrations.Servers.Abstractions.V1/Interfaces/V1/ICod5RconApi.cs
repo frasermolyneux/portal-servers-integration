@@ -14,6 +14,7 @@ public interface ICod5RconApi
     Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default);
+    Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default);

@@ -49,6 +49,9 @@ public class Cod5RconController(
     [HttpPost("say")]
     public Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest? request) => Say(gameServerId, request, "RconCod5Say", HttpContext.RequestAborted);
 
+    [HttpPost("tell")]
+    public Task<IActionResult> Tell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) => Tell(gameServerId, request, "RconCod5Tell", HttpContext.RequestAborted);
+
     [HttpPost("map")]
     public Task<IActionResult> Map(Guid gameServerId, [FromBody] ChangeMapRequest? request) => Map(gameServerId, request, "RconCod5Map", HttpContext.RequestAborted);
 

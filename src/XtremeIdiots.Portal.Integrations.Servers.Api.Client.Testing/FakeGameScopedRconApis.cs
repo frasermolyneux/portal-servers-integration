@@ -105,6 +105,12 @@ public abstract class FakeGameScopedRconApiBase
         });
     }
 
+    protected Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request)
+    {
+        _operationLog.Add(($"{_apiName}.Tell", gameServerId, request));
+        return Task.FromResult(StringResult("tell ok"));
+    }
+
     protected Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request)
     {
         _operationLog.Add(($"{_apiName}.Map", gameServerId, request));
@@ -188,6 +194,7 @@ public sealed class FakeCod2RconApi : FakeGameScopedRconApiBase, ICod2RconApi
     public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
     public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => base.Tell(gameServerId, request);
     public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
     public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
     public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);
@@ -212,6 +219,7 @@ public sealed class FakeCod4RconApi : FakeGameScopedRconApiBase, ICod4RconApi
     public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
     public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => base.Tell(gameServerId, request);
     public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
     public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
     public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);
@@ -236,6 +244,7 @@ public sealed class FakeCod5RconApi : FakeGameScopedRconApiBase, ICod5RconApi
     public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
     public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => base.Tell(gameServerId, request);
     public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
     public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
     public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);

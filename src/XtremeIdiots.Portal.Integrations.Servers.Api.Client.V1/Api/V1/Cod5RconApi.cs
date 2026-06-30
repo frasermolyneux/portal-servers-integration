@@ -46,6 +46,9 @@ public class Cod5RconApi : GameScopedRconApiBase, ICod5RconApi
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) =>
         SayCore(gameServerId, request, cancellationToken);
 
+    public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
+        TellCore(gameServerId, request, cancellationToken);
+
     public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) =>
         MapCore(gameServerId, request, cancellationToken);
 

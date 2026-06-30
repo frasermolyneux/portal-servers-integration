@@ -19,6 +19,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     private const string BracketedIpv6Pattern = @"\[(?:[0-9A-Fa-f:.%]+)\]";
     private const string BareIpv6Pattern = @"(?:[0-9A-Fa-f]{0,4}:){2,}[0-9A-Fa-f:%.]*";
     private const string IpAddressPattern = @"(?<ip>(?:" + BracketedIpv6Pattern + @"|" + Ipv4Pattern + @"|" + BareIpv6Pattern + @"))";
+    private static readonly char[] InvalidTellMessageCharacters = [';', '\r', '\n'];
 
     [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
     private static partial Regex MapRegex();
@@ -331,15 +332,30 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         _logger.LogDebug("[{GameServerId}] Attempting to send message to client ID {ClientId}", ServerId, clientId);
 
+        var sanitizedMessage = SanitizeTellMessage(message);
+
         // Some servers do not emit a payload for `tell`; treat this as best-effort fire-and-forget.
         Policy.Handle<Exception>()
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
             {
                 _logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", ServerId, retryCount);
             })
-            .Execute(() => GetCommandPackets($"tell {clientId} \"{message}\"", skipReceive: true));
+            .Execute(() => GetCommandPackets($"tell {clientId} \"{sanitizedMessage}\"", skipReceive: true));
 
         return Task.FromResult("Tell command sent to player");
+    }
+
+    private static string SanitizeTellMessage(string message)
+    {
+        var normalizedMessage = message?.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedMessage);
+
+        if (normalizedMessage.IndexOfAny(InvalidTellMessageCharacters) >= 0)
+        {
+            throw new ArgumentException("Message contains unsupported characters.", nameof(message));
+        }
+
+        return normalizedMessage.Replace("\"", "\\\"");
     }
 
     public Task<string> ChangeMap(string mapName)

@@ -186,6 +186,17 @@ public class CoD4xRconController(
     public Task<IActionResult> Map(Guid gameServerId, [FromBody] CoD4xMapRequestDto? request) =>
         ExecuteAction(gameServerId, "RconCoD4xMap", AuditAction.Execute, request, RequireMap, (client, dto, ct) => client.Map(dto.MapName!), HttpContext.RequestAborted);
 
+    [HttpGet]
+    [Route("rcon/{gameServerId}/cod4x/maps")]
+    public Task<IActionResult> GetMaps(Guid gameServerId) =>
+        ExecuteStructuredAction(
+            gameServerId,
+            "RconCoD4xMaps",
+            null,
+            (client, ct) => client.GetMaps(),
+            maps => new RconMapCollectionDto(maps.Select(map => new RconMapDto(map.GameType, map.MapName))),
+            HttpContext.RequestAborted);
+
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/map-restart")]
     public Task<IActionResult> MapRestart(Guid gameServerId) =>
@@ -376,6 +387,67 @@ public class CoD4xRconController(
     {
         var rawResult = await ExecuteAction(gameServerId, operationName, auditAction, execute, null, cancellationToken).ConfigureAwait(false);
         return MapStructuredResult(rawResult, parse).ToHttpResult();
+    }
+
+    private async Task<IActionResult> ExecuteStructuredAction<TData, TResponse>(
+        Guid gameServerId,
+        string operationName,
+        AuditAction? auditAction,
+        Func<ICallOfDuty4xRconClient, CancellationToken, Task<TData>> execute,
+        Func<TData, TResponse> parse,
+        CancellationToken cancellationToken)
+    {
+        _ = auditAction;
+
+        var contextResult = await TryGetCoD4xContext(gameServerId, cancellationToken).ConfigureAwait(false);
+        if (contextResult.Error != null)
+        {
+            return contextResult.Error.ToHttpResult();
+        }
+
+        var context = contextResult.Context!;
+        var operation = telemetryClient.StartOperation<DependencyTelemetry>(operationName);
+        operation.Telemetry.Type = $"{context.GameType}Server";
+        operation.Telemetry.Target = $"{context.Hostname}:{context.QueryPort}";
+
+        try
+        {
+            var rawData = await execute(context.Client, cancellationToken).ConfigureAwait(false);
+            var mappedResult = parse(rawData);
+            return new ApiResponse<TResponse>(mappedResult).ToApiResult().ToHttpResult();
+        }
+        catch (NotImplementedException ex)
+        {
+            operation.Telemetry.Success = false;
+            operation.Telemetry.ResultCode = ex.Message;
+            telemetryClient.TrackException(ex);
+
+            logger.LogWarning(ex, "{OperationName} is not implemented for game server {GameServerId}", operationName, gameServerId);
+            return new ApiResponse<TResponse>(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested CoD4x operation is not implemented for this game server type."))
+                .ToApiResult()
+                .ToHttpResult();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            operation.Telemetry.Success = false;
+            operation.Telemetry.ResultCode = "Cancelled";
+            throw;
+        }
+        catch (Exception ex)
+        {
+            operation.Telemetry.Success = false;
+            operation.Telemetry.ResultCode = ex.Message;
+            telemetryClient.TrackException(ex);
+
+            logger.LogError(ex, "Failed to execute {OperationName} on game server {GameServerId}", operationName, gameServerId);
+            return new ApiResponse<TResponse>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute CoD4x command via RCON."))
+                .ToApiResult()
+                .ToHttpResult();
+        }
+        finally
+        {
+            telemetryClient.StopOperation(operation);
+        }
     }
 
     private static ApiResult<TResponse> MapStructuredResult<TResponse>(ApiResult<string> rawResult, Func<string, TResponse> parse)

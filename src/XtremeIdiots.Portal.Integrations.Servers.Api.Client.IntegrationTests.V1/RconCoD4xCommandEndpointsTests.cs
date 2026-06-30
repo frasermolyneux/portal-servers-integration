@@ -5,6 +5,7 @@ using MX.Api.Abstractions;
 using Newtonsoft.Json;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.Configurations;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
@@ -199,6 +200,35 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         Assert.Contains("\"isPermanent\":true", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.DumpBanList(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CoD4xMaps_WhenValidRequest_ReturnsOkAndCallsRconClient()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.GetMaps())
+            .ReturnsAsync([
+                new Quake3QueryMap { GameType = "war", MapName = "mp_crash" },
+                new Quake3QueryMap { GameType = "sd", MapName = "mp_backlot" }
+            ]);
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var response = await _client.GetAsync($"/v1.0/rcon/{gameServerId}/cod4x/maps");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"mapName\":\"mp_crash\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"mapName\":\"mp_backlot\"", content, StringComparison.OrdinalIgnoreCase);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.GetMaps(), Times.Once);
     }
 
     [Fact]

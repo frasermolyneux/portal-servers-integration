@@ -48,6 +48,26 @@ public class GameScopedRconApiRouteTests
     }
 
     [Fact]
+    public async Task Cod2Tell_UsesCod2TellRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateCod2Api(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.Tell(gameServerId, new CoD4xTargetMessageRequestDto
+        {
+            Target = "2",
+            Message = "test"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod2/tell", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Post, restClientService.LastRequest.Method);
+        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+    }
+
+    [Fact]
     public async Task Cod4DvarList_UsesCod4DvarListRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -83,6 +103,26 @@ public class GameScopedRconApiRouteTests
     }
 
     [Fact]
+    public async Task Cod4Tell_UsesCod4TellRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateCod4Api(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.Tell(gameServerId, new CoD4xTargetMessageRequestDto
+        {
+            Target = "3",
+            Message = "test"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod4/tell", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Post, restClientService.LastRequest.Method);
+        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+    }
+
+    [Fact]
     public async Task Cod5Status_UsesCod5StatusRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -112,6 +152,26 @@ public class GameScopedRconApiRouteTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         Assert.NotNull(restClientService.LastRequest);
         Assert.Equal($"v1/rcon/{gameServerId}/cod5/ban", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Post, restClientService.LastRequest.Method);
+        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+    }
+
+    [Fact]
+    public async Task Cod5Tell_UsesCod5TellRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateCod5Api(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.Tell(gameServerId, new CoD4xTargetMessageRequestDto
+        {
+            Target = "4",
+            Message = "test"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod5/tell", restClientService.LastRequest!.Resource);
         Assert.Equal(Method.Post, restClientService.LastRequest.Method);
         Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
     }

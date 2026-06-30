@@ -51,6 +51,9 @@ public abstract class GameScopedRconApiBase : BaseApi<ServersApiClientOptions>
     protected Task<ApiResult> SayCore(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) =>
         PostNoResponse(gameServerId, "say", request, cancellationToken);
 
+    protected Task<ApiResult<string>> TellCore(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
+        PostString(gameServerId, "tell", request, cancellationToken);
+
     protected Task<ApiResult<string>> MapCore(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "map", request, cancellationToken);
 

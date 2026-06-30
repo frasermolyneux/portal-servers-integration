@@ -29,6 +29,7 @@ public interface ICoD4xRconApi
     Task<ApiResult<string>> ConTell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default);
 
     Task<ApiResult<string>> Map(Guid gameServerId, CoD4xMapRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> MapRestart(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> FastRestart(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> MapRotate(Guid gameServerId, CancellationToken cancellationToken = default);

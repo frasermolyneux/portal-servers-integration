@@ -88,6 +88,44 @@ public abstract class GameScopedRconControllerBase(
             .ConfigureAwait(false);
     }
 
+    protected async Task<IActionResult> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Target))
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Target is required.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Message))
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message is required.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        if (request.Message.IndexOfAny([';', '\r', '\n']) >= 0)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message contains unsupported characters.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        if (!int.TryParse(request.Target.Trim(), out var clientId) || clientId < 0)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Target must be a non-negative client ID.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var message = request.Message.Trim();
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Moderate,
+                (client, ct) => client.TellPlayer(clientId, message),
+                cancellationToken,
+                BuildOperatorData(("ClientId", clientId), ("Message", message)))
+            .ConfigureAwait(false);
+    }
+
     protected Task<IActionResult> Restart(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
         ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.Restart(), cancellationToken);
 

@@ -46,6 +46,21 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task GetMaps_UsesCod4xMapsRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateApi(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.GetMaps(gameServerId);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod4x/maps", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Get, restClientService.LastRequest.Method);
+    }
+
+    [Fact]
     public async Task DumpBanList_UsesCod4xDumpBanListRoute()
     {
         var restClientService = new FakeRestClientService();

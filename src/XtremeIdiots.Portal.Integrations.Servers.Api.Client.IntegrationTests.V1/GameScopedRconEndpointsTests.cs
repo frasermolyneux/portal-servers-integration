@@ -83,6 +83,74 @@ public class GameScopedRconEndpointsTests : IClassFixture<CustomWebApplicationFa
     }
 
     [Fact]
+    public async Task Cod2Tell_WhenTargetMissing_ReturnsBadRequest()
+    {
+        var gameServerId = Guid.NewGuid();
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod2/tell", new CoD4xTargetMessageRequestDto
+        {
+            Target = " ",
+            Message = "hello"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cod2Tell_WhenTargetIsNotNumeric_ReturnsBadRequest()
+    {
+        var gameServerId = Guid.NewGuid();
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod2/tell", new CoD4xTargetMessageRequestDto
+        {
+            Target = "abc",
+            Message = "hello"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cod2Tell_WhenMessageContainsUnsupportedCharacters_ReturnsBadRequest()
+    {
+        var gameServerId = Guid.NewGuid();
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod2/tell", new CoD4xTargetMessageRequestDto
+        {
+            Target = "3",
+            Message = "hello;quit"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cod2Tell_WhenValidRequest_ReturnsOkAndCallsRconClient()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty2);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.TellPlayer(5, "hello"))
+            .ReturnsAsync("Tell command sent to player");
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty2, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod2/tell", new CoD4xTargetMessageRequestDto
+        {
+            Target = "5",
+            Message = "  hello  "
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.Verify(x => x.TellPlayer(5, "hello"), Times.Once);
+    }
+
+    [Fact]
     public async Task Cod2Set_WhenSuccessful_DoesNotIncludeResultInOperatorEventPayload()
     {
         var gameServerId = Guid.NewGuid();

@@ -74,6 +74,8 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
     public Task<ApiResult<string>> ScreenTell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ScreenTell", gameServerId, request);
     public Task<ApiResult<string>> ConTell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ConTell", gameServerId, request);
     public Task<ApiResult<string>> Map(Guid gameServerId, CoD4xMapRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("Map", gameServerId, request);
+    public Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        LogAndReturnTyped("GetMaps", gameServerId, new RconMapCollectionDto([]));
     public Task<ApiResult<string>> MapRestart(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("MapRestart", gameServerId);
     public Task<ApiResult<string>> FastRestart(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("FastRestart", gameServerId);
     public Task<ApiResult<string>> MapRotate(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("MapRotate", gameServerId);

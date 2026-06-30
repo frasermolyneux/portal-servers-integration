@@ -169,6 +169,7 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         Assert.Contains("\"mapName\":\"mp_crash\"", content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"rawName\":\"^1Fraser\"", content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"name\":\"Fraser\"", content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"ipAddress\":\"127.0.0.1\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.Status(), Times.Once);
     }

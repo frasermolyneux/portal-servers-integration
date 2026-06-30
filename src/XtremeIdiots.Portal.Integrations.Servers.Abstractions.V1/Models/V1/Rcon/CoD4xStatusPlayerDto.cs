@@ -11,7 +11,6 @@ public record CoD4xStatusPlayerDto
     public string RawName { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public int LastMessageSeconds { get; set; }
-    public string Address { get; set; } = string.Empty;
-    public int QPort { get; set; }
+    public string IpAddress { get; set; } = string.Empty;
     public int Rate { get; set; }
 }

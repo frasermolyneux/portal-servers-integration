@@ -648,7 +648,6 @@ public class CoD4xRconController(
             var pingRaw = playerMatch.Groups["ping"].Value;
             _ = int.TryParse(pingRaw, out var pingValue);
             _ = int.TryParse(playerMatch.Groups["lastmsg"].Value, out var lastMessageSeconds);
-            _ = int.TryParse(playerMatch.Groups["qport"].Value, out var qport);
             _ = int.TryParse(playerMatch.Groups["rate"].Value, out var rate);
 
             var rawName = playerMatch.Groups["name"].Value.Trim();
@@ -664,13 +663,51 @@ public class CoD4xRconController(
                 RawName = rawName,
                 Name = QuakeColorCodeRegex.Replace(rawName, string.Empty),
                 LastMessageSeconds = lastMessageSeconds,
-                Address = playerMatch.Groups["address"].Value,
-                QPort = qport,
+                IpAddress = ExtractIpAddress(playerMatch.Groups["address"].Value),
                 Rate = rate
             });
         }
 
         return response;
+    }
+
+    private static string ExtractIpAddress(string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            return string.Empty;
+        }
+
+        var trimmedEndpoint = endpoint.Trim();
+
+        if (trimmedEndpoint[0] == '[')
+        {
+            var bracketEndIndex = trimmedEndpoint.IndexOf(']');
+            if (bracketEndIndex > 1)
+            {
+                var bracketedHost = trimmedEndpoint[1..bracketEndIndex];
+                return IPAddress.TryParse(bracketedHost, out _) ? bracketedHost : string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        if (IPAddress.TryParse(trimmedEndpoint, out _))
+        {
+            return trimmedEndpoint;
+        }
+
+        var firstColonIndex = trimmedEndpoint.IndexOf(':');
+        var lastColonIndex = trimmedEndpoint.LastIndexOf(':');
+        if (firstColonIndex > 0 &&
+            firstColonIndex == lastColonIndex &&
+            int.TryParse(trimmedEndpoint[(lastColonIndex + 1)..], out _))
+        {
+            var ipv4Candidate = trimmedEndpoint[..lastColonIndex];
+            return IPAddress.TryParse(ipv4Candidate, out _) ? ipv4Candidate : string.Empty;
+        }
+
+        return string.Empty;
     }
 
     private async Task<IActionResult> ExecuteAction(

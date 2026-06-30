@@ -398,6 +398,34 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
         return Task.FromResult(GetStringFromPackets(packets));
     }
 
+    public Task<string> GetCvarList()
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to get cvar list", ServerId);
+
+        var packets = Policy.Handle<Exception>()
+            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+            {
+                _logger.LogWarning("[{ServerName}] Failed to execute cvarlist command - retry count: {Count}", ServerId, retryCount);
+            })
+            .Execute(() => GetCommandPackets("cvarlist"));
+
+        return Task.FromResult(GetStringFromPackets(packets));
+    }
+
+    public Task<string> GetDvarList()
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to get dvar list", ServerId);
+
+        var packets = Policy.Handle<Exception>()
+            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+            {
+                _logger.LogWarning("[{ServerName}] Failed to execute dvarlist command - retry count: {Count}", ServerId, retryCount);
+            })
+            .Execute(() => GetCommandPackets("dvarlist"));
+
+        return Task.FromResult(GetStringFromPackets(packets));
+    }
+
     public Task<string> GetDvar(string dvarName)
     {
         _logger.LogDebug("[{GameServerId}] Attempting to get dvar {DvarName}", ServerId, dvarName);
@@ -422,6 +450,20 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
                 _logger.LogWarning("[{GameServerId}] Failed to set dvar {DvarName} - retry count: {Count}", ServerId, dvarName, retryCount);
             })
             .Execute(() => GetCommandPackets($"set {dvarName} \"{value}\""));
+
+        return Task.FromResult(GetStringFromPackets(packets));
+    }
+
+    public Task<string> SetaDvar(string dvarName, string value)
+    {
+        _logger.LogDebug("[{GameServerId}] Attempting to seta dvar {DvarName}", ServerId, dvarName);
+
+        var packets = Policy.Handle<Exception>()
+            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+            {
+                _logger.LogWarning("[{GameServerId}] Failed to seta dvar {DvarName} - retry count: {Count}", ServerId, dvarName, retryCount);
+            })
+            .Execute(() => GetCommandPackets($"seta {dvarName} \"{value}\""));
 
         return Task.FromResult(GetStringFromPackets(packets));
     }

@@ -28,6 +28,37 @@ public abstract class GameScopedRconControllerBase(
     protected Task<IActionResult> GetCurrentMap(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
         ExecuteStructuredOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetCurrentMap(), mapName => new RconCurrentMapDto(mapName), cancellationToken, emitAuditAndEvent: false);
 
+    protected Task<IActionResult> Status(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStructuredOperation(
+            gameServerId,
+            operationName,
+            AuditAction.Execute,
+            (client, ct) => Task.FromResult(client.GetPlayers()),
+            players => new RconStatusResponseDto
+            {
+                Players = players.Select(player => new RconStatusPlayerDto
+                {
+                    Num = player.Num,
+                    Guid = player.Guid ?? string.Empty,
+                    Name = player.Name ?? string.Empty,
+                    IpAddress = player.IpAddress ?? string.Empty,
+                    Rate = player.Rate,
+                    Ping = player.Ping
+                }).ToList()
+            },
+            cancellationToken,
+            emitAuditAndEvent: false);
+
+    protected Task<IActionResult> GetMaps(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStructuredOperation(
+            gameServerId,
+            operationName,
+            AuditAction.Execute,
+            (client, ct) => client.GetMaps(),
+            maps => new RconMapCollectionDto(maps.Select(map => new RconMapDto(map.GameType, map.MapName))),
+            cancellationToken,
+            emitAuditAndEvent: false);
+
     protected async Task<IActionResult> Say(Guid gameServerId, SayRequest? request, string operationName, CancellationToken cancellationToken)
     {
         if (request == null)
@@ -69,22 +100,205 @@ public abstract class GameScopedRconControllerBase(
     protected Task<IActionResult> NextMap(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
         ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.NextMap(), cancellationToken);
 
-    private async Task<IActionResult> ExecuteStructuredOperation<TResponse>(
+    protected Task<IActionResult> ServerInfo(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetServerInfo(), cancellationToken, emitAuditAndEvent: false);
+
+    protected Task<IActionResult> SystemInfo(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetSystemInfo(), cancellationToken, emitAuditAndEvent: false);
+
+    protected Task<IActionResult> CmdList(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetCommandList(), cancellationToken, emitAuditAndEvent: false);
+
+    protected Task<IActionResult> CvarList(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetCvarList(), cancellationToken, emitAuditAndEvent: false);
+
+    protected Task<IActionResult> DvarList(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
+        ExecuteStringOperation(gameServerId, operationName, AuditAction.Execute, (client, ct) => client.GetDvarList(), cancellationToken, emitAuditAndEvent: false);
+
+    protected async Task<IActionResult> Map(Guid gameServerId, ChangeMapRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.MapName))
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "MapName is required.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Execute,
+                (client, ct) => client.ChangeMap(request.MapName.Trim()),
+                cancellationToken,
+                BuildOperatorData(("MapName", request.MapName.Trim())))
+            .ConfigureAwait(false);
+    }
+
+    protected async Task<IActionResult> Kick(Guid gameServerId, ClientSlotRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validationError = ValidateClientSlotRequest(request);
+        if (validationError != null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Moderate,
+                (client, ct) => client.KickPlayer(request.ClientId),
+                cancellationToken,
+                BuildOperatorData(("ClientId", request.ClientId)))
+            .ConfigureAwait(false);
+    }
+
+    protected async Task<IActionResult> TempBan(Guid gameServerId, ClientSlotRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validationError = ValidateClientSlotRequest(request);
+        if (validationError != null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Moderate,
+                (client, ct) => client.TempBanPlayer(request.ClientId),
+                cancellationToken,
+                BuildOperatorData(("ClientId", request.ClientId)))
+            .ConfigureAwait(false);
+    }
+
+    protected async Task<IActionResult> Ban(Guid gameServerId, ClientSlotRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validationError = ValidateClientSlotRequest(request);
+        if (validationError != null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Moderate,
+                (client, ct) => client.BanPlayer(request.ClientId),
+                cancellationToken,
+                BuildOperatorData(("ClientId", request.ClientId)))
+            .ConfigureAwait(false);
+    }
+
+    protected async Task<IActionResult> Set(Guid gameServerId, SetDvarRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validationError = ValidateSetDvarRequest(request);
+        if (validationError != null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Execute,
+            (client, ct) => client.SetDvar(request.DvarName.Trim(), request.Value.Trim()),
+                cancellationToken,
+            BuildOperatorData(("DvarName", request.DvarName.Trim())),
+            emitAuditAndEvent: true,
+            includeResultInOperatorEvent: false)
+            .ConfigureAwait(false);
+    }
+
+    protected async Task<IActionResult> Seta(Guid gameServerId, SetDvarRequest? request, string operationName, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var validationError = ValidateSetDvarRequest(request);
+        if (validationError != null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return await ExecuteStringOperation(
+                gameServerId,
+                operationName,
+                AuditAction.Execute,
+                (client, ct) => client.SetaDvar(request.DvarName.Trim(), request.Value.Trim()),
+                cancellationToken,
+            BuildOperatorData(("DvarName", request.DvarName.Trim())),
+            emitAuditAndEvent: true,
+            includeResultInOperatorEvent: false)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<IActionResult> ExecuteStructuredOperation<TData, TResponse>(
         Guid gameServerId,
         string operationName,
         AuditAction auditAction,
-        Func<IRconClient, CancellationToken, Task<string>> execute,
-        Func<string, TResponse> map,
+        Func<IRconClient, CancellationToken, Task<TData>> execute,
+        Func<TData, TResponse> map,
         CancellationToken cancellationToken,
         bool emitAuditAndEvent = true)
     {
-        var rawResult = await ExecuteInternal(gameServerId, operationName, auditAction, execute, null, emitAuditAndEvent, cancellationToken).ConfigureAwait(false);
+        var rawResult = await ExecuteInternal(
+                gameServerId,
+                operationName,
+                auditAction,
+                execute,
+                null,
+                emitAuditAndEvent,
+                includeResultInOperatorEvent: true,
+                cancellationToken)
+            .ConfigureAwait(false);
         if (!rawResult.IsSuccess)
         {
             return rawResult.ToHttpResult();
         }
 
-        return new ApiResponse<TResponse>(map(rawResult.Result?.Data ?? string.Empty)).ToApiResult().ToHttpResult();
+        if (rawResult.Result is null)
+        {
+            return new ApiResponse<TResponse>(
+                    new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "RCON command did not return data."))
+                .ToApiResult()
+                .ToHttpResult();
+        }
+
+        var resultData = rawResult.Result.Data;
+        if (resultData is null)
+        {
+            return new ApiResponse<TResponse>(
+                    new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "RCON command did not return data."))
+                .ToApiResult()
+                .ToHttpResult();
+        }
+
+        var mappedData = map(resultData);
+        return new ApiResponse<TResponse>(mappedData).ToApiResult().ToHttpResult();
     }
 
     private async Task<IActionResult> ExecuteStringOperation(
@@ -92,9 +306,22 @@ public abstract class GameScopedRconControllerBase(
         string operationName,
         AuditAction auditAction,
         Func<IRconClient, CancellationToken, Task<string>> execute,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, object?>? operatorData = null,
+        bool emitAuditAndEvent = true,
+        bool includeResultInOperatorEvent = true)
     {
-        var response = await ExecuteInternal(gameServerId, operationName, auditAction, execute, null, emitAuditAndEvent: true, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteInternal(
+                gameServerId,
+                operationName,
+                auditAction,
+                execute,
+                operatorData,
+                emitAuditAndEvent,
+                includeResultInOperatorEvent,
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return response.ToHttpResult();
     }
 
@@ -154,19 +381,22 @@ public abstract class GameScopedRconControllerBase(
         }
     }
 
-    private async Task<ApiResult<string>> ExecuteInternal(
+    private async Task<ApiResult<TData>> ExecuteInternal<TData>(
         Guid gameServerId,
         string operationName,
         AuditAction auditAction,
-        Func<IRconClient, CancellationToken, Task<string>> execute,
+        Func<IRconClient, CancellationToken, Task<TData>> execute,
         IReadOnlyDictionary<string, object?>? operatorData,
         bool emitAuditAndEvent,
+        bool includeResultInOperatorEvent,
         CancellationToken cancellationToken)
     {
         var contextResult = await TryGetContext(gameServerId, cancellationToken).ConfigureAwait(false);
         if (contextResult.Error != null)
         {
-            return contextResult.Error;
+            return new ApiResult<TData>(
+                contextResult.Error.StatusCode,
+                new ApiResponse<TData>(contextResult.Error.Result?.Errors ?? []));
         }
 
         var context = contextResult.Context!;
@@ -179,10 +409,11 @@ public abstract class GameScopedRconControllerBase(
             var result = await execute(context.Client, cancellationToken).ConfigureAwait(false);
             if (emitAuditAndEvent)
             {
-                await WriteSuccessAuditAndEvent(context, operationName, auditAction, operatorData, cancellationToken, result).ConfigureAwait(false);
+                var resultText = includeResultInOperatorEvent ? result?.ToString() : null;
+                await WriteSuccessAuditAndEvent(context, operationName, auditAction, operatorData, cancellationToken, resultText).ConfigureAwait(false);
             }
 
-            return new ApiResponse<string>(result).ToApiResult();
+            return new ApiResponse<TData>(result).ToApiResult();
         }
         catch (NotImplementedException ex)
         {
@@ -191,7 +422,7 @@ public abstract class GameScopedRconControllerBase(
             telemetryClient.TrackException(ex);
 
             logger.LogWarning(ex, "{OperationName} is not implemented for game server {GameServerId}", operationName, gameServerId);
-            return new ApiResponse<string>(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested operation is not implemented for this game server type.")).ToBadRequestResult();
+            return new ApiResponse<TData>(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested operation is not implemented for this game server type.")).ToBadRequestResult();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -206,7 +437,7 @@ public abstract class GameScopedRconControllerBase(
             telemetryClient.TrackException(ex);
 
             logger.LogError(ex, "Failed to execute {OperationName} on game server {GameServerId}", operationName, gameServerId);
-            return new ApiResponse<string>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute RCON command.")).ToApiResult();
+            return new ApiResponse<TData>(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute RCON command.")).ToApiResult();
         }
         finally
         {
@@ -345,6 +576,31 @@ public abstract class GameScopedRconControllerBase(
         }
 
         return properties;
+    }
+
+    private static ApiResult<string>? ValidateClientSlotRequest(ClientSlotRequest request)
+    {
+        if (request.ClientId < 0)
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "ClientId must be greater than or equal to 0.")).ToBadRequestResult();
+        }
+
+        return null;
+    }
+
+    private static ApiResult<string>? ValidateSetDvarRequest(SetDvarRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.DvarName))
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "DvarName is required.")).ToBadRequestResult();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Value))
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Value is required.")).ToBadRequestResult();
+        }
+
+        return null;
     }
 
     private sealed record RconContext(Guid GameServerId, string GameType, string Hostname, int QueryPort, IRconClient Client);

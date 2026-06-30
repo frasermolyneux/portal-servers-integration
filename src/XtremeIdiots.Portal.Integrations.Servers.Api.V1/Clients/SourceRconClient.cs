@@ -237,6 +237,16 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         throw new NotImplementedException("Getting command list is not implemented for Source engine games");
     }
 
+    public Task<string> GetCvarList()
+    {
+        throw new NotImplementedException("Getting cvar list is not implemented for Source engine games");
+    }
+
+    public Task<string> GetDvarList()
+    {
+        throw new NotImplementedException("Getting dvar list is not implemented for Source engine games");
+    }
+
     public Task<string> GetDvar(string dvarName)
     {
         throw new NotImplementedException("Getting dvars is not implemented for Source engine games");
@@ -245,6 +255,11 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
     public Task<string> SetDvar(string dvarName, string value)
     {
         throw new NotImplementedException("Setting dvars is not implemented for Source engine games");
+    }
+
+    public Task<string> SetaDvar(string dvarName, string value)
+    {
+        throw new NotImplementedException("Setting archived dvars is not implemented for Source engine games");
     }
 
     public Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default)

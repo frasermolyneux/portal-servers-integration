@@ -25,8 +25,47 @@ public class Cod4RconController(
     [HttpGet("current-map")]
     public Task<IActionResult> GetCurrentMap(Guid gameServerId) => GetCurrentMap(gameServerId, "RconCod4CurrentMap", HttpContext.RequestAborted);
 
+    [HttpGet("status")]
+    public Task<IActionResult> Status(Guid gameServerId) => Status(gameServerId, "RconCod4Status", HttpContext.RequestAborted);
+
+    [HttpGet("maps")]
+    public Task<IActionResult> GetMaps(Guid gameServerId) => GetMaps(gameServerId, "RconCod4Maps", HttpContext.RequestAborted);
+
+    [HttpGet("server-info")]
+    public Task<IActionResult> ServerInfo(Guid gameServerId) => ServerInfo(gameServerId, "RconCod4ServerInfo", HttpContext.RequestAborted);
+
+    [HttpGet("system-info")]
+    public Task<IActionResult> SystemInfo(Guid gameServerId) => SystemInfo(gameServerId, "RconCod4SystemInfo", HttpContext.RequestAborted);
+
+    [HttpGet("cmdlist")]
+    public Task<IActionResult> CmdList(Guid gameServerId) => CmdList(gameServerId, "RconCod4CmdList", HttpContext.RequestAborted);
+
+    [HttpGet("cvarlist")]
+    public Task<IActionResult> CvarList(Guid gameServerId) => CvarList(gameServerId, "RconCod4CvarList", HttpContext.RequestAborted);
+
+    [HttpGet("dvarlist")]
+    public Task<IActionResult> DvarList(Guid gameServerId) => DvarList(gameServerId, "RconCod4DvarList", HttpContext.RequestAborted);
+
     [HttpPost("say")]
     public Task<IActionResult> Say(Guid gameServerId, [FromBody] SayRequest? request) => Say(gameServerId, request, "RconCod4Say", HttpContext.RequestAborted);
+
+    [HttpPost("map")]
+    public Task<IActionResult> Map(Guid gameServerId, [FromBody] ChangeMapRequest? request) => Map(gameServerId, request, "RconCod4Map", HttpContext.RequestAborted);
+
+    [HttpPost("kick")]
+    public Task<IActionResult> Kick(Guid gameServerId, [FromBody] ClientSlotRequest? request) => Kick(gameServerId, request, "RconCod4Kick", HttpContext.RequestAborted);
+
+    [HttpPost("temp-ban")]
+    public Task<IActionResult> TempBan(Guid gameServerId, [FromBody] ClientSlotRequest? request) => TempBan(gameServerId, request, "RconCod4TempBan", HttpContext.RequestAborted);
+
+    [HttpPost("ban")]
+    public Task<IActionResult> Ban(Guid gameServerId, [FromBody] ClientSlotRequest? request) => Ban(gameServerId, request, "RconCod4Ban", HttpContext.RequestAborted);
+
+    [HttpPost("set")]
+    public Task<IActionResult> Set(Guid gameServerId, [FromBody] SetDvarRequest? request) => Set(gameServerId, request, "RconCod4Set", HttpContext.RequestAborted);
+
+    [HttpPost("seta")]
+    public Task<IActionResult> Seta(Guid gameServerId, [FromBody] SetDvarRequest? request) => Seta(gameServerId, request, "RconCod4Seta", HttpContext.RequestAborted);
 
     [HttpPost("restart")]
     public Task<IActionResult> Restart(Guid gameServerId) => Restart(gameServerId, "RconCod4Restart", HttpContext.RequestAborted);

@@ -42,6 +42,58 @@ public abstract class FakeGameScopedRconApiBase
         });
     }
 
+    protected Task<ApiResult<RconStatusResponseDto>> Status(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.Status", gameServerId, null));
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<RconStatusResponseDto>(HttpStatusCode.OK, new ApiResponse<RconStatusResponseDto>(new RconStatusResponseDto())),
+            DefaultBehavior.ReturnError => new ApiResult<RconStatusResponseDto>(HttpStatusCode.InternalServerError, new ApiResponse<RconStatusResponseDto>(new ApiError("FAILED", "Operation failed"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
+
+    protected Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.GetMaps", gameServerId, null));
+        return Task.FromResult(DefaultResponseBehavior switch
+        {
+            DefaultBehavior.ReturnGenericSuccess => new ApiResult<RconMapCollectionDto>(HttpStatusCode.OK, new ApiResponse<RconMapCollectionDto>(new RconMapCollectionDto([]))),
+            DefaultBehavior.ReturnError => new ApiResult<RconMapCollectionDto>(HttpStatusCode.InternalServerError, new ApiResponse<RconMapCollectionDto>(new ApiError("FAILED", "Operation failed"))),
+            _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
+        });
+    }
+
+    protected Task<ApiResult<string>> ServerInfo(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.ServerInfo", gameServerId, null));
+        return Task.FromResult(StringResult("serverinfo"));
+    }
+
+    protected Task<ApiResult<string>> SystemInfo(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.SystemInfo", gameServerId, null));
+        return Task.FromResult(StringResult("systeminfo"));
+    }
+
+    protected Task<ApiResult<string>> CmdList(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.CmdList", gameServerId, null));
+        return Task.FromResult(StringResult("cmdlist"));
+    }
+
+    protected Task<ApiResult<string>> CvarList(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.CvarList", gameServerId, null));
+        return Task.FromResult(StringResult("cvarlist"));
+    }
+
+    protected Task<ApiResult<string>> DvarList(Guid gameServerId)
+    {
+        _operationLog.Add(($"{_apiName}.DvarList", gameServerId, null));
+        return Task.FromResult(StringResult("dvarlist"));
+    }
+
     protected Task<ApiResult> Say(Guid gameServerId, SayRequest request)
     {
         _operationLog.Add(($"{_apiName}.Say", gameServerId, request));
@@ -51,6 +103,42 @@ public abstract class FakeGameScopedRconApiBase
             DefaultBehavior.ReturnError => new ApiResult(HttpStatusCode.InternalServerError, new ApiResponse(new ApiError("FAILED", "Operation failed"))),
             _ => throw new InvalidOperationException($"Unknown default behavior: {DefaultResponseBehavior}")
         });
+    }
+
+    protected Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.Map", gameServerId, request));
+        return Task.FromResult(StringResult("map ok"));
+    }
+
+    protected Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.Kick", gameServerId, request));
+        return Task.FromResult(StringResult("kick ok"));
+    }
+
+    protected Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.TempBan", gameServerId, request));
+        return Task.FromResult(StringResult("tempban ok"));
+    }
+
+    protected Task<ApiResult<string>> Ban(Guid gameServerId, ClientSlotRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.Ban", gameServerId, request));
+        return Task.FromResult(StringResult("ban ok"));
+    }
+
+    protected Task<ApiResult<string>> Set(Guid gameServerId, SetDvarRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.Set", gameServerId, request));
+        return Task.FromResult(StringResult("set ok"));
+    }
+
+    protected Task<ApiResult<string>> Seta(Guid gameServerId, SetDvarRequest request)
+    {
+        _operationLog.Add(($"{_apiName}.Seta", gameServerId, request));
+        return Task.FromResult(StringResult("seta ok"));
     }
 
     protected Task<ApiResult<string>> Restart(Guid gameServerId)
@@ -92,7 +180,20 @@ public sealed class FakeCod2RconApi : FakeGameScopedRconApiBase, ICod2RconApi
 {
     public FakeCod2RconApi() : base("Cod2") { }
     public Task<ApiResult<RconCurrentMapDto>> GetCurrentMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetCurrentMap(gameServerId);
+    public Task<ApiResult<RconStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default) => base.Status(gameServerId);
+    public Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetMaps(gameServerId);
+    public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.ServerInfo(gameServerId);
+    public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.SystemInfo(gameServerId);
+    public Task<ApiResult<string>> CmdList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CmdList(gameServerId);
+    public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
+    public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
+    public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
+    public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);
+    public Task<ApiResult<string>> Ban(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Ban(gameServerId, request);
+    public Task<ApiResult<string>> Set(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Set(gameServerId, request);
+    public Task<ApiResult<string>> Seta(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Seta(gameServerId, request);
     public Task<ApiResult<string>> Restart(Guid gameServerId, CancellationToken cancellationToken = default) => base.Restart(gameServerId);
     public Task<ApiResult<string>> RestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.RestartMap(gameServerId);
     public Task<ApiResult<string>> FastRestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.FastRestartMap(gameServerId);
@@ -103,7 +204,20 @@ public sealed class FakeCod4RconApi : FakeGameScopedRconApiBase, ICod4RconApi
 {
     public FakeCod4RconApi() : base("Cod4") { }
     public Task<ApiResult<RconCurrentMapDto>> GetCurrentMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetCurrentMap(gameServerId);
+    public Task<ApiResult<RconStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default) => base.Status(gameServerId);
+    public Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetMaps(gameServerId);
+    public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.ServerInfo(gameServerId);
+    public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.SystemInfo(gameServerId);
+    public Task<ApiResult<string>> CmdList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CmdList(gameServerId);
+    public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
+    public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
+    public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
+    public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);
+    public Task<ApiResult<string>> Ban(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Ban(gameServerId, request);
+    public Task<ApiResult<string>> Set(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Set(gameServerId, request);
+    public Task<ApiResult<string>> Seta(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Seta(gameServerId, request);
     public Task<ApiResult<string>> Restart(Guid gameServerId, CancellationToken cancellationToken = default) => base.Restart(gameServerId);
     public Task<ApiResult<string>> RestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.RestartMap(gameServerId);
     public Task<ApiResult<string>> FastRestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.FastRestartMap(gameServerId);
@@ -114,7 +228,20 @@ public sealed class FakeCod5RconApi : FakeGameScopedRconApiBase, ICod5RconApi
 {
     public FakeCod5RconApi() : base("Cod5") { }
     public Task<ApiResult<RconCurrentMapDto>> GetCurrentMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetCurrentMap(gameServerId);
+    public Task<ApiResult<RconStatusResponseDto>> Status(Guid gameServerId, CancellationToken cancellationToken = default) => base.Status(gameServerId);
+    public Task<ApiResult<RconMapCollectionDto>> GetMaps(Guid gameServerId, CancellationToken cancellationToken = default) => base.GetMaps(gameServerId);
+    public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.ServerInfo(gameServerId);
+    public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) => base.SystemInfo(gameServerId);
+    public Task<ApiResult<string>> CmdList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CmdList(gameServerId);
+    public Task<ApiResult<string>> CvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.CvarList(gameServerId);
+    public Task<ApiResult<string>> DvarList(Guid gameServerId, CancellationToken cancellationToken = default) => base.DvarList(gameServerId);
     public Task<ApiResult> Say(Guid gameServerId, SayRequest request, CancellationToken cancellationToken = default) => base.Say(gameServerId, request);
+    public Task<ApiResult<string>> Map(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) => base.Map(gameServerId, request);
+    public Task<ApiResult<string>> Kick(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Kick(gameServerId, request);
+    public Task<ApiResult<string>> TempBan(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.TempBan(gameServerId, request);
+    public Task<ApiResult<string>> Ban(Guid gameServerId, ClientSlotRequest request, CancellationToken cancellationToken = default) => base.Ban(gameServerId, request);
+    public Task<ApiResult<string>> Set(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Set(gameServerId, request);
+    public Task<ApiResult<string>> Seta(Guid gameServerId, SetDvarRequest request, CancellationToken cancellationToken = default) => base.Seta(gameServerId, request);
     public Task<ApiResult<string>> Restart(Guid gameServerId, CancellationToken cancellationToken = default) => base.Restart(gameServerId);
     public Task<ApiResult<string>> RestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.RestartMap(gameServerId);
     public Task<ApiResult<string>> FastRestartMap(Guid gameServerId, CancellationToken cancellationToken = default) => base.FastRestartMap(gameServerId);

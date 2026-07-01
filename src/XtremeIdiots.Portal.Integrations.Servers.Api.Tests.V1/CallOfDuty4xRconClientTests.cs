@@ -108,13 +108,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             using var mockServer = new MockUdpServer();
             var client = CreateClient(mockServer);
 
-            const string expectedCommand = "permban 2310346615957836592";
+            const string expectedCommand = "permban 2310346615957836592 \"sync-ban\"";
             var exactMatch = RegisterExactCommandHandler(mockServer, expectedCommand);
 
             mockServer.Start();
             await Task.Delay(100);
 
-            await client.BanPlayerByPlayerIdentifier("2310346615957836592");
+            await client.BanPlayerByPlayerIdentifier("2310346615957836592", "sync-ban");
 
             await Task.Delay(200);
             Assert.True(exactMatch());
@@ -126,13 +126,13 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             using var mockServer = new MockUdpServer();
             var client = CreateClient(mockServer);
 
-            const string expectedCommand = "tempban 2310346615957836592 30";
+            const string expectedCommand = "tempban 2310346615957836592 30 \"sync-ban\"";
             var exactMatch = RegisterExactCommandHandler(mockServer, expectedCommand);
 
             mockServer.Start();
             await Task.Delay(100);
 
-            await client.TempBanPlayerByPlayerIdentifier("2310346615957836592", 30);
+            await client.TempBanPlayerByPlayerIdentifier("2310346615957836592", 30, "sync-ban");
 
             await Task.Delay(200);
             Assert.True(exactMatch());

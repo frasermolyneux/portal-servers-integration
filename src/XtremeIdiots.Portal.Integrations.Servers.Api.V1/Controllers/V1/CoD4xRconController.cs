@@ -33,6 +33,7 @@ public class CoD4xRconController(
     IAuditLogger auditLogger) : Controller
 {
     private const int MaxCoD4xTempBanDurationMinutes = 525600;
+    private const string DefaultCoD4xBanReason = "Banned by XtremeIdiots Portal";
     private static readonly Regex CoD4xPlayerIdentifierRegex = new(@"^[0-9]{17,21}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xStatusPlayerRegex = new(@"^\s*(?<num>\d+)\s+(?<score>-?\d+)\s+(?<ping>CNCT|ZMBI|PRIM|\d+)\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<steamid>\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<name>.+?)\s+(?<lastmsg>\d+)\s+(?<address>\[?[0-9a-fA-F:.]+\]?:\d+)\s+(?<qport>\d+)\s+(?<rate>\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xDumpBanListEntryRegex = new(@"^(?<index>\d+) playerid: (?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); nick: (?<nick>.*?); adminsteamid: (?<admin>System/Rcon|\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); expire: (?<expire>Never|.+?); reason: (?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -54,7 +55,7 @@ public class CoD4xRconController(
             AuditAction.Moderate,
             request,
             RequireCoD4xPermBan,
-            (client, dto, ct) => client.BanPlayerByPlayerIdentifier(dto.PlayerIdentifier!),
+            (client, dto, ct) => client.BanPlayerByPlayerIdentifier(dto.PlayerIdentifier!, DefaultCoD4xBanReason),
             result => ParseBanCommandResponse(result, "PermBan"),
             HttpContext.RequestAborted);
 
@@ -67,7 +68,7 @@ public class CoD4xRconController(
             AuditAction.Moderate,
             request,
             RequireCoD4xTempBan,
-            (client, dto, ct) => client.TempBanPlayerByPlayerIdentifier(dto.PlayerIdentifier!, dto.DurationMinutes),
+            (client, dto, ct) => client.TempBanPlayerByPlayerIdentifier(dto.PlayerIdentifier!, dto.DurationMinutes, DefaultCoD4xBanReason),
             result => ParseBanCommandResponse(result, "TempBan"),
             HttpContext.RequestAborted);
 

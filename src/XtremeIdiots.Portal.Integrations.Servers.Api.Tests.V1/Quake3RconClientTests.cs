@@ -283,10 +283,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             cod4xRconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
 
             var playerIdentifier = "2310346615957836592";
+            var reason = "sync-ban";
             var expectedResponse = "permban queued";
             var commandReceived = false;
 
-            _mockServer.RegisterCommandHandler($"permban {playerIdentifier}", cmd =>
+            _mockServer.RegisterCommandHandler($"permban {playerIdentifier} \"{reason}\"", cmd =>
             {
                 commandReceived = true;
                 return MockUdpServer.CreateQuake3Response(expectedResponse);
@@ -295,7 +296,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             await Task.Delay(100);
 
             // Act
-            var result = await cod4xRconClient.BanPlayerByPlayerIdentifier(playerIdentifier);
+            var result = await cod4xRconClient.BanPlayerByPlayerIdentifier(playerIdentifier, reason);
 
             // Assert
             await Task.Delay(200);
@@ -312,10 +313,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
 
             var playerIdentifier = "2310346615957836592";
             const int durationMinutes = 15;
+            var reason = "sync-ban";
             var expectedResponse = "tempban queued";
             var commandReceived = false;
 
-            _mockServer.RegisterCommandHandler($"tempban {playerIdentifier} {durationMinutes}", cmd =>
+            _mockServer.RegisterCommandHandler($"tempban {playerIdentifier} {durationMinutes} \"{reason}\"", cmd =>
             {
                 commandReceived = true;
                 return MockUdpServer.CreateQuake3Response(expectedResponse);
@@ -324,7 +326,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             await Task.Delay(100);
 
             // Act
-            var result = await cod4xRconClient.TempBanPlayerByPlayerIdentifier(playerIdentifier, durationMinutes);
+            var result = await cod4xRconClient.TempBanPlayerByPlayerIdentifier(playerIdentifier, durationMinutes, reason);
 
             // Assert
             await Task.Delay(200);

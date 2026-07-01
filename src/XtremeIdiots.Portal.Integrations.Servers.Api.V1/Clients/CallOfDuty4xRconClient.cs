@@ -244,21 +244,21 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         return ExecuteCommand($"pluginInfo {FormatCommandToken(pluginName, nameof(pluginName))}", "Attempting CoD4x pluginInfo for {PluginName}", "Failed to execute CoD4x pluginInfo command", pluginName);
     }
 
-    public Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier)
+    public Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier, string reason)
     {
         return ExecuteCommand(
-            $"permban {FormatCommandTarget(playerIdentifier)}",
+            AppendReason($"permban {FormatCommandTarget(playerIdentifier)}", reason),
             "Attempting to permanently ban CoD4x player identifier {PlayerIdentifier}",
             "Failed to execute CoD4x permanent ban command",
             playerIdentifier);
     }
 
-    public Task<string> TempBanPlayerByPlayerIdentifier(string playerIdentifier, int durationMinutes)
+    public Task<string> TempBanPlayerByPlayerIdentifier(string playerIdentifier, int durationMinutes, string reason)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(durationMinutes, 1);
 
         return ExecuteCommand(
-            $"tempban {FormatCommandTarget(playerIdentifier)} {durationMinutes}",
+            AppendReason($"tempban {FormatCommandTarget(playerIdentifier)} {durationMinutes}", reason),
             "Attempting to temporarily ban CoD4x player identifier {PlayerIdentifier} for {DurationMinutes} minutes",
             "Failed to execute CoD4x temporary ban command",
             playerIdentifier,

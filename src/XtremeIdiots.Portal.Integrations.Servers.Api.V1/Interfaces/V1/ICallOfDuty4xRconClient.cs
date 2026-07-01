@@ -60,7 +60,7 @@ public interface ICallOfDuty4xRconClient
     Task<string> PluginInfo(string pluginName);
 
     Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default);
-    Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier);
-    Task<string> TempBanPlayerByPlayerIdentifier(string playerIdentifier, int durationMinutes);
+    Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier, string reason);
+    Task<string> TempBanPlayerByPlayerIdentifier(string playerIdentifier, int durationMinutes, string reason);
     Task<string> UnbanPlayerByPlayerIdentifier(string playerIdentifier);
 }

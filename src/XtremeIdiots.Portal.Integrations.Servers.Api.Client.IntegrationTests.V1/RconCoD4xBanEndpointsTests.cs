@@ -13,6 +13,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V
 [Trait("Category", "Integration")]
 public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
+    private const string DefaultCoD4xBanReason = "Banned by XtremeIdiots Portal";
+
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
@@ -80,7 +82,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Setup(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"))
+            .Setup(x => x.BanPlayerByPlayerIdentifier("2310346615957836592", DefaultCoD4xBanReason))
             .ReturnsAsync("Banrecord added for id: 2310346615957836592");
 
         _factory.MockRconClientFactory
@@ -98,7 +100,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         Assert.Contains("\"isSuccess\":true", content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"playerIdentifier\":\"2310346615957836592\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Verify(x => x.BanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
+            .Verify(x => x.BanPlayerByPlayerIdentifier("2310346615957836592", DefaultCoD4xBanReason), Times.Once);
     }
 
     [Fact]
@@ -154,7 +156,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Setup(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15))
+            .Setup(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15, DefaultCoD4xBanReason))
             .ReturnsAsync("Banrecord added for player: ^1Fraser id: 2310346615957836592");
 
         _factory.MockRconClientFactory
@@ -173,7 +175,7 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         Assert.Contains("\"isSuccess\":true", content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"playerName\":\"^1Fraser\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Verify(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15), Times.Once);
+            .Verify(x => x.TempBanPlayerByPlayerIdentifier("2310346615957836592", 15, DefaultCoD4xBanReason), Times.Once);
     }
 
     [Fact]

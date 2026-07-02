@@ -1,4 +1,5 @@
 using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Identity.Web;
@@ -14,6 +15,7 @@ using MX.Observability.ApplicationInsights.AspNetCore;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Publishing;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,6 +110,24 @@ builder.Services.AddScoped<IGameServerFileTransportFactory, GameServerFileTransp
 builder.Services.AddRepositoryApiClient(options => options
     .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
     .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
+
+builder.Services.AddSingleton(sp =>
+{
+    var fqns = builder.Configuration["ServiceBusConnection:fullyQualifiedNamespace"];
+    if (string.IsNullOrWhiteSpace(fqns))
+    {
+        throw new InvalidOperationException("ServiceBusConnection:fullyQualifiedNamespace is required");
+    }
+
+    var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+    {
+        ManagedIdentityClientId = builder.Configuration["ServiceBusConnection:ManagedIdentityClientId"]
+    });
+
+    return new ServiceBusClient(fqns, credential);
+});
+
+builder.Services.AddSingleton<IBanLifecycleEventPublisher, ServiceBusBanLifecycleEventPublisher>();
 
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"])

@@ -36,6 +36,9 @@ resource "azurerm_linux_web_app" "app_v1" {
     "AzureAppConfiguration__ManagedIdentityClientId" = local.servers_integration_identity.client_id
     "AzureAppConfiguration__Environment"             = var.environment
 
+    "ServiceBusConnection__fullyQualifiedNamespace" = data.terraform_remote_state.portal_core.outputs.servicebus_namespace.fqdn
+    "ServiceBusConnection__ManagedIdentityClientId" = local.servers_integration_identity.client_id
+
     "AZURE_CLIENT_ID" = local.servers_integration_identity.client_id
 
     "minTlsVersion"                              = "1.2"

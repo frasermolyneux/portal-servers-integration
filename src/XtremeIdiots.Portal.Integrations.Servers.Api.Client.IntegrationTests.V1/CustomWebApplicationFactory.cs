@@ -23,12 +23,36 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public Mock<IQueryClientFactory> MockQueryClientFactory { get; } = new();
     public Mock<IRconClientFactory> MockRconClientFactory { get; } = new();
     public Mock<IRepositoryApiClient> MockRepositoryApiClient { get; } = new();
+    public Mock<IBanLifecycleEventPublisher> MockBanLifecycleEventPublisher { get; } = new();
+
+    public CustomWebApplicationFactory()
+    {
+        SetupDefaultMocks();
+    }
 
     public void ResetMocks()
     {
         MockQueryClientFactory.Reset();
         MockRconClientFactory.Reset();
         MockRepositoryApiClient.Reset();
+        MockBanLifecycleEventPublisher.Reset();
+
+        SetupDefaultMocks();
+    }
+
+    private void SetupDefaultMocks()
+    {
+        MockBanLifecycleEventPublisher
+            .Setup(x => x.PublishBanLiftAppliedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,6 +69,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IQueryClientFactory>();
             services.RemoveAll<IRconClientFactory>();
             services.RemoveAll<IRepositoryApiClient>();
+            services.RemoveAll<IBanLifecycleEventPublisher>();
 
             // Remove real repository API client registrations
             services.RemoveAll<IVersionedGameServersApi>();
@@ -54,6 +79,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton(MockQueryClientFactory.Object);
             services.AddSingleton(MockRconClientFactory.Object);
             services.AddSingleton(MockRepositoryApiClient.Object);
+            services.AddSingleton(MockBanLifecycleEventPublisher.Object);
 
             // Replace authentication with a test scheme that always authenticates
             services.AddAuthentication("Test")

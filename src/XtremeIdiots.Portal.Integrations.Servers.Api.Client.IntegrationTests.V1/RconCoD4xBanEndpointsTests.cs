@@ -247,6 +247,105 @@ public class RconCoD4xBanEndpointsTests : IClassFixture<CustomWebApplicationFact
         Assert.Contains("\"banReason\":\"test ban\"", content, StringComparison.OrdinalIgnoreCase);
         mockRconClient.As<ICallOfDuty4xRconClient>()
             .Verify(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
+
+        _factory.MockBanLifecycleEventPublisher
+            .Verify(x => x.PublishBanLiftAppliedAsync(
+                gameServerId,
+                GameType.CallOfDuty4x.ToString(),
+                "2310346615957836592",
+                "Fraser",
+                "portal",
+                "Portal unban command applied",
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task CoD4xUnban_WhenBanLiftPublishFails_ReturnsOkAndCallsRconClient()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"))
+            .ReturnsAsync("Removing ban for Nick: Fraser, PlayerID: 2310346615957836592, Banreason: test ban");
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        _factory.MockBanLifecycleEventPublisher
+            .Setup(x => x.PublishBanLiftAppliedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Simulated publish failure"));
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/unban", new CoD4xUnbanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"), Times.Once);
+
+        _factory.MockBanLifecycleEventPublisher
+            .Verify(x => x.PublishBanLiftAppliedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task CoD4xUnban_WhenUnbanResponseIsNotRemoved_DoesNotPublishBanLiftApplied()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, /*lang=json,strict*/ "{\"password\":\"secret\"}");
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Setup(x => x.UnbanPlayerByPlayerIdentifier("2310346615957836592"))
+            .ReturnsAsync("No matching ban entry for target");
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/unban", new CoD4xUnbanRequestDto
+        {
+            PlayerIdentifier = "2310346615957836592"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        _factory.MockBanLifecycleEventPublisher
+            .Verify(x => x.PublishBanLiftAppliedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
     }
 
     private void SetupGameServer(Guid gameServerId, GameType gameType)

@@ -30,7 +30,8 @@ public class CoD4xRconController(
     IRepositoryApiClient repositoryApiClient,
     IRconClientFactory rconClientFactory,
     TelemetryClient telemetryClient,
-    IAuditLogger auditLogger) : Controller
+    IAuditLogger auditLogger,
+    IBanLifecycleEventPublisher banLifecycleEventPublisher) : Controller
 {
     private const int MaxCoD4xTempBanDurationMinutes = 525600;
     private const string DefaultCoD4xBanReason = "Banned by XtremeIdiots Portal";
@@ -83,6 +84,7 @@ public class CoD4xRconController(
             RequireCoD4xUnban,
             (client, dto, ct) => client.UnbanPlayerByPlayerIdentifier(dto.PlayerIdentifier!),
             result => ParseBanCommandResponse(result, "Unban"),
+            (response, ct) => TryPublishBanLiftAppliedAsync(gameServerId, response, ct),
             HttpContext.RequestAborted);
 
     [HttpPost]
@@ -361,6 +363,30 @@ public class CoD4xRconController(
         CancellationToken cancellationToken)
         where TRequest : class
     {
+        return await ExecuteStructuredAction(
+            gameServerId,
+            operationName,
+            auditAction,
+            request,
+            validate,
+            execute,
+            parse,
+            onSuccess: null,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IActionResult> ExecuteStructuredAction<TRequest, TResponse>(
+        Guid gameServerId,
+        string operationName,
+        AuditAction? auditAction,
+        TRequest? request,
+        Func<TRequest, ApiResult<string>?> validate,
+        Func<ICallOfDuty4xRconClient, TRequest, CancellationToken, Task<string>> execute,
+        Func<string, TResponse> parse,
+        Func<TResponse, CancellationToken, Task>? onSuccess,
+        CancellationToken cancellationToken)
+        where TRequest : class
+    {
         if (request == null)
         {
             return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
@@ -375,7 +401,16 @@ public class CoD4xRconController(
         var normalizedRequest = NormalizeRequest(request);
         var operationContext = BuildOperationContext(normalizedRequest);
         var rawResult = await ExecuteAction(gameServerId, operationName, auditAction, (client, ct) => execute(client, normalizedRequest, ct), operationContext, cancellationToken).ConfigureAwait(false);
-        return MapStructuredResult(rawResult, parse).ToHttpResult();
+        var structuredResult = MapStructuredResult(rawResult, parse);
+
+        if (onSuccess is not null &&
+            structuredResult.IsSuccess &&
+            structuredResult.Result is not null)
+        {
+            await onSuccess(structuredResult.Result.Data, cancellationToken).ConfigureAwait(false);
+        }
+
+        return structuredResult.ToHttpResult();
     }
 
     private async Task<IActionResult> ExecuteStructuredAction<TResponse>(
@@ -851,6 +886,51 @@ public class CoD4xRconController(
                 "Failed to write {EventType} operator event for game server {GameServerId}",
                 eventType,
                 gameServerId);
+        }
+    }
+
+    private async Task TryPublishBanLiftAppliedAsync(
+        Guid gameServerId,
+        CoD4xBanCommandResponseDto response,
+        CancellationToken cancellationToken)
+    {
+        if (!response.IsSuccess || !string.Equals(response.Outcome, "Removed", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(response.PlayerIdentifier))
+        {
+            logger.LogWarning(
+                "Skipping BanLiftApplied publish for game server {GameServerId} because player identifier was missing from CoD4x unban response",
+                gameServerId);
+            return;
+        }
+
+        var playerIdentifier = response.PlayerIdentifier.Trim();
+        var playerName = string.IsNullOrWhiteSpace(response.PlayerName)
+            ? playerIdentifier
+            : response.PlayerName.Trim();
+
+        try
+        {
+            await banLifecycleEventPublisher.PublishBanLiftAppliedAsync(
+                gameServerId,
+                GameType.CallOfDuty4x.ToString(),
+                playerIdentifier,
+                playerName,
+                "portal",
+                "Portal unban command applied",
+                HttpContext.TraceIdentifier,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to publish BanLiftApplied event for game server {GameServerId} and player {PlayerIdentifier}",
+                gameServerId,
+                playerIdentifier);
         }
     }
 

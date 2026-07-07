@@ -91,6 +91,9 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) =>
         GetString(gameServerId, "system-info", cancellationToken);
 
+    public Task<ApiResult<string>> Say(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) =>
+        PostString(gameServerId, "say", request, cancellationToken);
+
     public Task<ApiResult<string>> ScreenSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "screen-say", request, cancellationToken);
 

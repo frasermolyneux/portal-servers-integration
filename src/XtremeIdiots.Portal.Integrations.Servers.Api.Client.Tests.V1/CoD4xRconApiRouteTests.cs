@@ -31,6 +31,25 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task Say_UsesCod4xSayRoute()
+    {
+        var restClientService = new FakeRestClientService();
+        var api = CreateApi(restClientService);
+        var gameServerId = Guid.NewGuid();
+
+        var result = await api.Say(gameServerId, new CoD4xMessageRequestDto
+        {
+            Message = "welcome to the server"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(restClientService.LastRequest);
+        Assert.Equal($"v1/rcon/{gameServerId}/cod4x/say", restClientService.LastRequest!.Resource);
+        Assert.Equal(Method.Post, restClientService.LastRequest.Method);
+        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+    }
+
+    [Fact]
     public async Task Status_UsesCod4xStatusRoute()
     {
         var restClientService = new FakeRestClientService();

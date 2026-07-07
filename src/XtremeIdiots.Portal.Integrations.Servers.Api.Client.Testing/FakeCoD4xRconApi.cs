@@ -68,6 +68,7 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
         LogAndReturnTyped("DumpBanList", gameServerId, new CoD4xBanListResponseDto());
     public Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("ServerInfo", gameServerId);
     public Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("SystemInfo", gameServerId);
+    public Task<ApiResult<string>> Say(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("Say", gameServerId, request);
     public Task<ApiResult<string>> ScreenSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ScreenSay", gameServerId, request);
     public Task<ApiResult<string>> ConSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("ConSay", gameServerId, request);
     public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("Tell", gameServerId, request);

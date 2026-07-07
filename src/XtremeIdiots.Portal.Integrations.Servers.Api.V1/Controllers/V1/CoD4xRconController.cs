@@ -160,6 +160,15 @@ public class CoD4xRconController(
         ExecuteAction(gameServerId, "RconCoD4xSystemInfo", null, ct => ct.SystemInfo(), HttpContext.RequestAborted);
 
     [HttpPost]
+    [Route("rcon/{gameServerId}/cod4x/say")]
+    public Task<IActionResult> Say(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
+        ExecuteAction(gameServerId, "RconCoD4xSay", null, request, RequireMessage, static async (client, dto, ct) =>
+        {
+            await client.Say(dto.Message!).ConfigureAwait(false);
+            return string.Empty;
+        }, HttpContext.RequestAborted);
+
+    [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screen-say")]
     public Task<IActionResult> ScreenSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
         ExecuteAction(gameServerId, "RconCoD4xScreenSay", null, request, RequireMessage, (client, dto, ct) => client.ScreenSay(dto.Message!), HttpContext.RequestAborted);

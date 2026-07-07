@@ -22,6 +22,7 @@ public interface ICoD4xRconApi
     Task<ApiResult<string>> ServerInfo(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> SystemInfo(Guid gameServerId, CancellationToken cancellationToken = default);
 
+    Task<ApiResult<string>> Say(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> ScreenSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> ConSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default);

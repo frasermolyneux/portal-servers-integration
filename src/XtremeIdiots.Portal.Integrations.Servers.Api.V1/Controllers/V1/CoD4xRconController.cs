@@ -162,7 +162,7 @@ public class CoD4xRconController(
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/say")]
     public Task<IActionResult> Say(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xSay", null, request, RequireMessage, static async (client, dto, ct) =>
+        ExecuteAction(gameServerId, "RconCoD4xSay", AuditAction.Execute, request, RequireMessage, static async (client, dto, ct) =>
         {
             await client.Say(dto.Message!).ConfigureAwait(false);
             return string.Empty;
@@ -171,27 +171,27 @@ public class CoD4xRconController(
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screen-say")]
     public Task<IActionResult> ScreenSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xScreenSay", null, request, RequireMessage, (client, dto, ct) => client.ScreenSay(dto.Message!), HttpContext.RequestAborted);
+        ExecuteAction(gameServerId, "RconCoD4xScreenSay", AuditAction.Execute, request, RequireMessage, (client, dto, ct) => client.ScreenSay(dto.Message!), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/con-say")]
     public Task<IActionResult> ConSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xConSay", null, request, RequireMessage, (client, dto, ct) => client.ConSay(dto.Message!), HttpContext.RequestAborted);
+        ExecuteAction(gameServerId, "RconCoD4xConSay", AuditAction.Execute, request, RequireMessage, (client, dto, ct) => client.ConSay(dto.Message!), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/tell")]
     public Task<IActionResult> Tell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xTell", null, request, RequireTargetAndMessage, (client, dto, ct) => client.Tell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteAction(gameServerId, "RconCoD4xTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.Tell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screen-tell")]
     public Task<IActionResult> ScreenTell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xScreenTell", null, request, RequireTargetAndMessage, (client, dto, ct) => client.ScreenTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteAction(gameServerId, "RconCoD4xScreenTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.ScreenTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/con-tell")]
     public Task<IActionResult> ConTell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xConTell", null, request, RequireTargetAndMessage, (client, dto, ct) => client.ConTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteAction(gameServerId, "RconCoD4xConTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.ConTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/map")]
@@ -1129,14 +1129,14 @@ public class CoD4xRconController(
             CoD4xTargetMessageRequestDto dto => new OperationContext(
                 dto.Target,
                 "Target",
-                BuildAuditProperties(("MessageLength", (dto.Message ?? string.Empty).Length.ToString())),
-                BuildOperatorProperties(("Target", TrimOrNull(dto.Target)), ("MessageLength", (dto.Message ?? string.Empty).Length))),
+                BuildAuditProperties(("Message", TrimOrNull(dto.Message))),
+                BuildOperatorProperties(("Target", TrimOrNull(dto.Target)), ("Message", TrimOrNull(dto.Message)))),
 
             CoD4xMessageRequestDto dto => new OperationContext(
                 null,
                 "Target",
-                BuildAuditProperties(("MessageLength", (dto.Message ?? string.Empty).Length.ToString())),
-                BuildOperatorProperties(("MessageLength", (dto.Message ?? string.Empty).Length))),
+                BuildAuditProperties(("Message", TrimOrNull(dto.Message))),
+                BuildOperatorProperties(("Message", TrimOrNull(dto.Message)))),
 
             TakeScreenshotRequestDto dto => new OperationContext(
                 dto.PlayerIdentifier,

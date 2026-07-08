@@ -151,6 +151,98 @@ public class GameScopedRconEndpointsTests : IClassFixture<CustomWebApplicationFa
     }
 
     [Fact]
+    public async Task Cod4Say_WhenSuccessful_IncludesMessageInOperatorEventPayload()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.Say("welcome to the server"))
+            .Returns(Task.CompletedTask);
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        CreateGameServerEventDto? capturedEvent = null;
+        var gameServerEventsApi = new Mock<IGameServersEventsApi>();
+        gameServerEventsApi
+            .Setup(x => x.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateGameServerEventDto, CancellationToken>((dto, _) => capturedEvent = dto)
+            .ReturnsAsync(new ApiResult(HttpStatusCode.OK, new ApiResponse()));
+
+        var versionedGameServerEventsApi = new Mock<IVersionedGameServersEventsApi>();
+        versionedGameServerEventsApi
+            .SetupGet(x => x.V1)
+            .Returns(gameServerEventsApi.Object);
+
+        _factory.MockRepositoryApiClient
+            .SetupGet(x => x.GameServersEvents)
+            .Returns(versionedGameServerEventsApi.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4/say", new SayRequest
+        {
+            Message = "welcome to the server"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.Verify(x => x.Say("welcome to the server"), Times.Once);
+        Assert.NotNull(capturedEvent);
+        Assert.Equal("RconCod4Say", capturedEvent!.EventType);
+        Assert.Contains("welcome to the server", capturedEvent.EventData, StringComparison.Ordinal);
+        Assert.Contains("\"Message\"", capturedEvent.EventData, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Cod4Say_WhenMultipleMessages_IncludesMessagesArrayInOperatorEventPayload()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+
+        var mockRconClient = new Mock<IRconClient>();
+        mockRconClient
+            .Setup(x => x.Say(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(mockRconClient.Object);
+
+        CreateGameServerEventDto? capturedEvent = null;
+        var gameServerEventsApi = new Mock<IGameServersEventsApi>();
+        gameServerEventsApi
+            .Setup(x => x.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateGameServerEventDto, CancellationToken>((dto, _) => capturedEvent = dto)
+            .ReturnsAsync(new ApiResult(HttpStatusCode.OK, new ApiResponse()));
+
+        var versionedGameServerEventsApi = new Mock<IVersionedGameServersEventsApi>();
+        versionedGameServerEventsApi
+            .SetupGet(x => x.V1)
+            .Returns(gameServerEventsApi.Object);
+
+        _factory.MockRepositoryApiClient
+            .SetupGet(x => x.GameServersEvents)
+            .Returns(versionedGameServerEventsApi.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4/say", new SayRequest
+        {
+            Messages = ["first line", "second line"]
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.Verify(x => x.Say("first line"), Times.Once);
+        mockRconClient.Verify(x => x.Say("second line"), Times.Once);
+        Assert.NotNull(capturedEvent);
+        Assert.Equal("RconCod4Say", capturedEvent!.EventType);
+        Assert.Contains("\"Messages\"", capturedEvent.EventData, StringComparison.Ordinal);
+        Assert.Contains("first line", capturedEvent.EventData, StringComparison.Ordinal);
+        Assert.Contains("second line", capturedEvent.EventData, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Cod2Set_WhenSuccessful_DoesNotIncludeResultInOperatorEventPayload()
     {
         var gameServerId = Guid.NewGuid();

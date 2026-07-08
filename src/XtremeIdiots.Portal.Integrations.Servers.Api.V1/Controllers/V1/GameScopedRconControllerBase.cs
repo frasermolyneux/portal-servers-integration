@@ -83,7 +83,10 @@ public abstract class GameScopedRconControllerBase(
                         await client.Say(message).ConfigureAwait(false);
                     }
                 },
-                BuildOperatorData(("MessageCount", messages.Count)),
+                BuildOperatorData(
+                    ("MessageCount", messages.Count),
+                    ("Message", messages.Count == 1 ? messages[0] : null),
+                    ("Messages", messages.Count > 1 ? messages : null)),
                 cancellationToken)
             .ConfigureAwait(false);
     }

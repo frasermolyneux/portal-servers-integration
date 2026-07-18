@@ -34,8 +34,8 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="4.13.0" />
     <PackageReference Include="Polly" Version="8.7.0" />
     <PackageReference Include="SSH.NET" Version="2025.1.0" />
-      <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.1.1" />
-      <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.1.1" />
+      <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.9" />
+      <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.9" />
     <PackageReference Include="XtremeIdiots.Portal.Server.Events.Abstractions.V1" Version="1.1.157" />
     <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.1.1" />
   </ItemGroup>

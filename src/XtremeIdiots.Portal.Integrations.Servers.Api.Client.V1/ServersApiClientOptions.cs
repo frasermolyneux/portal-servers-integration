@@ -1,4 +1,4 @@
-﻿using MX.Api.Client.Configuration;
+using MX.Api.Client.Configuration;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
 {

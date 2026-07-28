@@ -1,4 +1,4 @@
-﻿namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
 {
     public interface IRconPlayer
     {

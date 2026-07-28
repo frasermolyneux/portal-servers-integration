@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
 {

@@ -1,4 +1,4 @@
-﻿using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1
 {

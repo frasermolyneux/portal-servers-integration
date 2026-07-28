@@ -1,4 +1,4 @@
-﻿using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1;

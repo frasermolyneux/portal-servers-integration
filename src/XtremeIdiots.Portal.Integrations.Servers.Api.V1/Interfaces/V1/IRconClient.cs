@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 
 using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;

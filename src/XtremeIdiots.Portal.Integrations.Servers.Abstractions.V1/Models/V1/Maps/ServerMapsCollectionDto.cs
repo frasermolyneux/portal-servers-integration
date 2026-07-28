@@ -1,4 +1,4 @@
-﻿using MX.Api.Abstractions;
+using MX.Api.Abstractions;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 

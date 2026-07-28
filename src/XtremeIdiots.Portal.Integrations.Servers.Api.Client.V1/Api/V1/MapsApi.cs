@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
 using MX.Api.Client;

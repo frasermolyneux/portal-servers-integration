@@ -1,4 +1,4 @@
-﻿namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
+namespace XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1;
 
 public record ServerQueryStatusResponseDto
 {

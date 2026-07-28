@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MX.Api.Client.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 

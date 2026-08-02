@@ -16,7 +16,6 @@ public class RepositoryClientCachingTests : IClassFixture<CustomWebApplicationFa
     public RepositoryClientCachingTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
-        _ = factory.CreateClient();
     }
 
     [Fact]

@@ -109,7 +109,9 @@ builder.Services.AddScoped<IGameServerFileTransportFactory, GameServerFileTransp
 
 builder.Services.AddRepositoryApiClient(options => options
     .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
-    .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
+    .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required"))
+    .WithCachePartition(builder.Environment.ApplicationName)
+    .WithCaching(c => c.UseLibraryDefaults()));
 
 builder.Services.AddSingleton(sp =>
 {

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MX.Api.Client.Configuration;
 using MX.Api.Client.Extensions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 
@@ -8,31 +9,57 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     {
         public static IServiceCollection AddServersApiClient(this IServiceCollection serviceCollection, Action<ServersApiClientOptionsBuilder> configureOptions)
         {
+            ArgumentNullException.ThrowIfNull(serviceCollection);
+            ArgumentNullException.ThrowIfNull(configureOptions);
+
+            // Run the consumer's configuration against a probe builder so we can lift any WithCaching
+            // delegate into a SharedCacheConfiguration. MX.Api.Client scopes each ApiClientOptionsBuilder
+            // to a single typed client, so applying the same multi-interface WithCaching expression via
+            // AddTypedApiClient per sub-API crashes at startup. WithSharedCaching applies only the
+            // operations whose declaring interface matches the current typed client and skips siblings.
+            var probe = new ServersApiClientOptionsBuilder();
+            configureOptions(probe);
+            var capturedCache = probe.CapturedCacheConfigure;
+            var sharedCache = capturedCache is null ? null : new SharedCacheConfiguration(capturedCache);
+
+            Action<ServersApiClientOptionsBuilder> perClient = sharedCache is null
+                ? configureOptions
+                : builder =>
+                {
+                    configureOptions(builder);
+                    builder.WithSharedCaching(sharedCache);
+                };
+
             // Register V1 API implementations using the new typed pattern
-            serviceCollection.AddTypedApiClient<IQueryApi, QueryApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<ICoD4xRconApi, CoD4xRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<ICod2RconApi, Cod2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<ICod4RconApi, Cod4RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<ICod5RconApi, Cod5RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<IInsurgencyRconApi, InsurgencyRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<IRustRconApi, RustRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<IL4d2RconApi, L4d2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
-            serviceCollection.AddTypedApiClient<IMapsApi, MapsApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IQueryApi, QueryApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<ICoD4xRconApi, CoD4xRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<ICod2RconApi, Cod2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<ICod4RconApi, Cod4RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<ICod5RconApi, Cod5RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<IInsurgencyRconApi, InsurgencyRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<IRustRconApi, RustRconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<IL4d2RconApi, L4d2RconApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+            serviceCollection.AddTypedApiClient<IMapsApi, MapsApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
 
             // Register API info endpoint
-            serviceCollection.AddTypedApiClient<IApiInfoApi, ApiInfoApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IApiInfoApi, ApiInfoApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
 
             // Register API health endpoint
-            serviceCollection.AddTypedApiClient<IApiHealthApi, ApiHealthApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IApiHealthApi, ApiHealthApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
 
             // Register Config API endpoint
-            serviceCollection.AddTypedApiClient<IConfigApi, ConfigApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IConfigApi, ConfigApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
 
             // Register transport-neutral browse endpoint.
-            serviceCollection.AddTypedApiClient<IFileBrowseApi, FileBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IFileBrowseApi, FileBrowseApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
 
             // Register transport-neutral generic files endpoints.
-            serviceCollection.AddTypedApiClient<IFilesApi, FilesApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(configureOptions);
+            serviceCollection.AddTypedApiClient<IFilesApi, FilesApi, ServersApiClientOptions, ServersApiClientOptionsBuilder>(perClient);
+
+            // Fail fast on typos: any cache operation whose declaring interface never matched a registered
+            // typed client (e.g. an unregistered/renamed sub-API) throws InvalidOperationException here
+            // rather than silently no-op'ing.
+            sharedCache?.ValidateAllOperationsMatched();
 
             // Register version selectors as scoped
             serviceCollection.AddScoped<IVersionedQueryApi, VersionedQueryApi>();

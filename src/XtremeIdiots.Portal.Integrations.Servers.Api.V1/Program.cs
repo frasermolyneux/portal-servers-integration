@@ -10,12 +10,12 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Factories.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using Asp.Versioning;
-using XtremeIdiots.Portal.Repository.Api.Client.V1;
 using MX.Observability.ApplicationInsights.AspNetCore;
 using Scalar.AspNetCore;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Publishing;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Registration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -107,9 +107,7 @@ builder.Services.AddSingleton<IRconClientFactory, RconClientFactory>();
 builder.Services.AddScoped<IFileTransportResolver, FileTransportResolver>();
 builder.Services.AddScoped<IGameServerFileTransportFactory, GameServerFileTransportFactory>();
 
-builder.Services.AddRepositoryApiClient(options => options
-    .WithBaseUrl(builder.Configuration["RepositoryApi:BaseUrl"] ?? throw new InvalidOperationException("RepositoryApi:BaseUrl configuration is required"))
-    .WithEntraIdAuthentication(builder.Configuration["RepositoryApi:ApplicationAudience"] ?? throw new InvalidOperationException("RepositoryApi:ApplicationAudience configuration is required")));
+builder.Services.AddPortalRepositoryApiClient(builder.Configuration, builder.Environment.ApplicationName);
 
 builder.Services.AddSingleton(sp =>
 {

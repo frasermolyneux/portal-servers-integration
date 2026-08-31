@@ -1,35 +1,12 @@
-# Copilot Instructions
+# Copilot instructions
 
-> Shared conventions:
-> - [`.github-copilot/.github/instructions/terraform.instructions.md`](../.github-copilot/.github/instructions/terraform.instructions.md)  standard Terraform layout, providers, remote-state, validation, CI/CD.
-> - [`.github-copilot/.github/instructions/dotnet-nuget-library.instructions.md`](../.github-copilot/.github/instructions/dotnet-nuget-library.instructions.md)  .NET NuGet library standards.
-> - [`.github-copilot/.github/instructions/dotnet-api-client-libraries.instructions.md`](../.github-copilot/.github/instructions/dotnet-api-client-libraries.instructions.md)  typed API client patterns (three-package layout, fluent DI builder, `ApiResult<T>` envelope, authentication options, testing-package conventions).
->
-> <!-- Links use `../.github-copilot/` which resolves in the cloud-runner checkout (copilot-setup-steps.yml clones `.github-copilot` to the repo root). In local VS Code with the multi-root workspace, browse `../../.github-copilot/` instead. -->
->
-> **Cloud agents (GitHub Copilot coding agent etc.):** read [`AGENTS.md`](../AGENTS.md) at the repo root first — it is the canonical brief that survives outside the local VS Code multi-root workspace.
+Make focused changes within this repository and follow its existing .NET, test, API, client, and Terraform patterns.
 
-- **Architecture**: ASP.NET Core 9 API with Entra ID auth via Microsoft.Identity.Web. API startup lives in [src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs); controllers are versioned using Asp.Versioning and routed as `v{version:apiVersion}`.
-- **Projects**: Solution [src/XtremeIdiots.Portal.Integrations.Servers.sln](src/XtremeIdiots.Portal.Integrations.Servers.sln) includes Abstractions DTOs/interfaces, API, generated API client, and unit/integration tests.
-- **Authentication/Authorization**: Controllers are `[Authorize(Roles = "ServiceAccount")]`; ApiInfoController (`/v1.0/info`) and HealthController (`/v1.0/health/live`, `/v1.0/health/ready`) allow anonymous. Ensure Entra audience/authority is configured in appsettings or environment.
-- **Configuration**: Optional Azure App Configuration load with two selectors: `XtremeIdiots.Portal.Integrations.Servers.Api.V1:*` (prefix trimmed) and `RepositoryApi:*` (loaded as-is), plus Key Vault credential in [Program.cs](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Program.cs). Repository API client requires `RepositoryApi:BaseUrl` and `RepositoryApi:ApplicationAudience`.
-- **Telemetry**: Application Insights via MX.Observability.ApplicationInsights package. Telemetry filtering, audit logging, and job telemetry registered via `AddObservability()` in Program.cs. `TelemetryInitializer` sets role name. Dependency telemetry is created around RCON/query/FTP calls. RCON moderation actions emit structured audit events via `IAuditLogger`.
-- **Audit event balance**: Use `.github/instructions/auditing-balance.instructions.md` when adding, reviewing, or removing audit events.
-- **HTTP surface**: Controllers under [src/.../Controllers/V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Controllers/V1) expose query, RCON, and map-sync endpoints. Responses use MX.Api `ApiResponse`/`ApiResult` helpers and `ToHttpResult()` extension.
-- **Game server integrations**:
-  - Query operations use `IQueryClientFactory` from [src/.../Factories](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Factories) and cache responses for 5 minutes in [QueryController](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Controllers/V1/QueryController.cs).
-  - RCON operations instantiate protocol-specific clients via `IRconClientFactory` in [RconController](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Controllers/V1/RconController.cs); player operations verify server data via Repository API first.
-  - Map sync talks to server FTP hosts via `FluentFTP` in [MapsController](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Controllers/V1/MapsController.cs); accepts a self-signed certificate when thumbprint matches `xtremeidiots_ftp_certificate_thumbprint`.
-- **Portal integration**: All server metadata and map definitions come from the Portal Repository API via the generated client in [src/XtremeIdiots.Portal.Repository.Api.Client.V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/Clients) configured in Program startup.
-- **Local development**: Typical loop (from docs) `dotnet clean src/XtremeIdiots.Portal.Integrations.Servers.Api.V1/XtremeIdiots.Portal.Integrations.Servers.Api.V1.csproj && dotnet build ... && dotnet test src --filter "FullyQualifiedName!~IntegrationTests"`.
-- **Tests**: Unit tests live under [src/XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1); integration tests under [src/XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1). Client unit tests in [src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1](src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1) cover DI resolution. Keep new tests in the appropriate project; default pipelines exclude integration tests unless explicitly run. Use `[Trait("Category", "Unit")]` for unit tests and `[Trait("Category", "Integration")]` for integration tests.
-- **Testing Package**: [src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing](src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing) provides `FakeServersApiClient` (in-memory fake of `IServersApiClient`), `ServersDtoFactory` (factory methods for test DTOs), and `AddFakeServersApiClient()` DI extension for consumer test projects. Tests for the testing package live in [src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests](src/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests). See [docs/testing.md](docs/testing.md).
-- **CI/CD workflows**: Key workflows in [.github/workflows](.github/workflows) — `build-and-test` for feature branches, `pr-verify` for PR validation (with Terraform plans), `deploy-dev` manual apply, `deploy-prd` on main, `codequality` weekly/PR, `release-version-and-tag` then `release-publish-nuget` for NuGet releases.
-- **Environment secrets**: OIDC vars `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` are defined at the GitHub environment level; app settings should prefer managed identity for App Config/Key Vault when available.
-- **Docs**: See [docs/development-workflows.md](docs/development-workflows.md) for branch/CI rules and [docs/manual-steps.md](docs/manual-steps.md) for any post-deploy actions.
-- **Patterns**: Prefer factories (`IQueryClientFactory`, `IRconClientFactory`) over direct client instantiation to keep protocol handling testable. Cache expensive query calls via `IMemoryCache` with short TTLs. Wrap external calls with telemetry operations. Use `IAuditLogger` for auditable actions (kick, ban, etc.).
-- **Platform settings contracts**: File transport and RCON settings resolution must use `XtremeIdiots.Portal.Settings.Contracts.V1` typed documents/validators. Avoid introducing ad hoc namespace/property JSON parsing in resolvers. Keep compatibility support for legacy schema versions where required by the contract package.
-- **Settings troubleshooting**: Use [docs/platform-settings-contracts.md](docs/platform-settings-contracts.md) for migration and resolver troubleshooting guidance.
-- **OpenAPI**: Runtime-generated OpenAPI specs via ASP.NET Core native OpenAPI (`AddOpenApi`) with Scalar UI. Specs served at `/openapi/v1.0.json`. `StripVersionPrefixTransformer` removes version prefix from paths; `BearerSecuritySchemeTransformer` adds JWT security scheme. No build-time spec generation.
-- **Health**: `/v1.0/health/live` and `/v1.0/health/ready` are anonymous via versioned HealthController; readiness includes Repository API connectivity check. `ApiInfoController` at `/v1.0/info` returns build version for deployment verification.
-- **NuGet**: Abstractions and API client projects are packaged and published by the release workflows; avoid breaking contracts without bumping versions accordingly.
+- Preserve versioned routes, authorization, published NuGet contracts, typed settings contracts, and external server-interaction safety.
+- Keep protocol access behind the existing query, RCON, and file-transport abstractions.
+- Audit successful state-changing RCON operations; do not audit routine read-only queries.
+- Put tests beside the affected implementation and exclude integration tests unless their external prerequisites are available.
+- Use managed identity/OIDC configuration; never add credentials or client secrets.
+- Treat Terraform backend, remote-state, provider, output, and deployment wiring as compatibility-sensitive.
+
+Repository structure, commands, and material operational constraints are documented in `AGENTS.md`.

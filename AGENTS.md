@@ -14,9 +14,9 @@ ASP.NET Core API for live game-server query, RCON administration, and file trans
 ## Commands
 
 ```pwsh
-dotnet build src/XtremeIdiots.Portal.Integrations.Servers.sln
+dotnet build src/XtremeIdiots.Portal.Integrations.Servers.slnx
 dotnet test src --filter "FullyQualifiedName!~IntegrationTests"
-dotnet format src/XtremeIdiots.Portal.Integrations.Servers.sln --verify-no-changes
+dotnet format src/XtremeIdiots.Portal.Integrations.Servers.slnx --verify-no-changes
 terraform -chdir=terraform fmt -check -recursive
 terraform -chdir=terraform init -backend-config=backends/dev.backend.hcl
 terraform -chdir=terraform validate

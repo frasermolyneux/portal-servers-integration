@@ -1,0 +1,16 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1/XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V1/XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.Tests.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1/XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1/XtremeIdiots.Portal.Integrations.Servers.Api.IntegrationTests.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1/XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.csproj" />
+  <Project Path="XtremeIdiots.Portal.Integrations.Servers.Api.V1/XtremeIdiots.Portal.Integrations.Servers.Api.V1.csproj" />
+</Solution>

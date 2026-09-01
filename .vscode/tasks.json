@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "clean",
-                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.slnx",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ]
@@ -18,7 +18,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.slnx",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -34,7 +34,7 @@
             "type": "process",
             "args": [
                 "test",
-                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.slnx",
                 "--filter",
                 "FullyQualifiedName!~IntegrationTests",
                 "/property:GenerateFullPaths=true",
@@ -51,7 +51,7 @@
             "type": "process",
             "args": [
                 "test",
-                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.slnx",
                 "--filter",
                 "FullyQualifiedName~IntegrationTests",
                 "/property:GenerateFullPaths=true",
@@ -67,7 +67,7 @@
             "type": "process",
             "args": [
                 "format",
-                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.sln",
+                "${workspaceFolder}/src/XtremeIdiots.Portal.Integrations.Servers.slnx",
                 "--verify-no-changes"
             ]
         }

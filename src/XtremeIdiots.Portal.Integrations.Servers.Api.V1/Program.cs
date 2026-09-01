@@ -154,6 +154,3 @@ app.MapControllers();
 app.MapGet("/", () => Results.Ok()).ExcludeFromDescription();
 
 app.Run();
-
-// Required for WebApplicationFactory integration tests
-public partial class Program { }

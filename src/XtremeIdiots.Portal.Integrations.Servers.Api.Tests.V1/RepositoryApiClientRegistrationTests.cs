@@ -135,6 +135,7 @@ public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiC
         var root = document.RootElement;
         var paths = root.GetProperty("paths").EnumerateObject().Select(path => path.Name).ToArray();
 
+        Assert.StartsWith("3.0.", root.GetProperty("openapi").GetString());
         Assert.NotEmpty(paths);
         Assert.All(paths, path => Assert.False(path.StartsWith("/v1.0", StringComparison.OrdinalIgnoreCase)));
         Assert.True(root.GetProperty("components").GetProperty("securitySchemes").TryGetProperty("Bearer", out _));

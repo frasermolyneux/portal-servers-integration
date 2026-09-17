@@ -28,7 +28,8 @@
   <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
 	<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
-	<PackageReference Include="MX.Api.Client" Version="2.3.80" />
+	<PackageReference Include="MX.Api.Client" Version="2.3.81" />
+	<PackageReference Include="Polly" Version="8.8.0" />
 	<PackageReference Include="RestSharp" Version="114.0.0" />
   </ItemGroup>
 

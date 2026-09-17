@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -120,6 +121,23 @@ public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiC
 
         Assert.NotNull(mapsPolicies);
         Assert.NotEmpty(mapsPolicies!.Policies);
+    }
+
+    [Fact]
+    public async Task HostBoot_ExposesVersionedOpenApiDocument()
+    {
+        using var client = _factory.CreateClient();
+
+        using var response = await client.GetAsync("/openapi/v1.0.json");
+        response.EnsureSuccessStatusCode();
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+        var root = document.RootElement;
+        var paths = root.GetProperty("paths").EnumerateObject().Select(path => path.Name).ToArray();
+
+        Assert.NotEmpty(paths);
+        Assert.All(paths, path => Assert.False(path.StartsWith("/v1.0", StringComparison.OrdinalIgnoreCase)));
+        Assert.True(root.GetProperty("components").GetProperty("securitySchemes").TryGetProperty("Bearer", out _));
     }
 
     [Fact]

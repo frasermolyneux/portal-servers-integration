@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.OpenApi;
 

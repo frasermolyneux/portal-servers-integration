@@ -82,24 +82,22 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Configure API versioning
 builder.Services.AddApiVersioning(options =>
 {
-    options.DefaultApiVersion = new ApiVersion(1, 0);
     options.AssumeDefaultVersionWhenUnspecified = true;
     options.ReportApiVersions = true;
     // Configure URL path versioning
     options.ApiVersionReader = new UrlSegmentApiVersionReader();
 })
+.AddMvc()
 .AddApiExplorer(options =>
 {
     // Format the version as "'v'major[.minor]" (e.g. v1.0)
     options.GroupNameFormat = "'v'VV";
     options.SubstituteApiVersionInUrl = true;
-});
-
-// Configure OpenAPI
-builder.Services.AddOpenApi("v1.0", options =>
+})
+.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-    options.AddDocumentTransformer<StripVersionPrefixTransformer>();
+    options.Document.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    options.Document.AddDocumentTransformer<StripVersionPrefixTransformer>();
 });
 
 builder.Services.AddSingleton<IQueryClientFactory, QueryClientFactory>();
@@ -141,8 +139,17 @@ if (isAzureAppConfigurationEnabled)
 }
 
 // Configure the HTTP request pipeline.
-app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapOpenApi().WithDocumentPerVersion();
+app.MapScalarApiReference(options =>
+{
+    var descriptions = app.DescribeApiVersions();
+
+    for (var i = 0; i < descriptions.Count; i++)
+    {
+        var description = descriptions[i];
+        options.AddDocument(description.GroupName, description.GroupName, isDefault: i == descriptions.Count - 1);
+    }
+});
 
 app.UseHttpsRedirection();
 

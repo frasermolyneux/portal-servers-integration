@@ -3,6 +3,7 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Identity.Web;
+using Microsoft.OpenApi;
 
 using System.Text.Json.Serialization;
 
@@ -96,6 +97,7 @@ builder.Services.AddApiVersioning(options =>
 })
 .AddOpenApi(options =>
 {
+    options.Document.OpenApiVersion = OpenApiSpecVersion.OpenApi3_0;
     options.Document.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     options.Document.AddDocumentTransformer<StripVersionPrefixTransformer>();
 });

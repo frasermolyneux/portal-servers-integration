@@ -9,9 +9,12 @@ updates:
       time: "02:15"
       timezone: "Etc/UTC"
     groups:
-      all-updates:
+      minor-and-patch-updates:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "Microsoft.ApplicationInsights*"
         versions: [">=3.0.0"]

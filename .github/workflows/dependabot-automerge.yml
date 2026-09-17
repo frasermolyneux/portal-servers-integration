@@ -14,7 +14,7 @@ jobs:
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login == 'dependabot[bot]' }}
     outputs:
       is_dependabot: ${{ steps.evaluate.outputs.is_dependabot }}
       auto_merge_allowed: ${{ steps.evaluate.outputs.auto_merge_allowed }}
@@ -38,4 +38,3 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

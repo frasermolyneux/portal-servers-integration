@@ -1,5 +1,6 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 
@@ -18,6 +19,9 @@ public class FileTransportConfigResolverFixtureTests
             string.Empty,
             null,
             null,
+            SftpAuthenticationType.Password,
+            null,
+            null,
         ];
 
         yield return
@@ -30,6 +34,9 @@ public class FileTransportConfigResolverFixtureTests
             "secret",
             null,
             "/mods/maps",
+            SftpAuthenticationType.Password,
+            null,
+            null,
         ];
 
         yield return
@@ -42,6 +49,24 @@ public class FileTransportConfigResolverFixtureTests
             "secret",
             "SHA256:abcdef",
             "/srv/game",
+            SftpAuthenticationType.Password,
+            null,
+            null,
+        ];
+
+        yield return
+        [
+            FileTransportType.Sftp,
+            "FileTransport/sftp-valid-private-key.json",
+            "sftp.example.local",
+            22,
+            "demo",
+            string.Empty,
+            "SHA256:abcdef",
+            "/srv/game",
+            SftpAuthenticationType.PrivateKey,
+            "test-private-key",
+            "test-passphrase",
         ];
     }
 
@@ -63,7 +88,10 @@ public class FileTransportConfigResolverFixtureTests
         string expectedUsername,
         string expectedPassword,
         string? expectedHostKeyFingerprint,
-        string? expectedMapsRootPath)
+        string? expectedMapsRootPath,
+        SftpAuthenticationType expectedAuthenticationType = SftpAuthenticationType.Password,
+        string? expectedPrivateKey = null,
+        string? expectedPrivateKeyPassphrase = null)
     {
         var payload = ResolverFixtureLoader.Load(fixturePath);
 
@@ -76,6 +104,9 @@ public class FileTransportConfigResolverFixtureTests
         Assert.Equal(expectedPassword, result.Password);
         Assert.Equal(expectedHostKeyFingerprint, result.HostKeyFingerprint);
         Assert.Equal(expectedMapsRootPath, result.MapsRootPath);
+        Assert.Equal(expectedAuthenticationType, result.AuthenticationType);
+        Assert.Equal(expectedPrivateKey, result.PrivateKey);
+        Assert.Equal(expectedPrivateKeyPassphrase, result.PrivateKeyPassphrase);
     }
 
     [Theory]

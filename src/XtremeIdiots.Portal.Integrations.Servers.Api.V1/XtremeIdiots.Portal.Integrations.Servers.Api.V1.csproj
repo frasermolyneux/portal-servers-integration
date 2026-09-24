@@ -35,7 +35,7 @@
     <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.37" />
     <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.37" />
     <PackageReference Include="XtremeIdiots.Portal.Server.Events.Abstractions.V1" Version="1.1.184" />
-    <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.2.37" />
+    <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.2.44" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,5 +43,4 @@
   </ItemGroup>
 
 </Project>
-
 

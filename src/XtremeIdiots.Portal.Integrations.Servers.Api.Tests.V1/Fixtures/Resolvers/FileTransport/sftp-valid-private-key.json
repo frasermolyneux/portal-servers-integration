@@ -4,6 +4,6 @@
     "authenticationType": "PrivateKey",
     "privateKey": "test-private-key",
     "privateKeyPassphrase": "test-passphrase",
-    "hostKeyFingerprint": "SHA256:abcdef",
+    "hostKeyFingerprint": "AA:BB",
     "mapsRootPath": "/srv/game"
 }

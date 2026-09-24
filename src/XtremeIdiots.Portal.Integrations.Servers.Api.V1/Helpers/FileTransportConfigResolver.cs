@@ -70,9 +70,11 @@ internal static class FileTransportConfigResolver
             document.Username,
             document.Password ?? string.Empty,
             document.HostKeyFingerprint,
-            document.MapsRootPath,
-            document.AuthenticationType,
-            document.PrivateKey,
-            document.PrivateKeyPassphrase);
+            document.MapsRootPath)
+        {
+            AuthenticationType = document.AuthenticationType,
+            PrivateKey = document.PrivateKey,
+            PrivateKeyPassphrase = document.PrivateKeyPassphrase,
+        };
     }
 }

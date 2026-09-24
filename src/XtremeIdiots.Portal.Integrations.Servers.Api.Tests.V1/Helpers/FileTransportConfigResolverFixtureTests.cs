@@ -62,7 +62,7 @@ public class FileTransportConfigResolverFixtureTests
             22,
             "demo",
             string.Empty,
-            "SHA256:abcdef",
+            "AA:BB",
             "/srv/game",
             SftpAuthenticationType.PrivateKey,
             "test-private-key",

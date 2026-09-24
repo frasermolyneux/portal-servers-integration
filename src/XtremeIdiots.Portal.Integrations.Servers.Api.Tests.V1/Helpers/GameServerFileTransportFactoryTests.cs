@@ -6,9 +6,15 @@ using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 
+/// <summary>
+/// Verifies SFTP authentication method construction without opening network connections.
+/// </summary>
 [Trait("Category", "Unit")]
 public class GameServerFileTransportFactoryTests
 {
+    /// <summary>
+    /// Verifies password settings select SSH.NET password authentication.
+    /// </summary>
     [Fact]
     public void CreateSftpConnectionInfo_WithPasswordAuthentication_UsesPasswordMethod()
     {
@@ -24,22 +30,31 @@ public class GameServerFileTransportFactoryTests
             Assert.Single(connectionInfo.AuthenticationMethods));
     }
 
-    [Fact]
-    public void CreateSftpConnectionInfo_WithEncryptedPrivateKey_UsesPrivateKeyMethod()
+    /// <summary>
+    /// Verifies encrypted and unencrypted private keys select SSH.NET private-key authentication.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CreateSftpConnectionInfo_WithPrivateKey_UsesPrivateKeyMethod(bool encrypted)
     {
         const string passphrase = "test-passphrase";
         using var rsa = RSA.Create(2048);
-        var privateKey = rsa.ExportEncryptedPkcs8PrivateKeyPem(
-            passphrase,
-            new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 1_000));
+        var privateKey = encrypted
+            ? rsa.ExportEncryptedPkcs8PrivateKeyPem(
+                passphrase,
+                new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 1_000))
+            : rsa.ExportPkcs8PrivateKeyPem();
         var credentials = new FileTransportCredentials(
             "sftp.example.local",
             22,
             "demo",
-            string.Empty,
-            AuthenticationType: SftpAuthenticationType.PrivateKey,
-            PrivateKey: privateKey,
-            PrivateKeyPassphrase: passphrase);
+            string.Empty)
+        {
+            AuthenticationType = SftpAuthenticationType.PrivateKey,
+            PrivateKey = privateKey,
+            PrivateKeyPassphrase = encrypted ? passphrase : null,
+        };
 
         var connectionInfo = GameServerFileTransportFactory.CreateSftpConnectionInfo(credentials);
 
@@ -47,6 +62,9 @@ public class GameServerFileTransportFactoryTests
             Assert.Single(connectionInfo.AuthenticationMethods));
     }
 
+    /// <summary>
+    /// Verifies private-key authentication rejects missing key material.
+    /// </summary>
     [Fact]
     public void CreateSftpConnectionInfo_WithMissingPrivateKey_Throws()
     {
@@ -54,8 +72,10 @@ public class GameServerFileTransportFactoryTests
             "sftp.example.local",
             22,
             "demo",
-            string.Empty,
-            AuthenticationType: SftpAuthenticationType.PrivateKey);
+            string.Empty)
+        {
+            AuthenticationType = SftpAuthenticationType.PrivateKey,
+        };
 
         var exception = Assert.Throws<InvalidOperationException>(
             () => GameServerFileTransportFactory.CreateSftpConnectionInfo(credentials));

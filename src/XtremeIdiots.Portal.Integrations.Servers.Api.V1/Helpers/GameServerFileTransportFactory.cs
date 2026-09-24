@@ -46,7 +46,51 @@ internal sealed class GameServerFileTransportFactory(
     }
 
     internal static Renci.SshNet.ConnectionInfo CreateSftpConnectionInfo(FileTransportCredentials credentials)
-        => SftpGameServerFileTransportSession.CreateSftpConnectionInfo(credentials);
+    {
+        AuthenticationMethod authenticationMethod = credentials.AuthenticationType switch
+        {
+            SftpAuthenticationType.Password => new PasswordAuthenticationMethod(credentials.Username, credentials.Password),
+            SftpAuthenticationType.PrivateKey => CreatePrivateKeyAuthenticationMethod(credentials),
+            _ => throw new InvalidOperationException($"Unsupported SFTP authentication type '{credentials.AuthenticationType}'."),
+        };
+
+        return new Renci.SshNet.ConnectionInfo(
+            credentials.Hostname,
+            credentials.Port,
+            credentials.Username,
+            authenticationMethod);
+    }
+
+    private static PrivateKeyAuthenticationMethod CreatePrivateKeyAuthenticationMethod(FileTransportCredentials credentials)
+    {
+        if (string.IsNullOrWhiteSpace(credentials.PrivateKey))
+        {
+            throw new InvalidOperationException("The sftp.privateKey setting is required for private-key authentication.");
+        }
+
+        var privateKeyBytes = Encoding.UTF8.GetBytes(credentials.PrivateKey);
+        try
+        {
+            using var privateKeyStream = new MemoryStream(privateKeyBytes, writable: false);
+            var privateKeyFile = string.IsNullOrEmpty(credentials.PrivateKeyPassphrase)
+                ? new PrivateKeyFile(privateKeyStream)
+                : new PrivateKeyFile(privateKeyStream, credentials.PrivateKeyPassphrase);
+
+            try
+            {
+                return new PrivateKeyAuthenticationMethod(credentials.Username, privateKeyFile);
+            }
+            catch
+            {
+                privateKeyFile.Dispose();
+                throw;
+            }
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(privateKeyBytes);
+        }
+    }
 
     private sealed class FtpGameServerFileTransportSession : IGameServerFileTransportSession
     {
@@ -176,20 +220,13 @@ internal sealed class GameServerFileTransportFactory(
             try
             {
                 client = new SftpClient(connectionInfo);
-                var hostKeyValidated = false;
                 client.HostKeyReceived += (_, args) =>
                 {
                     var receivedFingerprint = NormalizeFingerprint(BitConverter.ToString(args.FingerPrint));
-                    hostKeyValidated = string.Equals(receivedFingerprint, expectedFingerprint, StringComparison.OrdinalIgnoreCase);
-                    args.CanTrust = hostKeyValidated;
+                    args.CanTrust = string.Equals(receivedFingerprint, expectedFingerprint, StringComparison.OrdinalIgnoreCase);
                 };
 
                 await Task.Run(client.Connect, cancellationToken).ConfigureAwait(false);
-
-                if (!hostKeyValidated)
-                {
-                    throw new InvalidOperationException("Failed to validate SFTP host key fingerprint.");
-                }
 
                 return new SftpGameServerFileTransportSession(transport, client, authenticationMethod);
             }
@@ -198,53 +235,6 @@ internal sealed class GameServerFileTransportFactory(
                 client?.Dispose();
                 authenticationMethod.Dispose();
                 throw;
-            }
-        }
-
-        internal static Renci.SshNet.ConnectionInfo CreateSftpConnectionInfo(FileTransportCredentials credentials)
-        {
-            AuthenticationMethod authenticationMethod = credentials.AuthenticationType switch
-            {
-                SftpAuthenticationType.Password => new PasswordAuthenticationMethod(credentials.Username, credentials.Password),
-                SftpAuthenticationType.PrivateKey => CreatePrivateKeyAuthenticationMethod(credentials),
-                _ => throw new InvalidOperationException($"Unsupported SFTP authentication type '{credentials.AuthenticationType}'."),
-            };
-
-            return new Renci.SshNet.ConnectionInfo(
-                credentials.Hostname,
-                credentials.Port,
-                credentials.Username,
-                authenticationMethod);
-        }
-
-        private static PrivateKeyAuthenticationMethod CreatePrivateKeyAuthenticationMethod(FileTransportCredentials credentials)
-        {
-            if (string.IsNullOrWhiteSpace(credentials.PrivateKey))
-            {
-                throw new InvalidOperationException("The sftp.privateKey setting is required for private-key authentication.");
-            }
-
-            var privateKeyBytes = Encoding.UTF8.GetBytes(credentials.PrivateKey);
-            try
-            {
-                using var privateKeyStream = new MemoryStream(privateKeyBytes, writable: false);
-                var privateKeyFile = string.IsNullOrEmpty(credentials.PrivateKeyPassphrase)
-                    ? new PrivateKeyFile(privateKeyStream)
-                    : new PrivateKeyFile(privateKeyStream, credentials.PrivateKeyPassphrase);
-
-                try
-                {
-                    return new PrivateKeyAuthenticationMethod(credentials.Username, privateKeyFile);
-                }
-                catch
-                {
-                    privateKeyFile.Dispose();
-                    throw;
-                }
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(privateKeyBytes);
             }
         }
 

@@ -3,7 +3,7 @@
     "username": "demo",
     "authenticationType": "PrivateKey",
     "privateKey": "test-private-key",
-    "privateKeyPassphrase": "phrase",
+    "privateKeyPassphrase": null,
     "hostKeyFingerprint": "AA:BB",
     "mapsRootPath": "/srv/game"
 }

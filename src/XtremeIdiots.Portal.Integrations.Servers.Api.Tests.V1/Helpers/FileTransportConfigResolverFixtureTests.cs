@@ -66,7 +66,7 @@ public class FileTransportConfigResolverFixtureTests
             "/srv/game",
             SftpAuthenticationType.PrivateKey,
             "test-private-key",
-            "phrase",
+            null,
         ];
     }
 

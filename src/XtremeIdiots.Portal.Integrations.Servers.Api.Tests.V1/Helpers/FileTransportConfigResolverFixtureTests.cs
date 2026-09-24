@@ -54,20 +54,6 @@ public class FileTransportConfigResolverFixtureTests
             null,
         ];
 
-        yield return
-        [
-            FileTransportType.Sftp,
-            "FileTransport/sftp-valid-private-key.json",
-            "sftp.example.local",
-            22,
-            "demo",
-            string.Empty,
-            "AA:BB",
-            "/srv/game",
-            SftpAuthenticationType.PrivateKey,
-            "test-private-key",
-            null,
-        ];
     }
 
     public static IEnumerable<object?[]> InvalidTransportPayloads()
@@ -134,6 +120,28 @@ public class FileTransportConfigResolverFixtureTests
         var result = FileTransportConfigResolver.Parse(FileTransportType.Ftp, "   ");
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void Parse_WithPrivateKeyPassphrase_PreservesAuthenticationSettings()
+    {
+        const string payload = /*lang=json,strict*/ """
+        {
+            "hostname": "sftp.example.local",
+            "username": "demo",
+            "authenticationType": "PrivateKey",
+            "privateKey": "k",
+            "privateKeyPassphrase": "p",
+            "hostKeyFingerprint": "AA:BB"
+        }
+        """;
+
+        var result = FileTransportConfigResolver.Parse(FileTransportType.Sftp, payload);
+
+        Assert.NotNull(result);
+        Assert.Equal(SftpAuthenticationType.PrivateKey, result.AuthenticationType);
+        Assert.Equal("k", result.PrivateKey);
+        Assert.Equal("p", result.PrivateKeyPassphrase);
     }
 
     [Fact]

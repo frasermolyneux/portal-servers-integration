@@ -1,9 +1,0 @@
-{
-    "hostname": "sftp.example.local",
-    "username": "demo",
-    "authenticationType": "PrivateKey",
-    "privateKey": "test-private-key",
-    "privateKeyPassphrase": null,
-    "hostKeyFingerprint": "AA:BB",
-    "mapsRootPath": "/srv/game"
-}

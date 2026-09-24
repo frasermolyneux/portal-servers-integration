@@ -1,5 +1,6 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 
@@ -18,6 +19,9 @@ public class FileTransportConfigResolverFixtureTests
             string.Empty,
             null,
             null,
+            SftpAuthenticationType.Password,
+            null,
+            null,
         ];
 
         yield return
@@ -30,6 +34,9 @@ public class FileTransportConfigResolverFixtureTests
             "secret",
             null,
             "/mods/maps",
+            SftpAuthenticationType.Password,
+            null,
+            null,
         ];
 
         yield return
@@ -42,7 +49,11 @@ public class FileTransportConfigResolverFixtureTests
             "secret",
             "SHA256:abcdef",
             "/srv/game",
+            SftpAuthenticationType.Password,
+            null,
+            null,
         ];
+
     }
 
     public static IEnumerable<object?[]> InvalidTransportPayloads()
@@ -63,7 +74,10 @@ public class FileTransportConfigResolverFixtureTests
         string expectedUsername,
         string expectedPassword,
         string? expectedHostKeyFingerprint,
-        string? expectedMapsRootPath)
+        string? expectedMapsRootPath,
+        SftpAuthenticationType expectedAuthenticationType = SftpAuthenticationType.Password,
+        string? expectedPrivateKey = null,
+        string? expectedPrivateKeyPassphrase = null)
     {
         var payload = ResolverFixtureLoader.Load(fixturePath);
 
@@ -76,6 +90,9 @@ public class FileTransportConfigResolverFixtureTests
         Assert.Equal(expectedPassword, result.Password);
         Assert.Equal(expectedHostKeyFingerprint, result.HostKeyFingerprint);
         Assert.Equal(expectedMapsRootPath, result.MapsRootPath);
+        Assert.Equal(expectedAuthenticationType, result.AuthenticationType);
+        Assert.Equal(expectedPrivateKey, result.PrivateKey);
+        Assert.Equal(expectedPrivateKeyPassphrase, result.PrivateKeyPassphrase);
     }
 
     [Theory]
@@ -103,6 +120,28 @@ public class FileTransportConfigResolverFixtureTests
         var result = FileTransportConfigResolver.Parse(FileTransportType.Ftp, "   ");
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void Parse_WithPrivateKeyPassphrase_PreservesAuthenticationSettings()
+    {
+        const string payload = /*lang=json,strict*/ """
+        {
+            "hostname": "sftp.example.local",
+            "username": "demo",
+            "authenticationType": "PrivateKey",
+            "privateKey": "k",
+            "privateKeyPassphrase": "p",
+            "hostKeyFingerprint": "AA:BB"
+        }
+        """;
+
+        var result = FileTransportConfigResolver.Parse(FileTransportType.Sftp, payload);
+
+        Assert.NotNull(result);
+        Assert.Equal(SftpAuthenticationType.PrivateKey, result.AuthenticationType);
+        Assert.Equal("k", result.PrivateKey);
+        Assert.Equal("p", result.PrivateKeyPassphrase);
     }
 
     [Fact]

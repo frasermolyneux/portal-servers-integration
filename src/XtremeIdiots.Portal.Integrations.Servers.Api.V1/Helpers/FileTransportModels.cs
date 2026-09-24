@@ -1,8 +1,14 @@
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
-
+using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
-public sealed record FileTransportCredentials(string Hostname, int Port, string Username, string Password, string? HostKeyFingerprint = null, string? MapsRootPath = null);
+public sealed record FileTransportCredentials(string Hostname, int Port, string Username, string Password, string? HostKeyFingerprint = null, string? MapsRootPath = null)
+{
+    internal SftpAuthenticationType AuthenticationType { get; init; } = SftpAuthenticationType.Password;
+
+    internal string? PrivateKey { get; init; }
+    internal string? PrivateKeyPassphrase { get; init; }
+}
 
 public sealed record ResolvedFileTransport(
     FileTransportType TransportType,

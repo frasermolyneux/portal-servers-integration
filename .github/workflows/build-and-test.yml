@@ -32,8 +32,9 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v2
+      - uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v2.1
         with:
+          test-reporting: "true"
           dotnet-version: |
             9.0.x
             10.0.x

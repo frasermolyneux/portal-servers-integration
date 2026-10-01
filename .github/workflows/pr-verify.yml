@@ -23,14 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: v1-ci
-        uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v2
+        uses: frasermolyneux/actions/dotnet-ci@dotnet-ci/v2.1
         with:
+          test-reporting: "true"
           dotnet-version: |
             9.0.x
             10.0.x
           src-folder: "src"
 
     outputs:
+      test_report: ${{ steps.v1-ci.outputs.test-report }}
       build_version: ${{ steps.v1-ci.outputs.build_version }}
 
   # Dev Terraform Plan:
@@ -157,3 +159,18 @@ jobs:
         with:
           info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
           expected-version: ${{ needs.build-and-test.outputs.build_version }}
+
+  test-results:
+    name: Test results summary
+    if: always() && github.event.pull_request.draft == false
+    needs: [build-and-test]
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    concurrency:
+      group: test-results-${{ github.repository }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: frasermolyneux/actions/test-results-summary@test-results-summary/v1
+        with:
+          jobs: ${{ toJSON(needs) }}

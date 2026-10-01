@@ -26,6 +26,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     uses: frasermolyneux/actions/.github/workflows/codequality.yml@main
     with:
+      test-reporting: true
       sonar-project-key: frasermolyneux_portal-servers-integration
       sonar-organization: frasermolyneux
       sonar-host-url: https://sonarcloud.io

@@ -57,12 +57,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult<FileEntryMetadataDto>();
         }
 
-        public async Task<ApiResult<FileMutationResultDto>> PutContent(Guid gameServerId, PutFileContentRequestDto requestBody, CancellationToken cancellationToken = default)
+        public async Task<ApiResult<FileMutationResultDto>> PutContent(Guid gameServerId, PutFileContentRequestDto request, CancellationToken cancellationToken = default)
         {
-            var request = await CreateRequestAsync($"v1/files/{gameServerId}/content", Method.Put, cancellationToken);
-            request.AddJsonBody(requestBody);
+            var apiRequest = await CreateRequestAsync($"v1/files/{gameServerId}/content", Method.Put, cancellationToken);
+            apiRequest.AddJsonBody(request);
 
-            var response = await ExecuteAsync(request, cancellationToken);
+            var response = await ExecuteAsync(apiRequest, cancellationToken);
             return response.ToApiResult<FileMutationResultDto>();
         }
 
@@ -75,12 +75,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult<FileMutationResultDto>();
         }
 
-        public async Task<ApiResult<FileMutationResultDto>> CreateDirectory(Guid gameServerId, CreateDirectoryRequestDto requestBody, CancellationToken cancellationToken = default)
+        public async Task<ApiResult<FileMutationResultDto>> CreateDirectory(Guid gameServerId, CreateDirectoryRequestDto request, CancellationToken cancellationToken = default)
         {
-            var request = await CreateRequestAsync($"v1/files/{gameServerId}/directories", Method.Post, cancellationToken);
-            request.AddJsonBody(requestBody);
+            var apiRequest = await CreateRequestAsync($"v1/files/{gameServerId}/directories", Method.Post, cancellationToken);
+            apiRequest.AddJsonBody(request);
 
-            var response = await ExecuteAsync(request, cancellationToken);
+            var response = await ExecuteAsync(apiRequest, cancellationToken);
             return response.ToApiResult<FileMutationResultDto>();
         }
 
@@ -94,12 +94,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             return response.ToApiResult<FileMutationResultDto>();
         }
 
-        public async Task<ApiResult<FileMutationResultDto>> PatchEntry(Guid gameServerId, PatchFileEntryRequestDto requestBody, CancellationToken cancellationToken = default)
+        public async Task<ApiResult<FileMutationResultDto>> PatchEntry(Guid gameServerId, PatchFileEntryRequestDto request, CancellationToken cancellationToken = default)
         {
-            var request = await CreateRequestAsync($"v1/files/{gameServerId}/entries", Method.Patch, cancellationToken);
-            request.AddJsonBody(requestBody);
+            var apiRequest = await CreateRequestAsync($"v1/files/{gameServerId}/entries", Method.Patch, cancellationToken);
+            apiRequest.AddJsonBody(request);
 
-            var response = await ExecuteAsync(request, cancellationToken);
+            var response = await ExecuteAsync(apiRequest, cancellationToken);
             return response.ToApiResult<FileMutationResultDto>();
         }
 

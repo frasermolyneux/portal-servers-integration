@@ -118,7 +118,7 @@ public class MapsController(
         // Built-in maps are already present on the server — no FTP upload needed
         if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
         {
-            logger.LogInformation("Map {MapName} is a built-in map for {GameType}, skipping FTP push", mapName, gameServerApiResponse.Result.Data.GameType);
+            logger.LogInformation("Built-in map requested for {GameType}, skipping FTP push", gameServerApiResponse.Result.Data.GameType);
             return new ApiResponse().ToApiResult();
         }
 
@@ -158,7 +158,7 @@ public class MapsController(
 
             if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
             {
-                logger.LogInformation("Directory {MapDirectoryPath} already exists on the server, skipping sync", mapDirectoryPath);
+                logger.LogInformation("Map directory already exists on the server, skipping sync");
                 return new ApiResponse().ToApiResult();
             }
             else
@@ -179,7 +179,7 @@ public class MapsController(
         catch (Exception ex)
         {
             telemetryClient.TrackException(ex);
-            logger.LogError(ex, "Failed to push map {MapName} to game server {GameServerId}", mapName, gameServerId);
+            logger.LogError(ex, "Failed to push map to game server {GameServerId}", gameServerId);
             return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to push map files to the game server file transport host.")).ToApiResult();
         }
     }
@@ -210,7 +210,7 @@ public class MapsController(
         // Built-in maps cannot be removed from the server — they are part of the game installation
         if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
         {
-            logger.LogInformation("Map {MapName} is a built-in map for {GameType}, skipping FTP delete", mapName, gameServerApiResponse.Result.Data.GameType);
+            logger.LogInformation("Built-in map requested for {GameType}, skipping FTP delete", gameServerApiResponse.Result.Data.GameType);
             return new ApiResponse().ToApiResult();
         }
 
@@ -243,7 +243,7 @@ public class MapsController(
             }
             else
             {
-                logger.LogInformation("Directory {MapDirectoryPath} does not exist on the server, skipping delete", mapDirectoryPath);
+                logger.LogInformation("Map directory does not exist on the server, skipping delete");
                 return new ApiResponse().ToApiResult();
             }
 
@@ -251,7 +251,7 @@ public class MapsController(
         catch (Exception ex)
         {
             telemetryClient.TrackException(ex);
-            logger.LogError(ex, "Failed to delete map {MapName} from game server {GameServerId}", mapName, gameServerId);
+            logger.LogError(ex, "Failed to delete map from game server {GameServerId}", gameServerId);
             return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to delete map directory from the game server file transport host.")).ToApiResult();
         }
     }

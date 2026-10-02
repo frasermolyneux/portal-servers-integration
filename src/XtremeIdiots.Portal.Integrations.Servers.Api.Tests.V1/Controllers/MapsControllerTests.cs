@@ -192,6 +192,31 @@ public class MapsControllerTests
         _mockRepositoryApiClient.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task BuiltInMapOperations_DoNotLogMapName()
+    {
+        const string mapName = "mp_backlot";
+        var gameServerId = Guid.NewGuid();
+        var gameServer = CreateGameServerDto();
+
+        _mockRepositoryApiClient
+            .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(gameServer)));
+
+        var controller = CreateController();
+
+        await controller.PushServerMapToHost(gameServerId, mapName);
+        await controller.DeleteServerMapFromHost(gameServerId, mapName);
+
+        var logMessages = _mockLogger.Invocations
+            .Where(invocation => invocation.Method.Name == nameof(ILogger.Log))
+            .Select(invocation => invocation.Arguments[2]?.ToString())
+            .ToList();
+
+        Assert.Equal(2, logMessages.Count);
+        Assert.All(logMessages, message => Assert.DoesNotContain(mapName, message));
+    }
+
     private static GameServerDto CreateGameServerDto()
     {
         var json = JsonConvert.SerializeObject(new

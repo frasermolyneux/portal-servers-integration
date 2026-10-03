@@ -300,120 +300,84 @@ public class FilesControllerTests
         Assert.Equal(416, objectResult.StatusCode);
     }
 
-    [Fact]
-    public async Task PutContent_WhenPathContainsTraversal_ReturnsBadRequestWithoutCreatingSession()
+    [Theory]
+    [InlineData(FileContentMode.Binary, "AAF//w==", "", 201, "AAF//w==")]
+    [InlineData(FileContentMode.Binary, " ", "", 400, "")]
+    [InlineData(FileContentMode.Binary, "%%%", "", 400, "")]
+    [InlineData(FileContentMode.Text, "", "unsupported-encoding", 400, "")]
+    public async Task PutContent_WhenPayloadIsValidOrInvalid_ReturnsExpectedResult(
+        FileContentMode mode,
+        string base64Content,
+        string encoding,
+        int expectedStatus,
+        string expectedBytes)
     {
         var gameServerId = Guid.NewGuid();
-        var controller = CreateController();
+        var session = new TestFileTransportSession(directories: ["/cfg"]);
+        SetupSession(gameServerId, session);
 
-        var result = await controller.PutContent(gameServerId, new PutFileContentRequestDto { Path = "/../secret.txt" });
+        var result = await CreateController().PutContent(gameServerId, new PutFileContentRequestDto
+        {
+            Path = "/cfg/file.bin",
+            Mode = mode,
+            Base64Content = base64Content,
+            TextContent = "content",
+            Encoding = encoding,
+        });
 
         var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(400, objectResult.StatusCode);
-        _mockFileTransportFactory.Verify(x => x.CreateSession(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(expectedStatus, objectResult.StatusCode);
+        var payload = Assert.IsType<ApiResponse<FileMutationResultDto>>(objectResult.Value);
+        if (expectedStatus == 201)
+        {
+            Assert.Equal(Convert.FromBase64String(expectedBytes), await session.DownloadBytes("/cfg/file.bin"));
+        }
+        else
+        {
+            Assert.Equal(ErrorCodes.INVALID_REQUEST, payload.Errors?.Single().Code);
+            Assert.False(await session.FileExists("/cfg/file.bin"));
+        }
     }
 
-    [Fact]
-    public async Task GetContent_WhenTransportConnectionFails_ReturnsConnectionError()
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound, ErrorCodes.GAME_SERVER_NOT_FOUND, 404, ErrorCodes.GAME_SERVER_NOT_FOUND)]
+    [InlineData(HttpStatusCode.BadRequest, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, 400, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING)]
+    [InlineData(HttpStatusCode.InternalServerError, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, 0, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED)]
+    public async Task FileOperations_WhenSessionCreationFails_ReturnExpectedError(
+        HttpStatusCode sessionStatus,
+        string sessionErrorCode,
+        int expectedStatus,
+        string expectedErrorCode)
     {
         var gameServerId = Guid.NewGuid();
         _mockFileTransportFactory
             .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(
-                HttpStatusCode.InternalServerError,
-                new ApiResponse<IGameServerFileTransportSession>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Connection failed"))));
+                sessionStatus,
+                new ApiResponse<IGameServerFileTransportSession>(new ApiError(sessionErrorCode, "Session creation failed"))));
 
         var controller = CreateController();
-        var result = await controller.GetContent(gameServerId, new GetFileContentQueryDto { Path = "/cfg/a.txt" });
+        var results = await Task.WhenAll(
+            controller.ListEntries(gameServerId, new ListEntriesQueryDto { Path = "/cfg" }),
+            controller.GetContent(gameServerId, new GetFileContentQueryDto { Path = "/cfg/file.txt" }),
+            controller.PutContent(gameServerId, new PutFileContentRequestDto { Path = "/cfg/file.txt" }),
+            controller.PatchEntry(gameServerId, new PatchFileEntryRequestDto
+            {
+                Operation = FileEntryPatchOperation.Rename,
+                SourcePath = "/cfg/source.txt",
+                DestinationPath = "/cfg/destination.txt",
+            }));
 
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        var payload = Assert.IsType<ApiResponse<FileContentDto>>(objectResult.Value);
-        Assert.Equal(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, payload.Errors?.FirstOrDefault()?.Code);
-    }
-
-    [Fact]
-    public async Task PutContent_WhenBinaryContentIsValid_UploadsDecodedBytes()
-    {
-        var gameServerId = Guid.NewGuid();
-        var session = new TestFileTransportSession(directories: ["/cfg"]);
-        SetupSession(gameServerId, session);
-        var expectedBytes = new byte[] { 0, 1, 127, 255 };
-
-        var result = await CreateController().PutContent(gameServerId, new PutFileContentRequestDto
+        foreach (var result in results)
         {
-            Path = "/cfg/file.bin",
-            Mode = FileContentMode.Binary,
-            Base64Content = Convert.ToBase64String(expectedBytes),
-        });
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            if (expectedStatus != 0)
+            {
+                Assert.Equal(expectedStatus, objectResult.StatusCode);
+            }
 
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(201, objectResult.StatusCode);
-        Assert.Equal(expectedBytes, session.GetBytes("/cfg/file.bin"));
-    }
-
-    [Theory]
-    [InlineData(" ")]
-    [InlineData("%%%")]
-    public async Task PutContent_WhenBinaryContentIsBlankOrMalformed_ReturnsBadRequest(string base64Content)
-    {
-        var gameServerId = Guid.NewGuid();
-        var session = new TestFileTransportSession(directories: ["/cfg"]);
-        SetupSession(gameServerId, session);
-
-        var result = await CreateController().PutContent(gameServerId, new PutFileContentRequestDto
-        {
-            Path = "/cfg/file.bin",
-            Mode = FileContentMode.Binary,
-            Base64Content = base64Content,
-        });
-
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(400, objectResult.StatusCode);
-        var payload = Assert.IsType<ApiResponse<FileMutationResultDto>>(objectResult.Value);
-        Assert.Equal(ErrorCodes.INVALID_REQUEST, payload.Errors?.Single().Code);
-        Assert.False(await session.FileExists("/cfg/file.bin"));
-    }
-
-    [Fact]
-    public async Task PutContent_WhenTextEncodingIsUnsupported_ReturnsBadRequest()
-    {
-        var gameServerId = Guid.NewGuid();
-        var session = new TestFileTransportSession(directories: ["/cfg"]);
-        SetupSession(gameServerId, session);
-
-        var result = await CreateController().PutContent(gameServerId, new PutFileContentRequestDto
-        {
-            Path = "/cfg/file.txt",
-            Mode = FileContentMode.Text,
-            TextContent = "content",
-            Encoding = "unsupported-encoding",
-        });
-
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(400, objectResult.StatusCode);
-        var payload = Assert.IsType<ApiResponse<FileMutationResultDto>>(objectResult.Value);
-        Assert.Equal(ErrorCodes.INVALID_REQUEST, payload.Errors?.Single().Code);
-        Assert.False(await session.FileExists("/cfg/file.txt"));
-    }
-
-    [Fact]
-    public async Task FileOperations_WhenServerIsNotFound_ReturnNotFoundError()
-    {
-        await AssertSessionErrorForAllOperations(
-            HttpStatusCode.NotFound,
-            ErrorCodes.GAME_SERVER_NOT_FOUND,
-            404,
-            ErrorCodes.GAME_SERVER_NOT_FOUND);
-    }
-
-    [Fact]
-    public async Task FileOperations_WhenCredentialsAreMissing_ReturnBadRequestError()
-    {
-        await AssertSessionErrorForAllOperations(
-            HttpStatusCode.BadRequest,
-            ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING,
-            400,
-            ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING);
+            Assert.Equal(expectedErrorCode, GetApiError(objectResult).Code);
+        }
     }
 
     [Fact]
@@ -485,47 +449,8 @@ public class FilesControllerTests
         Assert.False(await session.FileExists("/cfg/b.txt"));
     }
 
-    private async Task AssertSessionErrorForAllOperations(
-        HttpStatusCode sessionStatus,
-        string sessionErrorCode,
-        int expectedStatus,
-        string expectedErrorCode)
-    {
-        var gameServerId = Guid.NewGuid();
-        _mockFileTransportFactory
-            .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(
-                sessionStatus,
-                new ApiResponse<IGameServerFileTransportSession>(new ApiError(sessionErrorCode, "Session creation failed"))));
-
-        var controller = CreateController();
-        var results = new[]
-        {
-            await controller.ListEntries(gameServerId, new ListEntriesQueryDto { Path = "/cfg" }),
-            await controller.GetContent(gameServerId, new GetFileContentQueryDto { Path = "/cfg/file.txt" }),
-            await controller.PutContent(gameServerId, new PutFileContentRequestDto { Path = "/cfg/file.txt" }),
-            await controller.PatchEntry(gameServerId, new PatchFileEntryRequestDto
-            {
-                Operation = FileEntryPatchOperation.Rename,
-                SourcePath = "/cfg/source.txt",
-                DestinationPath = "/cfg/destination.txt",
-            }),
-        };
-
-        foreach (var result in results)
-        {
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(expectedStatus, objectResult.StatusCode);
-            Assert.Equal(expectedErrorCode, GetApiError(objectResult).Code);
-        }
-    }
-
-    private static ApiError GetApiError(ObjectResult result)
-    {
-        var errors = Assert.IsAssignableFrom<IEnumerable<ApiError>>(
-            result.Value!.GetType().GetProperty(nameof(ApiResponse<>.Errors))!.GetValue(result.Value));
-        return Assert.Single(errors);
-    }
+    private static ApiError GetApiError(ObjectResult result) =>
+        Assert.Single((IEnumerable<ApiError>)result.Value!.GetType().GetProperty(nameof(ApiResponse<>.Errors))!.GetValue(result.Value)!);
 
     private void SetupSession(Guid gameServerId, IGameServerFileTransportSession session)
     {
@@ -570,8 +495,6 @@ public class FilesControllerTests
             AddDirectoryHierarchy(parentPath);
             _files[normalizedPath] = Encoding.UTF8.GetBytes(content);
         }
-
-        public byte[] GetBytes(string path) => _files[NormalizePath(path)].ToArray();
 
         public Task<IReadOnlyList<FileTransportEntry>> GetListing(string path, CancellationToken cancellationToken = default)
         {

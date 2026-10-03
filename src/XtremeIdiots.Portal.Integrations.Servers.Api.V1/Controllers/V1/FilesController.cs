@@ -308,10 +308,25 @@ public class FilesController(
 
     async Task<ApiResult<FileMutationResultDto>> IFilesApi.PutContent(Guid gameServerId, PutFileContentRequestDto request, CancellationToken cancellationToken)
     {
-        var validationError = ValidatePutContentRequest(request, out var normalizedPath);
-        if (validationError != null)
+        if (request == null)
         {
-            return validationError;
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Path))
+        {
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Path is required.")).ToBadRequestResult();
+        }
+
+        var normalizedPath = NormalizePath(request.Path);
+        if (!IsPathSafe(normalizedPath))
+        {
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The path contains invalid traversal segments.")).ToBadRequestResult();
+        }
+
+        if (normalizedPath == "/")
+        {
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Path cannot be the root directory for file content operations.")).ToBadRequestResult();
         }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
@@ -376,35 +391,6 @@ public class FilesController(
             logger.LogError(ex, "Failed to put file content for game server {GameServerId} at path {Path}", gameServerId, normalizedPath);
             return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to write file content to the game server file transport host.")).ToApiResult();
         }
-    }
-
-    private static ApiResult<FileMutationResultDto>? ValidatePutContentRequest(
-        PutFileContentRequestDto request,
-        out string normalizedPath)
-    {
-        normalizedPath = "/";
-        if (request == null)
-        {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult();
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Path))
-        {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Path is required.")).ToBadRequestResult();
-        }
-
-        normalizedPath = NormalizePath(request.Path);
-        if (!IsPathSafe(normalizedPath))
-        {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "The path contains invalid traversal segments.")).ToBadRequestResult();
-        }
-
-        if (normalizedPath == "/")
-        {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Path cannot be the root directory for file content operations.")).ToBadRequestResult();
-        }
-
-        return null;
     }
 
     private static ApiResult<FileMutationResultDto>? TryCreateUploadPayload(PutFileContentRequestDto request, out byte[] payload)

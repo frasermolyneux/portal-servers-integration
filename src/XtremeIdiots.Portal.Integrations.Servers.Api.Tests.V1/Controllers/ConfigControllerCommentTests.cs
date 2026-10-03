@@ -110,6 +110,20 @@ public class ConfigControllerCommentTests
     }
 
     [Fact]
+    public void UpsertManagedCommentBlock_UsesFirstMatchingVariableLine()
+    {
+        var content = "set sv_maprotation \"first\"\nset sv_maprotation \"second\"";
+        var result = ConfigController.UpsertManagedCommentBlock(
+            content, "sv_maprotation",
+            ["Managed by Portal"],
+            Newline);
+
+        Assert.Equal(
+            "// [Portal] Managed by Portal\nset sv_maprotation \"first\"\nset sv_maprotation \"second\"",
+            result);
+    }
+
+    [Fact]
     public void UpsertManagedCommentBlock_CommentedOutVariable_IsNotMatched()
     {
         // ConfigVariableRegex only matches active "set" lines, not "//set" lines

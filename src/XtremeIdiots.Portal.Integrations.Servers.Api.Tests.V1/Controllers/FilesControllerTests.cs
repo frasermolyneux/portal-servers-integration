@@ -343,32 +343,22 @@ public class FilesControllerTests
     [InlineData(HttpStatusCode.NotFound, ErrorCodes.GAME_SERVER_NOT_FOUND, 404, ErrorCodes.GAME_SERVER_NOT_FOUND)]
     [InlineData(HttpStatusCode.BadRequest, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, 400, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING)]
     [InlineData(HttpStatusCode.InternalServerError, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, 0, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED)]
-    public async Task FileOperations_WhenSessionCreationFails_ReturnExpectedError(
-        HttpStatusCode sessionStatus,
-        string sessionErrorCode,
-        int expectedStatus,
-        string expectedErrorCode)
+    public async Task FileOperations_WhenSessionCreationFails_ReturnExpectedError(HttpStatusCode sessionStatus, string sessionErrorCode, int expectedStatus, string expectedErrorCode)
     {
         var gameServerId = Guid.NewGuid();
-        _mockFileTransportFactory
-            .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(
-                sessionStatus,
+        _mockFileTransportFactory.Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(sessionStatus,
                 new ApiResponse<IGameServerFileTransportSession>(new ApiError(sessionErrorCode, "Session creation failed"))));
 
         var controller = CreateController();
         var results = await Task.WhenAll(RunOperations(controller, gameServerId, "/cfg/file.txt"));
 
-        foreach (var result in results)
+        Assert.All(results, result =>
         {
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            if (expectedStatus != 0)
-            {
-                Assert.Equal(expectedStatus, objectResult.StatusCode);
-            }
-
-            Assert.Equal(expectedErrorCode, GetApiError(objectResult).Code);
-        }
+            var response = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(expectedStatus == 0 ? response.StatusCode : expectedStatus, response.StatusCode);
+            Assert.Equal(expectedErrorCode, GetApiError(response).Code);
+        });
     }
 
     [Fact]
@@ -377,12 +367,8 @@ public class FilesControllerTests
         var gameServerId = Guid.NewGuid();
         var results = await Task.WhenAll(RunOperations(CreateController(), gameServerId, "/cfg/../secret"));
 
-        Assert.All(results, result =>
-        {
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(400, objectResult.StatusCode);
-            Assert.Equal(ErrorCodes.INVALID_REQUEST, GetApiError(objectResult).Code);
-        });
+        Assert.All(results, result => Assert.Equal((400, ErrorCodes.INVALID_REQUEST),
+            (Assert.IsType<ObjectResult>(result).StatusCode, GetApiError((ObjectResult)result).Code)));
         _mockFileTransportFactory.Verify(x => x.CreateSession(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -458,17 +444,11 @@ public class FilesControllerTests
     private static ApiError GetApiError(ObjectResult result) =>
         Assert.Single((IEnumerable<ApiError>)result.Value!.GetType().GetProperty(nameof(ApiResponse<>.Errors))!.GetValue(result.Value)!);
 
-    private static Task<IActionResult>[] RunOperations(FilesController controller, Guid gameServerId, string path) =>
-    [
+    private static Task<IActionResult>[] RunOperations(FilesController controller, Guid gameServerId, string path) => [
         controller.ListEntries(gameServerId, new ListEntriesQueryDto { Path = path }),
         controller.GetContent(gameServerId, new GetFileContentQueryDto { Path = path }),
         controller.PutContent(gameServerId, new PutFileContentRequestDto { Path = path }),
-        controller.PatchEntry(gameServerId, new PatchFileEntryRequestDto
-        {
-            Operation = FileEntryPatchOperation.Rename,
-            SourcePath = path,
-            DestinationPath = "/cfg/destination.txt",
-        }),
+        controller.PatchEntry(gameServerId, new PatchFileEntryRequestDto { Operation = FileEntryPatchOperation.Rename, SourcePath = path, DestinationPath = "/cfg/destination.txt" }),
     ];
 
     private void SetupSession(Guid gameServerId, IGameServerFileTransportSession session)

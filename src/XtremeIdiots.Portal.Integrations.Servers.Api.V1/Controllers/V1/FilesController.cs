@@ -25,6 +25,8 @@ public class FilesController(
     IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient) : Controller, IFilesApi
 {
+    private const string MissingFileTransportCredentialsMessage = "The game server does not have file transport credentials configured.";
+
     [HttpGet]
     [Route("files/{gameServerId}/entries")]
     public async Task<IActionResult> ListEntries(Guid gameServerId, [FromQuery] ListEntriesQueryDto query, CancellationToken cancellationToken = default)
@@ -110,23 +112,13 @@ public class FilesController(
         }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
-        if (sessionResult.IsNotFound)
+        var sessionError = GetSessionError<FileEntriesCollectionDto>(sessionResult, gameServerId, "list entries");
+        if (sessionError != null)
         {
-            return new ApiResponse<FileEntriesCollectionDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+            return sessionError;
         }
 
-        if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
-        {
-            var error = sessionResult.Result?.Errors?.FirstOrDefault();
-            if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
-            {
-                return new ApiResponse<FileEntriesCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to list entries.")).ToApiResult();
-            }
-
-            return new ApiResponse<FileEntriesCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
-        }
-
-        await using var session = sessionResult.Result.Data;
+        await using var session = sessionResult.Result!.Data!;
         using var operation = telemetryClient.StartOperation<DependencyTelemetry>("FilesListEntries");
         operation.Telemetry.Type = session.Transport.TelemetryType;
         operation.Telemetry.Target = session.Transport.TelemetryTarget;
@@ -179,23 +171,13 @@ public class FilesController(
         }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
-        if (sessionResult.IsNotFound)
+        var sessionError = GetSessionError<FileContentDto>(sessionResult, gameServerId, "read file content");
+        if (sessionError != null)
         {
-            return new ApiResponse<FileContentDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+            return sessionError;
         }
 
-        if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
-        {
-            var error = sessionResult.Result?.Errors?.FirstOrDefault();
-            if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
-            {
-                return new ApiResponse<FileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to read file content.")).ToApiResult();
-            }
-
-            return new ApiResponse<FileContentDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
-        }
-
-        await using var session = sessionResult.Result.Data;
+        await using var session = sessionResult.Result!.Data!;
         using var operation = telemetryClient.StartOperation<DependencyTelemetry>("FilesGetContent");
         operation.Telemetry.Type = session.Transport.TelemetryType;
         operation.Telemetry.Target = session.Transport.TelemetryTarget;
@@ -288,7 +270,7 @@ public class FilesController(
                 return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to read metadata.")).ToApiResult();
             }
 
-            return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -350,23 +332,13 @@ public class FilesController(
         }
 
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
-        if (sessionResult.IsNotFound)
+        var sessionError = GetSessionError<FileMutationResultDto>(sessionResult, gameServerId, "write file content");
+        if (sessionError != null)
         {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+            return sessionError;
         }
 
-        if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
-        {
-            var error = sessionResult.Result?.Errors?.FirstOrDefault();
-            if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
-            {
-                return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to write file content.")).ToApiResult();
-            }
-
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
-        }
-
-        await using var session = sessionResult.Result.Data;
+        await using var session = sessionResult.Result!.Data!;
         using var operation = telemetryClient.StartOperation<DependencyTelemetry>("FilesPutContent");
         operation.Telemetry.Type = session.Transport.TelemetryType;
         operation.Telemetry.Target = session.Transport.TelemetryTarget;
@@ -398,37 +370,10 @@ public class FilesController(
                     new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "The file already exists and overwrite is disabled.")));
             }
 
-            byte[] payload;
-            if (request.Mode == FileContentMode.Binary)
+            var payloadError = TryCreateUploadPayload(request, out var payload);
+            if (payloadError != null)
             {
-                if (string.IsNullOrWhiteSpace(request.Base64Content))
-                {
-                    return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Base64Content is required when mode is binary.")).ToBadRequestResult();
-                }
-
-                try
-                {
-                    payload = Convert.FromBase64String(request.Base64Content);
-                }
-                catch (FormatException)
-                {
-                    return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Base64Content is not valid base64.")).ToBadRequestResult();
-                }
-            }
-            else
-            {
-                var textContent = request.TextContent ?? string.Empty;
-                Encoding textEncoding;
-                try
-                {
-                    textEncoding = Encoding.GetEncoding(request.Encoding);
-                }
-                catch (Exception)
-                {
-                    return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, $"The encoding '{request.Encoding}' is invalid or unsupported.")).ToBadRequestResult();
-                }
-
-                payload = textEncoding.GetBytes(textContent);
+                return payloadError;
             }
 
             await session.UploadBytes(normalizedPath, payload, cancellationToken).ConfigureAwait(false);
@@ -448,6 +393,42 @@ public class FilesController(
             logger.LogError(ex, "Failed to put file content for game server {GameServerId} at path {Path}", gameServerId, normalizedPath);
             return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to write file content to the game server file transport host.")).ToApiResult();
         }
+    }
+
+    private static ApiResult<FileMutationResultDto>? TryCreateUploadPayload(PutFileContentRequestDto request, out byte[] payload)
+    {
+        payload = [];
+        if (request.Mode == FileContentMode.Binary)
+        {
+            if (string.IsNullOrWhiteSpace(request.Base64Content))
+            {
+                return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Base64Content is required when mode is binary.")).ToBadRequestResult();
+            }
+
+            try
+            {
+                payload = Convert.FromBase64String(request.Base64Content);
+            }
+            catch (FormatException)
+            {
+                return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "Base64Content is not valid base64.")).ToBadRequestResult();
+            }
+
+            return null;
+        }
+
+        Encoding textEncoding;
+        try
+        {
+            textEncoding = Encoding.GetEncoding(request.Encoding);
+        }
+        catch (Exception)
+        {
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.INVALID_REQUEST, $"The encoding '{request.Encoding}' is invalid or unsupported.")).ToBadRequestResult();
+        }
+
+        payload = textEncoding.GetBytes(request.TextContent ?? string.Empty);
+        return null;
     }
 
     async Task<ApiResult<FileMutationResultDto>> IFilesApi.DeleteContent(Guid gameServerId, DeleteFileQueryDto query, CancellationToken cancellationToken)
@@ -477,7 +458,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete file content.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -559,7 +540,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to create directory.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -647,7 +628,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete directory.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -736,23 +717,13 @@ public class FilesController(
         CancellationToken cancellationToken)
     {
         var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
-        if (sessionResult.IsNotFound)
+        var sessionError = GetSessionError<FileMutationResultDto>(sessionResult, gameServerId, "patch entry");
+        if (sessionError != null)
         {
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+            return sessionError;
         }
 
-        if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
-        {
-            var error = sessionResult.Result?.Errors?.FirstOrDefault();
-            if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
-            {
-                return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to patch entry.")).ToApiResult();
-            }
-
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
-        }
-
-        await using var session = sessionResult.Result.Data;
+        await using var session = sessionResult.Result!.Data!;
         using var operation = telemetryClient.StartOperation<DependencyTelemetry>("FilesPatchEntry");
         operation.Telemetry.Type = session.Transport.TelemetryType;
         operation.Telemetry.Target = session.Transport.TelemetryTarget;
@@ -854,6 +825,30 @@ public class FilesController(
             logger.LogError(ex, "Failed to patch file entry for game server {GameServerId} from {SourcePath} to {DestinationPath}", gameServerId, sourcePath, destinationPath);
             return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to patch entry on the game server file transport host.")).ToApiResult();
         }
+    }
+
+    private static ApiResult<T>? GetSessionError<T>(
+        ApiResult<IGameServerFileTransportSession> sessionResult,
+        Guid gameServerId,
+        string operation)
+    {
+        if (sessionResult.IsNotFound)
+        {
+            return new ApiResponse<T>(new ApiError(ErrorCodes.GAME_SERVER_NOT_FOUND, $"The game server with ID '{gameServerId}' does not exist.")).ToNotFoundResult();
+        }
+
+        if (sessionResult.IsSuccess && sessionResult.Result?.Data != null)
+        {
+            return null;
+        }
+
+        var error = sessionResult.Result?.Errors?.FirstOrDefault();
+        if (string.Equals(error?.Code, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ApiResponse<T>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, $"Failed to connect to the game server file transport host to {operation}.")).ToApiResult();
+        }
+
+        return new ApiResponse<T>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
     }
 
     private static FileMutationOperation MapPatchOperation(FileEntryPatchOperation operation)

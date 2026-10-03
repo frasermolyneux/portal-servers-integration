@@ -336,7 +336,7 @@ public class FilesControllerTests
     [Theory]
     [InlineData(HttpStatusCode.NotFound, ErrorCodes.GAME_SERVER_NOT_FOUND, 404, ErrorCodes.GAME_SERVER_NOT_FOUND)]
     [InlineData(HttpStatusCode.BadRequest, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, 400, ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING)]
-    [InlineData(HttpStatusCode.InternalServerError, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, null, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED)]
+    [InlineData(HttpStatusCode.InternalServerError, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, 200, ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED)]
     public async Task FileOperations_WhenSessionCreationFails_ReturnExpectedError(HttpStatusCode sessionStatus, string sessionErrorCode, int? expectedStatus, string expectedErrorCode)
     {
         var gameServerId = Guid.NewGuid();
@@ -344,7 +344,7 @@ public class FilesControllerTests
         Assert.All(await Task.WhenAll(RunOperations(CreateController(), gameServerId, "/cfg/file.txt")), result =>
         {
             var response = Assert.IsType<ObjectResult>(result);
-            Assert.True(expectedStatus is null || expectedStatus == response.StatusCode);
+            Assert.Equal(expectedStatus, response.StatusCode);
             Assert.Equal(expectedErrorCode, GetApiError(response).Code);
         });
     }

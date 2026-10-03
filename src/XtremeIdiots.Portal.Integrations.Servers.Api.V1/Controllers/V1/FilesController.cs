@@ -25,6 +25,8 @@ public class FilesController(
     IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient) : Controller, IFilesApi
 {
+    private const string MissingFileTransportCredentialsMessage = "The game server does not have file transport credentials configured.";
+
     [HttpGet]
     [Route("files/{gameServerId}/entries")]
     public async Task<IActionResult> ListEntries(Guid gameServerId, [FromQuery] ListEntriesQueryDto query, CancellationToken cancellationToken = default)
@@ -268,7 +270,7 @@ public class FilesController(
                 return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to read metadata.")).ToApiResult();
             }
 
-            return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileEntryMetadataDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -456,7 +458,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete file content.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -538,7 +540,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to create directory.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -626,7 +628,7 @@ public class FilesController(
                 return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to delete directory.")).ToApiResult();
             }
 
-            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+            return new ApiResponse<FileMutationResultDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
         }
 
         await using var session = sessionResult.Result.Data;
@@ -846,7 +848,7 @@ public class FilesController(
             return new ApiResponse<T>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, $"Failed to connect to the game server file transport host to {operation}.")).ToApiResult();
         }
 
-        return new ApiResponse<T>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, "The game server does not have file transport credentials configured.")).ToBadRequestResult();
+        return new ApiResponse<T>(new ApiError(ErrorCodes.FILE_TRANSPORT_CREDENTIALS_MISSING, MissingFileTransportCredentialsMessage)).ToBadRequestResult();
     }
 
     private static FileMutationOperation MapPatchOperation(FileEntryPatchOperation operation)

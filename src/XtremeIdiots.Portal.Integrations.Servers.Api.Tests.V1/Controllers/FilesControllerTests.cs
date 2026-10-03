@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Files;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
@@ -297,6 +298,37 @@ public class FilesControllerTests
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(416, objectResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutContent_WhenPathContainsTraversal_ReturnsBadRequestWithoutCreatingSession()
+    {
+        var gameServerId = Guid.NewGuid();
+        var controller = CreateController();
+
+        var result = await controller.PutContent(gameServerId, new PutFileContentRequestDto { Path = "/../secret.txt" });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, objectResult.StatusCode);
+        _mockFileTransportFactory.Verify(x => x.CreateSession(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetContent_WhenTransportConnectionFails_ReturnsConnectionError()
+    {
+        var gameServerId = Guid.NewGuid();
+        _mockFileTransportFactory
+            .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(
+                HttpStatusCode.InternalServerError,
+                new ApiResponse<IGameServerFileTransportSession>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Connection failed"))));
+
+        var controller = CreateController();
+        var result = await controller.GetContent(gameServerId, new GetFileContentQueryDto { Path = "/cfg/a.txt" });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        var payload = Assert.IsType<ApiResponse<FileContentDto>>(objectResult.Value);
+        Assert.Equal(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, payload.Errors?.FirstOrDefault()?.Code);
     }
 
     [Fact]

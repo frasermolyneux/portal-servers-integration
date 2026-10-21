@@ -50,6 +50,19 @@ public class ConfigController(
         return new Regex($@"^(\s*set\s+{escaped}\s+)""([^""]*)""", RegexOptions.IgnoreCase | RegexOptions.Multiline, TimeSpan.FromSeconds(1));
     }
 
+    private static int FindFirstMatchingLineIndex(string[] lines, Regex regex)
+    {
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (regex.IsMatch(lines[i]))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     [HttpGet]
     [Route("config/{gameServerId}/file")]
     public async Task<IActionResult> GetConfigFile(Guid gameServerId, [FromQuery] string filePath)
@@ -231,16 +244,7 @@ public class ConfigController(
         var lines = content.Split(newline);
         var varRegex = ConfigVariableRegex(variableName);
 
-        // Find the first line that matches the variable
-        var varLineIndex = -1;
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (varRegex.IsMatch(lines[i]))
-            {
-                varLineIndex = i;
-                break;
-            }
-        }
+        var varLineIndex = FindFirstMatchingLineIndex(lines, varRegex);
 
         if (varLineIndex < 0)
         {

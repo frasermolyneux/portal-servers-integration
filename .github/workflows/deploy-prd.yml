@@ -8,7 +8,7 @@ on:
     # checkov:skip=CKV_GHA_7:Deployment entry point selects fixed jobs; build inputs are unchanged and user input never enters commands.
     inputs:
       scope:
-        description: "Use maps-bootstrap for application-only delivery without Terraform or APIM changes."
+        description: "Use maps-bootstrap for production application-only delivery without dev, Terraform or APIM changes."
         type: choice
         default: standard
         options:
@@ -45,7 +45,7 @@ jobs:
             terraform:terraform/**
 
   terraform-state-check-dev:
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap'
     permissions:
       contents: read
       id-token: write
@@ -91,7 +91,7 @@ jobs:
       build_version: ${{ steps.v1-ci.outputs.build_version }}
 
   terraform-plan-and-apply-dev:
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap'
     permissions:
       contents: read
       id-token: write
@@ -150,7 +150,7 @@ jobs:
 
   app-service-deploy-dev:
     if: |
-      !failure() && !cancelled() && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
+      !failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
     permissions:
       contents: read
       id-token: write
@@ -217,7 +217,7 @@ jobs:
 
   terraform-plan-and-apply-prd:
     if: |
-      !failure() && !cancelled() && (needs.terraform-plan-and-apply-dev.result == 'success' || github.event_name == 'schedule')
+      !failure() && !cancelled() && (inputs.scope == 'maps-bootstrap' || needs.terraform-plan-and-apply-dev.result == 'success' || github.event_name == 'schedule')
     permissions:
       contents: read
       id-token: write

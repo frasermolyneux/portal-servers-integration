@@ -20,6 +20,20 @@
 ## Overview
 Versioned REST API that bridges the XtremeIdiots Portal with game servers: querying live status, running RCON operations, and syncing maps over FTP or SFTP. Uses ASP.NET Core 9 with Microsoft.Identity.Web for Entra-protected controllers, Application Insights telemetry with sampling, optional Azure App Configuration, and a generated Repository API client for portal data. Packages abstractions and API clients for reuse across the ecosystem and deploys to Azure App Service via Terraform with OIDC authentication.
 
+## Redirect-backed map transfers
+
+The managed identity requires `Maps.Read`, with `RedirectApi:BaseUrl` and
+`RedirectApi:ApplicationAudience` in this application's App Configuration
+namespace. Transfers load the current redirect manifest and use the shared
+authenticated streaming client, not repository-provided download URLs.
+
+Explicit pushes refresh selected `.ff` and `.iwd` files, including nested files
+and existing destination folders. Verification checks filenames and byte sizes,
+not just folder presence or content hashes. Failed or incomplete transfers
+return an error; retrying a push retransfers its selected files. Resumable
+browser uploads/downloads and ZIP collections belong to the redirect manager,
+not a game-server transfer journal.
+
 ## NuGet Packages
 
 | Package                                                                                                                                                     | Latest                                                                                                                                                                                                  | Description                                               |

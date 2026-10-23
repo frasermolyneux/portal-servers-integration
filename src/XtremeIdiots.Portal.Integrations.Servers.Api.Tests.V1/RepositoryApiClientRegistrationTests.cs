@@ -17,6 +17,7 @@ using MX.Api.Client.Caching;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Registration;
 using XtremeIdiots.Portal.Repository.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
+using XtremeIdiots.Redirect.Api.Abstractions.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1;
 
@@ -84,6 +85,15 @@ public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiC
         var client = scope.ServiceProvider.GetRequiredService<IRepositoryApiClient>();
 
         Assert.NotNull(client);
+    }
+
+    [Fact]
+    public void HostBoot_ResolvesRedirectMetadataAndStreamingClients()
+    {
+        using var scope = _factory.Services.CreateScope();
+
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRedirectApiClient>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRedirectDownloadClient>());
     }
 
     [Fact]
@@ -188,6 +198,8 @@ public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiC
 
             builder.UseSetting("RepositoryApi:BaseUrl", "https://localhost/repository");
             builder.UseSetting("RepositoryApi:ApplicationAudience", "api://test-repository");
+            builder.UseSetting("RedirectApi:BaseUrl", "https://maps.example.invalid");
+            builder.UseSetting("RedirectApi:ApplicationAudience", "api://test-redirect");
             builder.UseSetting(
                 "ApplicationInsights:ConnectionString",
                 "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://localhost/;LiveEndpoint=https://localhost/");

@@ -18,6 +18,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Publishing;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Registration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using XtremeIdiots.Redirect.Api.Client.V1;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ if (!string.IsNullOrWhiteSpace(appConfigEndpoint))
             .Select("XtremeIdiots.Portal.Integrations.Servers.Api.V1:*", environmentLabel)
             .TrimKeyPrefix("XtremeIdiots.Portal.Integrations.Servers.Api.V1:")
             .Select("RepositoryApi:*", environmentLabel)
+            .Select("RedirectApi:*", environmentLabel)
             .Select("ApplicationInsights:*", environmentLabel)
             .ConfigureRefresh(refresh =>
             {
@@ -108,6 +110,9 @@ builder.Services.AddScoped<IFileTransportResolver, FileTransportResolver>();
 builder.Services.AddScoped<IGameServerFileTransportFactory, GameServerFileTransportFactory>();
 
 builder.Services.AddPortalRepositoryApiClient(builder.Configuration, builder.Environment.ApplicationName);
+builder.Services.AddRedirectApiClient(options => options
+    .WithBaseUrl(builder.Configuration["RedirectApi:BaseUrl"] ?? throw new InvalidOperationException("RedirectApi:BaseUrl is required."))
+    .WithEntraIdAuthentication(builder.Configuration["RedirectApi:ApplicationAudience"] ?? throw new InvalidOperationException("RedirectApi:ApplicationAudience is required.")));
 
 builder.Services.AddSingleton(sp =>
 {

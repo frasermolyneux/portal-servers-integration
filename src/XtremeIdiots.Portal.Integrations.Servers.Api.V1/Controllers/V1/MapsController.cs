@@ -13,6 +13,7 @@ using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
+using XtremeIdiots.Redirect.Api.Abstractions.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 
@@ -25,7 +26,8 @@ public class MapsController(
     IRepositoryApiClient repositoryApiClient,
     IGameServerFileTransportFactory fileTransportFactory,
     TelemetryClient telemetryClient,
-    IHttpClientFactory httpClientFactory) : Controller, IMapsApi
+    IRedirectApiClient redirectApiClient,
+    IRedirectDownloadClient redirectDownloadClient) : Controller, IMapsApi
 {
 
     [HttpGet]
@@ -108,7 +110,8 @@ public class MapsController(
             return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "The map name contains invalid path characters.")).ToBadRequestResult();
         }
 
-        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+        var cancellationToken = HttpContext?.RequestAborted ?? CancellationToken.None;
+        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
         {
@@ -122,19 +125,7 @@ public class MapsController(
             return new ApiResponse().ToApiResult();
         }
 
-        var mapApiResponse = await repositoryApiClient.Maps.V1.GetMap(gameServerApiResponse.Result.Data.GameType, mapName);
-
-        if (mapApiResponse.IsNotFound || mapApiResponse.Result?.Data == null)
-        {
-            return new ApiResponse(new ApiError(ErrorCodes.MAP_NOT_FOUND, $"The map '{mapName}' does not exist in the repository.")).ToNotFoundResult();
-        }
-
-        if (mapApiResponse.Result.Data.MapFiles.Count == 0)
-        {
-            return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' does not have any files associated with it.")).ToBadRequestResult();
-        }
-
-        var sessionResult = await fileTransportFactory.CreateSession(gameServerId).ConfigureAwait(false);
+        var sessionResult = await fileTransportFactory.CreateSession(gameServerId, cancellationToken).ConfigureAwait(false);
         if (!sessionResult.IsSuccess || sessionResult.Result?.Data == null)
         {
             var error = sessionResult.Result?.Errors?.FirstOrDefault();
@@ -154,33 +145,49 @@ public class MapsController(
 
         try
         {
-            var mapDirectoryPath = JoinPath(mapsDirectoryPath, mapName);
-
-            if (await session.DirectoryExists(mapDirectoryPath).ConfigureAwait(false))
+            var files = await GetRedirectFiles(gameServerApiResponse.Result.Data.GameType, mapName, cancellationToken);
+            if (files.Count == 0)
             {
-                logger.LogInformation("Map directory already exists on the server, skipping sync");
-                return new ApiResponse().ToApiResult();
+                return new ApiResponse(new ApiError(ErrorCodes.MAP_FILES_NOT_FOUND, $"The map '{mapName}' has no downloadable game files.")).ToBadRequestResult();
             }
-            else
-            {
-                await session.CreateDirectory(mapDirectoryPath).ConfigureAwait(false);
 
-                var httpClient = httpClientFactory.CreateClient();
-                foreach (var file in mapApiResponse.Result.Data.MapFiles)
+            var mapDirectoryPath = JoinPath(mapsDirectoryPath, mapName);
+            await EnsureDirectory(session, mapDirectoryPath, cancellationToken);
+            foreach (var (file, relativePath) in files)
+            {
+                var destination = JoinPath(mapDirectoryPath, relativePath);
+                var separator = relativePath.LastIndexOf('/');
+                if (separator >= 0)
                 {
-                    await using var mapStream = await httpClient.GetStreamAsync(file.Url).ConfigureAwait(false);
-                    await session.UploadStream($"{mapDirectoryPath}/{file.FileName}", mapStream).ConfigureAwait(false);
+                    var directory = mapDirectoryPath;
+                    foreach (var segment in relativePath[..separator].Split('/'))
+                    {
+                        directory = JoinPath(directory, segment);
+                        await EnsureDirectory(session, directory, cancellationToken);
+                    }
                 }
 
-                return new ApiResponse().ToApiResult();
+                using var download = await redirectDownloadClient.OpenFile(file, cancellationToken: cancellationToken);
+                await using var stream = await download.Content.ReadAsStreamAsync(cancellationToken);
+                await session.UploadStream(destination, stream, cancellationToken).ConfigureAwait(false);
             }
 
+            if (!await HasCompleteFiles(session, mapDirectoryPath, files, cancellationToken))
+            {
+                throw new IOException("The game server did not retain every transferred file at its expected size.");
+            }
+
+            return new ApiResponse().ToApiResult();
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return new ApiResponse(new ApiError(ErrorCodes.MAP_NOT_FOUND, $"The map '{mapName}' is not available on the redirect.")).ToNotFoundResult();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             telemetryClient.TrackException(ex);
             logger.LogError(ex, "Failed to push map to game server {GameServerId}", gameServerId);
-            return new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to push map files to the game server file transport host.")).ToApiResult();
+            return new ApiResult(HttpStatusCode.BadGateway, new ApiResponse(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to transfer the complete redirect map to the game server.")));
         }
     }
 
@@ -265,7 +272,7 @@ public class MapsController(
             return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
         }
 
-        var response = await ((IMapsApi)this).VerifyServerMaps(gameServerId, request.MapNames);
+        var response = await ((IMapsApi)this).VerifyServerMaps(gameServerId, request.MapNames, HttpContext?.RequestAborted ?? CancellationToken.None);
 
         return response.ToHttpResult();
     }
@@ -282,7 +289,7 @@ public class MapsController(
             return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.INVALID_REQUEST, "One or more map names contain invalid path characters.")).ToBadRequestResult();
         }
 
-        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId);
+        var gameServerApiResponse = await repositoryApiClient.GameServers.V1.GetGameServer(gameServerId, cancellationToken);
 
         if (gameServerApiResponse.IsNotFound || gameServerApiResponse.Result?.Data == null)
         {
@@ -313,27 +320,125 @@ public class MapsController(
 
         try
         {
-            var files = await session.GetListing(mapsDirectoryPath, cancellationToken).ConfigureAwait(false);
-            var existingDirectories = new HashSet<string>(files.Where(f => f.IsDirectory).Select(f => f.Name), StringComparer.OrdinalIgnoreCase);
+            var results = new List<MapVerificationResultDto>();
+            foreach (var mapName in mapNames)
+            {
+                if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
+                {
+                    results.Add(new MapVerificationResultDto(mapName, true));
+                    continue;
+                }
 
-            var results = mapNames.Select(mapName => new MapVerificationResultDto(mapName, existingDirectories.Contains(mapName))).ToList();
+                try
+                {
+                    var files = await GetRedirectFiles(gameServerApiResponse.Result.Data.GameType, mapName, cancellationToken);
+                    var complete = files.Count > 0 && await HasCompleteFiles(session, JoinPath(mapsDirectoryPath, mapName), files, cancellationToken);
+                    results.Add(new MapVerificationResultDto(mapName, complete));
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    results.Add(new MapVerificationResultDto(mapName, false));
+                }
+            }
 
             var data = new MapVerificationCollectionDto(results);
             return new ApiResponse<MapVerificationCollectionDto>(data).ToApiResult();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             operation.Telemetry.Success = false;
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
             logger.LogError(ex, "Failed to verify server maps from file transport host for game server {GameServerId}", gameServerId);
-            return new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_CONNECTION_FAILED, "Failed to connect to the game server file transport host to verify maps.")).ToApiResult();
+            return new ApiResult<MapVerificationCollectionDto>(HttpStatusCode.BadGateway, new ApiResponse<MapVerificationCollectionDto>(new ApiError(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, "Failed to verify complete redirect maps on the game server.")));
         }
         finally
         {
             telemetryClient.StopOperation(operation);
         }
+    }
+
+    private async Task<IReadOnlyList<(ContentEntry File, string RelativePath)>> GetRedirectFiles(GameType gameType, string mapName, CancellationToken cancellationToken)
+    {
+        if (gameType is not (GameType.CallOfDuty4 or GameType.CallOfDuty4x or GameType.CallOfDuty5))
+        {
+            throw new NotSupportedException("Redirect map transfers are not supported for this game.");
+        }
+        var game = gameType == GameType.CallOfDuty5 ? "cod5" : "cod4";
+        var result = await redirectApiClient.Manifest(game, mapName, cancellationToken: cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!result.IsSuccess || result.Result?.Data is not { } manifest)
+        {
+            throw new HttpRequestException($"The redirect API did not return a complete map manifest (HTTP {(int)result.StatusCode}).", null,
+                result.IsSuccess ? HttpStatusCode.BadGateway : result.StatusCode);
+        }
+        if (manifest.Game != game || manifest.Name != mapName || manifest.Path != $"redirect/{game}/usermaps/{mapName}" ||
+            string.IsNullOrWhiteSpace(manifest.Version) || manifest.Files.Any(file => file.IsDirectory || file.Bytes < 0) ||
+            manifest.Bytes != manifest.Files.Sum(file => file.Bytes))
+        {
+            throw new InvalidDataException("The redirect manifest does not match the requested map.");
+        }
+
+        var prefix = manifest.Path + "/";
+        var files = new List<(ContentEntry File, string RelativePath)>();
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in manifest.Files)
+        {
+            if (!file.Path.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException("The redirect manifest contains a file outside the requested map.");
+            }
+            var relative = file.Path[prefix.Length..];
+            if (!relative.EndsWith(".ff", StringComparison.OrdinalIgnoreCase) && !relative.EndsWith(".iwd", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            if (relative.Split('/').Any(segment => string.IsNullOrWhiteSpace(segment) ||
+                segment is "." or ".." || segment.EndsWith('.') || segment.EndsWith(' ') ||
+                segment.Any(character => char.IsControl(character) || "\\:<>\"|?*".Contains(character))))
+            {
+                throw new InvalidDataException("The redirect manifest contains an unsafe game-server file path.");
+            }
+            if (file.Bytes < 0 || string.IsNullOrWhiteSpace(file.Version) || !paths.Add(relative))
+            {
+                throw new InvalidDataException("The redirect manifest contains invalid or colliding game files.");
+            }
+            files.Add((file, relative));
+        }
+        return files;
+    }
+
+    private static async Task EnsureDirectory(IGameServerFileTransportSession session, string path, CancellationToken cancellationToken)
+    {
+        if (!await session.DirectoryExists(path, cancellationToken).ConfigureAwait(false))
+        {
+            await session.CreateDirectory(path, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<bool> HasCompleteFiles(IGameServerFileTransportSession session, string mapDirectoryPath,
+        IReadOnlyList<(ContentEntry File, string RelativePath)> files, CancellationToken cancellationToken)
+    {
+        foreach (var group in files.GroupBy(file => file.RelativePath.Contains('/')
+            ? file.RelativePath[..file.RelativePath.LastIndexOf('/')] : string.Empty))
+        {
+            var directory = group.Key.Length == 0 ? mapDirectoryPath : JoinPath(mapDirectoryPath, group.Key);
+            if (!await session.DirectoryExists(directory, cancellationToken).ConfigureAwait(false))
+            {
+                return false;
+            }
+            var entries = await session.GetListing(directory, cancellationToken).ConfigureAwait(false);
+            foreach (var (file, relativePath) in group)
+            {
+                var name = relativePath[(relativePath.LastIndexOf('/') + 1)..];
+                if (!entries.Any(entry => !entry.IsDirectory && entry.Name == name && entry.Size == file.Bytes))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private static bool TryGetMapsDirectoryPath(string? mapsRootPath, out string mapsDirectoryPath)
@@ -415,7 +520,7 @@ public class MapsController(
             return false;
         }
 
-        if (mapName.Contains('/') || mapName.Contains('\\'))
+        if (mapName.Any("\\/:<>\"|?*".Contains) || mapName.EndsWith('.') || mapName.EndsWith(' '))
         {
             return false;
         }

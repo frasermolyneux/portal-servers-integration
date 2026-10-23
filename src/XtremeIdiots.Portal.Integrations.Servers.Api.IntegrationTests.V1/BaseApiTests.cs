@@ -37,6 +37,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.UseSetting("RepositoryApi:BaseUrl", "https://localhost");
         builder.UseSetting("RepositoryApi:ApplicationAudience", "api://test");
+        builder.UseSetting("RedirectApi:BaseUrl", "https://maps.example.invalid");
+        builder.UseSetting("RedirectApi:ApplicationAudience", "api://test-redirect");
         builder.UseSetting("ApplicationInsights:ConnectionString", "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://localhost/;LiveEndpoint=https://localhost/");
 
         builder.ConfigureTestServices(services =>
@@ -93,4 +95,3 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
-

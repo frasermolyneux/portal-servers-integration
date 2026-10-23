@@ -267,6 +267,52 @@ public class MapsControllerTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task PushServerMapToHost_RejectsFileDirectoryCollisionsBeforeRemoteWrites(bool ancestorFirst, bool mixedCase)
+    {
+        var gameServerId = Guid.NewGuid();
+        var ancestor = CreateRedirectFile("assets.ff", 3);
+        var descendant = CreateRedirectFile(mixedCase ? "ASSETS.FF/nested.iwd" : "assets.ff/nested.iwd", 2);
+        var session = ConfigureMapTransfer(gameServerId,
+            ancestorFirst ? [ancestor, descendant] : [descendant, ancestor]);
+
+        var result = await CreateController().PushServerMapToHost(gameServerId, "mp_custom");
+
+        Assert.Equal(502, Assert.IsAssignableFrom<StatusCodeResult>(result).StatusCode);
+        session.Verify(x => x.CreateDirectory(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.UploadStream(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRedirectDownloadClient.Verify(x => x.OpenFile(It.IsAny<ContentEntry>(), It.IsAny<long>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false, 404)]
+    [InlineData(true, 502)]
+    public async Task PushServerMapToHost_DistinguishesMissingManifestFromMissingDownload(bool missingDownload, int expectedStatus)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("map.ff", 3));
+        if (missingDownload)
+        {
+            _mockRedirectDownloadClient.Setup(x => x.OpenFile(It.IsAny<ContentEntry>(), 0, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new HttpRequestException("The manifest file is missing.", null, HttpStatusCode.NotFound));
+        }
+        else
+        {
+            _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ApiResult<MapManifest>(HttpStatusCode.NotFound));
+        }
+
+        var result = await CreateController().PushServerMapToHost(gameServerId, "mp_custom");
+
+        Assert.Equal(expectedStatus, Assert.IsAssignableFrom<StatusCodeResult>(result).StatusCode);
+        session.Verify(x => x.UploadStream(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
     [InlineData(2, false)]
     [InlineData(3, true)]
     public async Task VerifyServerMaps_ChecksFilesAndSizesInsteadOfDirectoryExistence(long remoteBytes, bool complete)

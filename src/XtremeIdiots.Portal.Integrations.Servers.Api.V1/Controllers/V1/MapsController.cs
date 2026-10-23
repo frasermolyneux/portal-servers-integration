@@ -167,7 +167,7 @@ public class MapsController(
                     }
                 }
 
-                using var download = await redirectDownloadClient.OpenFile(file, cancellationToken: cancellationToken);
+                using var download = await OpenRedirectFile(file, cancellationToken);
                 await using var stream = await download.Content.ReadAsStreamAsync(cancellationToken);
                 await session.UploadStream(destination, stream, cancellationToken).ConfigureAwait(false);
             }
@@ -383,6 +383,7 @@ public class MapsController(
         var prefix = manifest.Path + "/";
         var files = new List<(ContentEntry File, string RelativePath)>();
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in manifest.Files)
         {
             if (!file.Path.StartsWith(prefix, StringComparison.Ordinal))
@@ -400,13 +401,34 @@ public class MapsController(
             {
                 throw new InvalidDataException("The redirect manifest contains an unsafe game-server file path.");
             }
-            if (file.Bytes < 0 || string.IsNullOrWhiteSpace(file.Version) || !paths.Add(relative))
+            if (file.Bytes < 0 || string.IsNullOrWhiteSpace(file.Version) || directories.Contains(relative) || !paths.Add(relative))
             {
                 throw new InvalidDataException("The redirect manifest contains invalid or colliding game files.");
+            }
+            for (var separator = relative.IndexOf('/'); separator >= 0; separator = relative.IndexOf('/', separator + 1))
+            {
+                var directory = relative[..separator];
+                if (paths.Contains(directory))
+                {
+                    throw new InvalidDataException("The redirect manifest contains a file that is also a game-file directory.");
+                }
+                directories.Add(directory);
             }
             files.Add((file, relative));
         }
         return files;
+    }
+
+    private async Task<HttpResponseMessage> OpenRedirectFile(ContentEntry file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await redirectDownloadClient.OpenFile(file, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new IOException("A file from the validated redirect manifest is no longer available.", ex);
+        }
     }
 
     private static async Task EnsureDirectory(IGameServerFileTransportSession session, string path, CancellationToken cancellationToken)

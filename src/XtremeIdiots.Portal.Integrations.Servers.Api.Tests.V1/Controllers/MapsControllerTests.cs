@@ -238,6 +238,33 @@ public class MapsControllerTests
     }
 
     [Theory]
+    [InlineData(true, 3, false, true)]
+    [InlineData(false, 3, false, false)]
+    [InlineData(true, 2, false, false)]
+    [InlineData(true, 3, true, false)]
+    public async Task RetainedFilenameCasingRequiresCanonicalHostLookupAndNeverOverridesAnExactSizeMismatch(
+        bool canonicalExists, long retainedBytes, bool exactSizeMismatch, bool complete)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("mp_custom.ff", 3));
+        var retained = new FileTransportEntry("MP_CUSTOM.FF", "usermaps/mp_custom/MP_CUSTOM.FF", false, retainedBytes, null);
+        session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(exactSizeMismatch
+                ? [retained, new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 1, null)]
+                : [retained]);
+        session.Setup(x => x.FileExists("usermaps/mp_custom/mp_custom.ff", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(canonicalExists);
+        _mockRedirectDownloadClient.Setup(x => x.OpenFile(It.IsAny<ContentEntry>(), 0, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
+
+        var push = await CreateController().PushServerMapToHost(gameServerId, "mp_custom");
+        Assert.Equal(complete ? 200 : 502, Assert.IsAssignableFrom<StatusCodeResult>(push).StatusCode);
+        var verification = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto { MapNames = ["mp_custom"] });
+        var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(verification).Value);
+        Assert.Equal(complete, Assert.Single(response.Data!.Items).ExistsOnServer);
+    }
+
+    [Theory]
     [InlineData("../outside.ff")]
     [InlineData("nested\\outside.ff")]
     [InlineData("folder./outside.ff")]

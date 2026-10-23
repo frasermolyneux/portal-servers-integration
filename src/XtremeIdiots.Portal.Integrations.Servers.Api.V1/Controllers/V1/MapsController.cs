@@ -455,7 +455,19 @@ public class MapsController(
             foreach (var (file, relativePath) in group)
             {
                 var name = relativePath[(relativePath.LastIndexOf('/') + 1)..];
-                if (!entries.Any(entry => !entry.IsDirectory && entry.Name == name && entry.Size == file.Bytes))
+                var exact = entries.FirstOrDefault(entry => entry.Name == name);
+                if (exact != null)
+                {
+                    if (exact.IsDirectory || exact.Size != file.Bytes)
+                    {
+                        return false;
+                    }
+                    continue;
+                }
+                var retained = entries.Where(entry => string.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+                // Resolve the requested casing on the host, rather than assuming every FTP/SFTP filesystem is case-insensitive.
+                if (retained.Length != 1 || retained[0].IsDirectory || retained[0].Size != file.Bytes ||
+                    !await session.FileExists(JoinPath(directory, name), cancellationToken).ConfigureAwait(false))
                 {
                     return false;
                 }

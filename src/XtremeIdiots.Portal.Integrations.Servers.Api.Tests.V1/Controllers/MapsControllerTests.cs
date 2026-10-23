@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
@@ -340,6 +341,76 @@ public class MapsControllerTests
         var result = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto { MapNames = ["mp_custom"] });
 
         Assert.Equal(502, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PushServerMapToHost_DistinguishesUpstreamTimeoutFromCallerCancellation(bool callerCancelled)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("mp_custom.ff", 3));
+        _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_custom", null, cancellation.Token))
+            .Callback(() =>
+            {
+                if (callerCancelled)
+                {
+                    cancellation.Cancel();
+                }
+            })
+            .ThrowsAsync(new TaskCanceledException("The upstream request timed out."));
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { RequestAborted = cancellation.Token }
+        };
+
+        if (callerCancelled)
+        {
+            await Assert.ThrowsAsync<TaskCanceledException>(() => controller.PushServerMapToHost(gameServerId, "mp_custom"));
+        }
+        else
+        {
+            var result = await controller.PushServerMapToHost(gameServerId, "mp_custom");
+            Assert.Equal(502, Assert.IsAssignableFrom<StatusCodeResult>(result).StatusCode);
+        }
+        session.Verify(x => x.UploadStream(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task VerifyServerMaps_DistinguishesUpstreamTimeoutFromCallerCancellation(bool callerCancelled)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gameServerId = Guid.NewGuid();
+        ConfigureMapTransfer(gameServerId, CreateRedirectFile("mp_custom.ff", 3));
+        _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_custom", null, cancellation.Token))
+            .Callback(() =>
+            {
+                if (callerCancelled)
+                {
+                    cancellation.Cancel();
+                }
+            })
+            .ThrowsAsync(new TaskCanceledException("The upstream request timed out."));
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { RequestAborted = cancellation.Token }
+        };
+        var request = new MapVerificationRequestDto { MapNames = ["mp_custom"] };
+
+        if (callerCancelled)
+        {
+            await Assert.ThrowsAsync<TaskCanceledException>(() => controller.VerifyServerMaps(gameServerId, request));
+        }
+        else
+        {
+            var result = await controller.VerifyServerMaps(gameServerId, request);
+            Assert.Equal(502, Assert.IsType<ObjectResult>(result).StatusCode);
+        }
     }
 
     private Mock<IGameServerFileTransportSession> ConfigureMapTransfer(Guid gameServerId, params ContentEntry[] files)

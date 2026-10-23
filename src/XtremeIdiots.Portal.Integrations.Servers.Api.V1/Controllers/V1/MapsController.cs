@@ -183,7 +183,7 @@ public class MapsController(
         {
             return new ApiResponse(new ApiError(ErrorCodes.MAP_NOT_FOUND, $"The map '{mapName}' is not available on the redirect.")).ToNotFoundResult();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             telemetryClient.TrackException(ex);
             logger.LogError(ex, "Failed to push map to game server {GameServerId}", gameServerId);
@@ -344,7 +344,7 @@ public class MapsController(
             var data = new MapVerificationCollectionDto(results);
             return new ApiResponse<MapVerificationCollectionDto>(data).ToApiResult();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             operation.Telemetry.Success = false;
             operation.Telemetry.ResultCode = ex.Message;

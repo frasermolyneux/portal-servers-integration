@@ -397,6 +397,7 @@ public class MapsController(
             }
             if (relative.Split('/').Any(segment => string.IsNullOrWhiteSpace(segment) ||
                 segment is "." or ".." || segment.EndsWith('.') || segment.EndsWith(' ') ||
+                IsReservedDeviceName(segment) ||
                 segment.Any(character => char.IsControl(character) || "\\:<>\"|?*".Contains(character))))
             {
                 throw new InvalidDataException("The redirect manifest contains an unsafe game-server file path.");
@@ -529,6 +530,14 @@ public class MapsController(
         return $"{leftNormalized}/{rightNormalized}";
     }
 
+    private static bool IsReservedDeviceName(string segment)
+    {
+        var name = segment.Split('.')[0].TrimEnd(' ').ToUpperInvariant();
+        return name is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$" ||
+            (name.Length == 4 && (name.StartsWith("COM", StringComparison.Ordinal) || name.StartsWith("LPT", StringComparison.Ordinal)) &&
+                name[3] is (>= '1' and <= '9') or '\u00b9' or '\u00b2' or '\u00b3');
+    }
+
     private static bool IsValidMapName(string mapName)
     {
         if (string.IsNullOrWhiteSpace(mapName))
@@ -542,7 +551,7 @@ public class MapsController(
             return false;
         }
 
-        if (mapName.Any("\\/:<>\"|?*".Contains) || mapName.EndsWith('.') || mapName.EndsWith(' '))
+        if (mapName.Any("\\/:<>\"|?*".Contains) || mapName.EndsWith('.') || mapName.EndsWith(' ') || IsReservedDeviceName(mapName))
         {
             return false;
         }

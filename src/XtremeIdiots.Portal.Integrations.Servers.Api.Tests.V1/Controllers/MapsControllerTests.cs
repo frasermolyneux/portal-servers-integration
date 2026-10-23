@@ -168,13 +168,17 @@ public class MapsControllerTests
         session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task PushServerMapToHost_WhenMapNameContainsPathSeparators_ReturnsBadRequest()
+    [Theory]
+    [InlineData("../bad-map")]
+    [InlineData("NUL")]
+    [InlineData("CoN.map")]
+    [InlineData("LPT9")]
+    public async Task PushServerMapToHost_WhenMapNameIsUnsafeOrReserved_ReturnsBadRequest(string mapName)
     {
         var gameServerId = Guid.NewGuid();
         var controller = CreateController();
 
-        var result = await controller.PushServerMapToHost(gameServerId, "../bad-map");
+        var result = await controller.PushServerMapToHost(gameServerId, mapName);
 
         var statusCodeResult = Assert.IsAssignableFrom<StatusCodeResult>(result);
         Assert.Equal(400, statusCodeResult.StatusCode);
@@ -237,6 +241,10 @@ public class MapsControllerTests
     [InlineData("../outside.ff")]
     [InlineData("nested\\outside.ff")]
     [InlineData("folder./outside.ff")]
+    [InlineData("aux.ff")]
+    [InlineData("CON/nested.ff")]
+    [InlineData("com1.foo/assets.iwd")]
+    [InlineData("LPT\u00b2 .ff")]
     public async Task PushServerMapToHost_RejectsUnsafeManifestBeforeAnyRemoteWrites(string relativePath)
     {
         var gameServerId = Guid.NewGuid();

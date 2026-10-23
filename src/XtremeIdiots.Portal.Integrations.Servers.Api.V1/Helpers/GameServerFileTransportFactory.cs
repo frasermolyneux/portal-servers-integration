@@ -170,7 +170,11 @@ internal sealed class GameServerFileTransportFactory(
                 content.Position = 0;
             }
 
-            await _client.UploadStream(content, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
+            var status = await _client.UploadStream(content, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
+            if (status != FtpStatus.Success)
+            {
+                throw new IOException("The FTP host did not acknowledge a successful file upload.");
+            }
         }
 
         public Task DeleteFile(string path, CancellationToken cancellationToken = default)

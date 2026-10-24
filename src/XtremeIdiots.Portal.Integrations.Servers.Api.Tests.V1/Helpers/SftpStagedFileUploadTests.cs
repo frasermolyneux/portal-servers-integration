@@ -56,7 +56,19 @@ public class SftpStagedFileUploadTests
             .Callback<string, short>((path, mode) =>
             {
                 var file = files[path];
-                files[path] = (file.Content, mode, file.User, file.Group);
+                var attributes = Attributes(file.Content.Length, file.Mode, file.User, file.Group);
+                attributes.SetPermissions(mode);
+                var permissions =
+                    (attributes.OwnerCanRead ? 0x100 : 0) |
+                    (attributes.OwnerCanWrite ? 0x080 : 0) |
+                    (attributes.OwnerCanExecute ? 0x040 : 0) |
+                    (attributes.GroupCanRead ? 0x020 : 0) |
+                    (attributes.GroupCanWrite ? 0x010 : 0) |
+                    (attributes.GroupCanExecute ? 0x008 : 0) |
+                    (attributes.OthersCanRead ? 0x004 : 0) |
+                    (attributes.OthersCanWrite ? 0x002 : 0) |
+                    (attributes.OthersCanExecute ? 0x001 : 0);
+                files[path] = (file.Content, permissions, file.User, file.Group);
             });
         client.Setup(x => x.SetAttributes(It.IsAny<string>(), It.IsAny<SftpFileAttributes>()))
             .Callback<string, SftpFileAttributes>((path, attributes) =>

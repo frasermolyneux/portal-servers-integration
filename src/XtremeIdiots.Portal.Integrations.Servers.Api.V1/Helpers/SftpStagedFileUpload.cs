@@ -5,8 +5,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal static class SftpStagedFileUpload
 {
-    private const short OwnerReadWrite = (short)(UnixFileMode.UserRead | UnixFileMode.UserWrite);
-    private const short PublicMapRead = OwnerReadWrite | (short)(UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+    // SSH.NET expects chmod notation, not a UnixFileMode bitmask.
+    private const short OwnerReadWrite = 600;
+    private const short PublicMapRead = 644;
 
     internal static async Task Upload(ISftpClient client, string path, Stream content, CancellationToken cancellationToken)
     {

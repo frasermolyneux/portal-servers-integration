@@ -10,7 +10,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Api.Client.V1;
+using XtremeIdiots.Redirect.Api.Abstractions.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V1;
 
@@ -23,6 +25,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public Mock<IQueryClientFactory> MockQueryClientFactory { get; } = new();
     public Mock<IRconClientFactory> MockRconClientFactory { get; } = new();
     public Mock<IRepositoryApiClient> MockRepositoryApiClient { get; } = new();
+    public Mock<IGameServerFileTransportFactory> MockGameServerFileTransportFactory { get; } = new();
+    public Mock<IRedirectApiClient> MockRedirectApiClient { get; } = new();
+    public Mock<IRedirectDownloadClient> MockRedirectDownloadClient { get; } = new();
     public Mock<IBanLifecycleEventPublisher> MockBanLifecycleEventPublisher { get; } = new();
 
     public CustomWebApplicationFactory()
@@ -35,6 +40,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         MockQueryClientFactory.Reset();
         MockRconClientFactory.Reset();
         MockRepositoryApiClient.Reset();
+        MockGameServerFileTransportFactory.Reset();
+        MockRedirectApiClient.Reset();
+        MockRedirectDownloadClient.Reset();
         MockBanLifecycleEventPublisher.Reset();
 
         SetupDefaultMocks();

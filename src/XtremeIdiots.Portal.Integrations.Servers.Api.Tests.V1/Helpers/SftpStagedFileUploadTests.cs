@@ -10,16 +10,22 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 public class SftpStagedFileUploadTests
 {
     [Theory]
-    [InlineData(384, false)]
-    [InlineData(416, false)]
-    [InlineData(384, true)]
-    public async Task ConfigurationStagingProtectsContentAndPreservesAccessOrLeavesOriginalIntact(int originalMode, bool accessUpdateFails)
+    [InlineData("server.cfg", 384, false, 384)]
+    [InlineData("server.cfg", 416, false, 416)]
+    [InlineData("server.cfg", 384, true, 384)]
+    [InlineData("credentials.json", null, false, 384)]
+    [InlineData(".env", null, false, 384)]
+    [InlineData("server.cfg.bak", null, false, 384)]
+    [InlineData("mp_custom.ff", null, false, 420)]
+    [InlineData("mp_custom.iwd", null, false, 420)]
+    public async Task StagingPreservesExistingAccessAndKeepsNewNonMapFilesPrivate(
+        string destination, int? originalMode, bool accessUpdateFails, int expectedMode)
     {
-        const string destination = "server.cfg";
-        var files = new Dictionary<string, (byte[] Content, int Mode, int User, int Group)>
+        var files = new Dictionary<string, (byte[] Content, int Mode, int User, int Group)>();
+        if (originalMode.HasValue)
         {
-            [destination] = ([9, 9], originalMode, 12, 34)
-        };
+            files[destination] = ([9, 9], originalMode.Value, 12, 34);
+        }
         var client = new Mock<ISftpClient>(MockBehavior.Strict);
         client.Setup(x => x.Exists(It.IsAny<string>())).Returns((string path) => files.ContainsKey(path));
         client.Setup(x => x.GetAttributes(It.IsAny<string>())).Returns((string path) =>
@@ -52,6 +58,10 @@ public class SftpStagedFileUploadTests
         client.Setup(x => x.SetAttributes(It.IsAny<string>(), It.IsAny<SftpFileAttributes>()))
             .Callback<string, SftpFileAttributes>((path, attributes) =>
             {
+                if (originalMode is not int mode)
+                {
+                    throw new InvalidOperationException("New files have no original attributes to restore.");
+                }
                 Assert.Equal(3, attributes.Size);
                 Assert.Equal(12, attributes.UserId);
                 Assert.Equal(34, attributes.GroupId);
@@ -62,7 +72,7 @@ public class SftpStagedFileUploadTests
                 {
                     throw new IOException("Ownership preservation rejected");
                 }
-                files[path] = (files[path].Content, originalMode, attributes.UserId, attributes.GroupId);
+                files[path] = (files[path].Content, mode, attributes.UserId, attributes.GroupId);
             });
         client.Setup(x => x.RenameFile(It.IsAny<string>(), It.IsAny<string>()))
             .Callback<string, string>((source, target) =>
@@ -85,9 +95,9 @@ public class SftpStagedFileUploadTests
 
         var retained = Assert.Single(files).Value;
         Assert.Equal(accessUpdateFails ? Enumerable.Repeat((byte)9, 2).ToArray() : content.ToArray(), retained.Content);
-        Assert.Equal(originalMode, retained.Mode);
-        Assert.Equal(12, retained.User);
-        Assert.Equal(34, retained.Group);
+        Assert.Equal(expectedMode, retained.Mode);
+        Assert.Equal(originalMode.HasValue ? 12 : 1000, retained.User);
+        Assert.Equal(originalMode.HasValue ? 34 : 1000, retained.Group);
     }
 
     private static SftpFileAttributes Attributes(long size, int mode, int user, int group)

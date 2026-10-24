@@ -27,8 +27,9 @@ internal static class SftpStagedFileUpload
                 {
                     if (original is null)
                     {
-                        client.ChangePermissions(temporary, path.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase)
-                            ? OwnerReadWrite : PublicMapRead);
+                        var isMapFile = path.EndsWith(".ff", StringComparison.OrdinalIgnoreCase) ||
+                            path.EndsWith(".iwd", StringComparison.OrdinalIgnoreCase);
+                        client.ChangePermissions(temporary, isMapFile ? PublicMapRead : OwnerReadWrite);
                     }
                     else
                     {

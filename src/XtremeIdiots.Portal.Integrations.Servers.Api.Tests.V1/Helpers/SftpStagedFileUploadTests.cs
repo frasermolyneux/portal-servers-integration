@@ -27,6 +27,9 @@ public class SftpStagedFileUploadTests
             files[destination] = ([9, 9], originalMode.Value, 12, 34);
         }
         var client = new Mock<ISftpClient>(MockBehavior.Strict);
+        client.Setup(x => x.ListDirectory(".", It.IsAny<Action<int>>())).Returns(() =>
+            files.Select(file => DirectoryEntry(file.Key,
+                Attributes(file.Value.Content.Length, file.Value.Mode, file.Value.User, file.Value.Group))));
         client.Setup(x => x.Exists(It.IsAny<string>())).Returns((string path) => files.ContainsKey(path));
         client.Setup(x => x.GetAttributes(It.IsAny<string>())).Returns((string path) =>
         {
@@ -109,7 +112,10 @@ public class SftpStagedFileUploadTests
         const string destination = "occupied.ff";
         var client = new Mock<ISftpClient>(MockBehavior.Strict);
         client.Setup(x => x.Exists(destination)).Returns(true);
-        client.Setup(x => x.GetAttributes(destination)).Returns(Attributes(0, 448, 12, 34, fileType));
+        client.Setup(x => x.GetAttributes(destination)).Returns(Attributes(0, 448, 12, 34,
+            fileType == 0xA000U ? 0x8000U : fileType));
+        client.Setup(x => x.ListDirectory(".", It.IsAny<Action<int>>()))
+            .Returns([DirectoryEntry(destination, Attributes(0, 448, 12, 34, fileType))]);
         using var content = new MemoryStream([1, 2, 3]);
 
         await Assert.ThrowsAsync<IOException>(() => SftpStagedFileUpload.Upload(
@@ -117,7 +123,48 @@ public class SftpStagedFileUploadTests
 
         client.Verify(x => x.UploadFile(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Action<ulong>>()), Times.Never);
         client.Verify(x => x.RenameFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        client.Verify(x => x.GetAttributes(destination), Times.Never);
     }
+
+    [Theory]
+    [InlineData("/server.cfg", "/")]
+    [InlineData("/configs/server.cfg", "/configs")]
+    [InlineData("configs/server.cfg", "configs")]
+    public async Task FinalSymlinkIsInspectedThroughItsParentRatherThanItsRegularTarget(string destination, string parent)
+    {
+        var client = new Mock<ISftpClient>(MockBehavior.Strict);
+        client.Setup(x => x.Exists(destination)).Returns(true);
+        client.Setup(x => x.GetAttributes(destination)).Returns(Attributes(123, 420, 12, 34));
+        client.Setup(x => x.ListDirectory(parent, It.IsAny<Action<int>>()))
+            .Returns([DirectoryEntry("server.cfg", Attributes(10, 511, 12, 34, 0xA000U))]);
+        using var content = new MemoryStream([1, 2, 3]);
+
+        await Assert.ThrowsAsync<IOException>(() => SftpStagedFileUpload.Upload(
+            client.Object, destination, content, CancellationToken.None));
+
+        client.Verify(x => x.GetAttributes(destination), Times.Never);
+        client.Verify(x => x.UploadFile(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Action<ulong>>()), Times.Never);
+        client.Verify(x => x.RenameFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("configs/")]
+    [InlineData(".")]
+    [InlineData("configs/..")]
+    public async Task DirectoryOnlyDestinationsAreRejectedBeforeRemoteCalls(string destination)
+    {
+        var client = new Mock<ISftpClient>(MockBehavior.Strict);
+        using var content = new MemoryStream([1, 2, 3]);
+
+        await Assert.ThrowsAsync<IOException>(() => SftpStagedFileUpload.Upload(
+            client.Object, destination, content, CancellationToken.None));
+
+        Assert.Empty(client.Invocations);
+    }
+
+    private static ISftpFile DirectoryEntry(string name, SftpFileAttributes attributes) =>
+        Mock.Of<ISftpFile>(file => file.Name == name && file.Attributes == attributes);
 
     private static SftpFileAttributes Attributes(long size, int mode, int user, int group, uint fileType = 0x8000U)
     {

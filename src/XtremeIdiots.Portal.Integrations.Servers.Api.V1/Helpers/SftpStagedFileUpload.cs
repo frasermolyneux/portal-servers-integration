@@ -10,7 +10,16 @@ internal static class SftpStagedFileUpload
 
     internal static async Task Upload(ISftpClient client, string path, Stream content, CancellationToken cancellationToken)
     {
-        var original = await Task.Run(() => client.Exists(path) ? client.GetAttributes(path) : null,
+        var separator = path.LastIndexOf('/');
+        var name = path[(separator + 1)..];
+        if (name is "" or "." or "..")
+        {
+            throw new IOException("The SFTP destination must identify a file, not a directory.");
+        }
+        var parent = separator < 0 ? "." : separator == 0 ? "/" : path[..separator];
+        // GetAttributes canonicalizes the final entry and can hide a link to a regular file.
+        var original = await Task.Run(() => client.ListDirectory(parent)
+            .SingleOrDefault(entry => string.Equals(entry.Name, name, StringComparison.Ordinal))?.Attributes,
             cancellationToken).ConfigureAwait(false);
         if (original is { IsRegularFile: false })
         {

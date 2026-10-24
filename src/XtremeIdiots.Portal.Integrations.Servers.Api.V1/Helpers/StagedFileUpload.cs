@@ -4,6 +4,44 @@ internal static class StagedFileUpload
 {
     internal static Stream WithExpectedLength(Stream stream, long expectedBytes) => new CountingReadStream(stream, expectedBytes);
 
+    internal static async Task ReplacePreservingOriginal(
+        string temporary, string destination,
+        Func<string, CancellationToken, Task<bool>> exists,
+        Func<string, string, CancellationToken, Task> rename,
+        Func<string, CancellationToken, Task> delete,
+        CancellationToken cancellationToken)
+    {
+        if (!await exists(destination, cancellationToken).ConfigureAwait(false))
+        {
+            await rename(temporary, destination, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var backup = $"{destination}.portal-backup-{Guid.NewGuid():N}";
+        try
+        {
+            await rename(destination, backup, cancellationToken).ConfigureAwait(false);
+            await rename(temporary, destination, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception publishError)
+        {
+            try
+            {
+                if (await exists(backup, CancellationToken.None).ConfigureAwait(false) &&
+                    !await exists(destination, CancellationToken.None).ConfigureAwait(false))
+                {
+                    await rename(backup, destination, CancellationToken.None).ConfigureAwait(false);
+                }
+            }
+            catch (Exception restoreError)
+            {
+                throw new AggregateException($"Publication failed; the original file may require recovery from '{backup}'.", publishError, restoreError);
+            }
+            throw;
+        }
+        await delete(backup, cancellationToken).ConfigureAwait(false);
+    }
+
     internal static async Task Upload(
         string destination,
         Stream content,

@@ -6,6 +6,49 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 public class StagedFileUploadTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PortableReplacementRestoresOriginalIfPublicationFails(bool fails)
+    {
+        var files = new Dictionary<string, int> { ["map.ff"] = 1, ["stage.tmp"] = 2 };
+        async Task Replace()
+        {
+            await StagedFileUpload.ReplacePreservingOriginal("stage.tmp", "map.ff",
+                (path, _) => Task.FromResult(files.ContainsKey(path)),
+                (source, target, _) =>
+                {
+                    if (source == "stage.tmp" && fails)
+                    {
+                        throw new IOException("Rename rejected");
+                    }
+                    Assert.False(files.ContainsKey(target));
+                    files.Add(target, files[source]);
+                    files.Remove(source);
+                    return Task.CompletedTask;
+                },
+                (path, _) =>
+                {
+                    files.Remove(path);
+                    return Task.CompletedTask;
+                }, CancellationToken.None);
+        }
+
+        if (fails)
+        {
+            await Assert.ThrowsAsync<IOException>(Replace);
+            Assert.Equal(1, files["map.ff"]);
+            Assert.Equal(2, files.Count);
+        }
+        else
+        {
+            await Replace();
+            Assert.Equal(2, files["map.ff"]);
+            Assert.Single(files);
+        }
+        Assert.DoesNotContain(files.Keys, key => key.Contains("backup", StringComparison.Ordinal));
+    }
+
+    [Theory]
     [InlineData(3, false)]
     [InlineData(2, false)]
     [InlineData(3, true)]

@@ -184,7 +184,11 @@ internal sealed class GameServerFileTransportFactory(
                     }
                 },
                 (temporary, token) => _client.GetFileSize(temporary, -1, token),
-                (temporary, destination, token) => _client.Rename(temporary, destination, token),
+                (temporary, destination, token) => StagedFileUpload.ReplacePreservingOriginal(
+                    temporary, destination,
+                    (file, ct) => _client.FileExists(file, ct),
+                    (source, target, ct) => _client.Rename(source, target, ct),
+                    (file, ct) => _client.DeleteFile(file, ct), token),
                 async temporary =>
                 {
                     if (await _client.FileExists(temporary).ConfigureAwait(false))
@@ -328,7 +332,11 @@ internal sealed class GameServerFileTransportFactory(
             return StagedFileUpload.Upload(path, content,
                 (temporary, stream, token) => Task.Run(() => _client.UploadFile(stream, temporary, true), token),
                 (temporary, token) => Task.Run(() => _client.GetAttributes(temporary).Size, token),
-                (temporary, destination, token) => Task.Run(() => _client.RenameFile(temporary, destination, true), token),
+                (temporary, destination, token) => StagedFileUpload.ReplacePreservingOriginal(
+                    temporary, destination,
+                    (file, ct) => Task.Run(() => _client.Exists(file), ct),
+                    (source, target, ct) => Task.Run(() => _client.RenameFile(source, target), ct),
+                    (file, ct) => Task.Run(() => _client.DeleteFile(file), ct), token),
                 temporary => Task.Run(() =>
                 {
                     if (_client.Exists(temporary))

@@ -12,6 +12,10 @@ internal static class SftpStagedFileUpload
     {
         var original = await Task.Run(() => client.Exists(path) ? client.GetAttributes(path) : null,
             cancellationToken).ConfigureAwait(false);
+        if (original is { IsRegularFile: false })
+        {
+            throw new IOException("The SFTP destination is not a regular file and cannot be replaced safely.");
+        }
 
         await StagedFileUpload.Upload(path, content,
             (temporary, stream, token) => Task.Run(() =>

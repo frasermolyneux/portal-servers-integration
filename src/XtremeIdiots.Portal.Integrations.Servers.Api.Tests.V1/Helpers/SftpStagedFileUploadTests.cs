@@ -100,11 +100,30 @@ public class SftpStagedFileUploadTests
         Assert.Equal(originalMode.HasValue ? 34 : 1000, retained.Group);
     }
 
-    private static SftpFileAttributes Attributes(long size, int mode, int user, int group)
+    [Theory]
+    [InlineData(0x4000U)]
+    [InlineData(0xA000U)]
+    [InlineData(0x1000U)]
+    public async Task ExistingNonRegularDestinationsAreRejectedBeforeAnyRemoteMutation(uint fileType)
+    {
+        const string destination = "occupied.ff";
+        var client = new Mock<ISftpClient>(MockBehavior.Strict);
+        client.Setup(x => x.Exists(destination)).Returns(true);
+        client.Setup(x => x.GetAttributes(destination)).Returns(Attributes(0, 448, 12, 34, fileType));
+        using var content = new MemoryStream([1, 2, 3]);
+
+        await Assert.ThrowsAsync<IOException>(() => SftpStagedFileUpload.Upload(
+            client.Object, destination, content, CancellationToken.None));
+
+        client.Verify(x => x.UploadFile(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Action<ulong>>()), Times.Never);
+        client.Verify(x => x.RenameFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    private static SftpFileAttributes Attributes(long size, int mode, int user, int group, uint fileType = 0x8000U)
     {
         // SSH.NET creates attributes from protocol responses and exposes no public constructor.
         var constructor = typeof(SftpFileAttributes).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).Single();
         return (SftpFileAttributes)constructor.Invoke(
-            [DateTime.UtcNow, DateTime.UtcNow, size, user, group, (uint)mode | 0x8000U, new Dictionary<string, string>()]);
+            [DateTime.UtcNow, DateTime.UtcNow, size, user, group, (uint)mode | fileType, new Dictionary<string, string>()]);
     }
 }

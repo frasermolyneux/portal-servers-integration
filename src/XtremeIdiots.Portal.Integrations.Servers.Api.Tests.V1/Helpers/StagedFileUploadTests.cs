@@ -5,10 +5,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 [Trait("Category", "Unit")]
 public class StagedFileUploadTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExplicitEmptyByteUploadsRemainSupportedWithoutAllowingEmptyMaps(bool allowEmpty)
+    [Fact]
+    public async Task ExplicitEmptyConfigurationUploadsRemainSupported()
     {
         using var source = new MemoryStream();
         var published = false;
@@ -22,17 +20,38 @@ public class StagedFileUploadTests
                     published = true;
                     return Task.CompletedTask;
                 },
-                _ => Task.CompletedTask, CancellationToken.None, allowEmpty);
+                _ => Task.CompletedTask, CancellationToken.None);
         }
-        if (allowEmpty)
-        {
-            await Upload();
-        }
-        else
-        {
-            await Assert.ThrowsAsync<IOException>(Upload);
-        }
-        Assert.Equal(allowEmpty, published);
+        await Upload();
+        Assert.True(published);
+    }
+
+    [Fact]
+    public async Task CancellationDuringPublicationStillRemovesTheBackup()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var files = new Dictionary<string, int> { ["server.cfg"] = 1, ["stage.tmp"] = 2 };
+        await StagedFileUpload.ReplacePreservingOriginal("stage.tmp", "server.cfg",
+            (path, _) => Task.FromResult(files.ContainsKey(path)),
+            (source, destination, _) =>
+            {
+                files[destination] = files[source];
+                Assert.True(files.Remove(source));
+                if (source == "stage.tmp")
+                {
+                    cancellation.Cancel();
+                }
+                return Task.CompletedTask;
+            },
+            (path, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                _ = files.Remove(path);
+                return Task.CompletedTask;
+            }, cancellation.Token);
+        Assert.True(cancellation.IsCancellationRequested);
+        Assert.Equal(2, files["server.cfg"]);
+        Assert.Single(files);
     }
 
     [Theory]
@@ -132,6 +151,7 @@ public class StagedFileUploadTests
     }
 
     [Theory]
+    [InlineData(0)]
     [InlineData(2)]
     [InlineData(4)]
     public async Task RejectsTruncatedOrOversizedSourceBeforePublishing(int actualSize)

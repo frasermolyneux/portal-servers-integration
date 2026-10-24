@@ -39,7 +39,7 @@ internal static class StagedFileUpload
             }
             throw;
         }
-        await delete(backup, cancellationToken).ConfigureAwait(false);
+        await delete(backup, CancellationToken.None).ConfigureAwait(false);
     }
 
     internal static async Task Upload(
@@ -49,8 +49,7 @@ internal static class StagedFileUpload
         Func<string, CancellationToken, Task<long>> getSize,
         Func<string, string, CancellationToken, Task> replace,
         Func<string, Task> cleanup,
-        CancellationToken cancellationToken,
-        bool allowEmpty = false)
+        CancellationToken cancellationToken)
     {
         var temporary = $"{destination}.portal-{Guid.NewGuid():N}.tmp";
         using var counted = new CountingReadStream(content);
@@ -58,10 +57,9 @@ internal static class StagedFileUpload
         {
             await upload(temporary, counted, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            if ((!allowEmpty && counted.BytesRead == 0) ||
-                await getSize(temporary, cancellationToken).ConfigureAwait(false) != counted.BytesRead)
+            if (await getSize(temporary, cancellationToken).ConfigureAwait(false) != counted.BytesRead)
             {
-                throw new IOException("The staged upload is empty or its retained size differs from the transferred bytes.");
+                throw new IOException("The staged upload's retained size differs from the transferred bytes.");
             }
 
             await replace(temporary, destination, cancellationToken).ConfigureAwait(false);

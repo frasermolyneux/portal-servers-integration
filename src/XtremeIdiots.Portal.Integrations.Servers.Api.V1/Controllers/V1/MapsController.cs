@@ -403,7 +403,7 @@ public class MapsController(
             {
                 throw new InvalidDataException("The redirect manifest contains an unsafe game-server file path.");
             }
-            if (file.Bytes < 0 || string.IsNullOrWhiteSpace(file.Version) || directories.Contains(relative) || !paths.Add(relative))
+            if (file.Bytes <= 0 || string.IsNullOrWhiteSpace(file.Version) || directories.Contains(relative) || !paths.Add(relative))
             {
                 throw new InvalidDataException("The redirect manifest contains invalid or colliding game files.");
             }

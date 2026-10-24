@@ -41,7 +41,7 @@ public class GameScopedRconEndpointsTests : IClassFixture<CustomWebApplicationFa
     {
         var gameServerId = Guid.NewGuid();
         SetupGameServer(gameServerId, gameType);
-        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
         var rcon = new Mock<IRconClient>();
         rcon.Setup(x => x.SetDvar("sv_maprotation", "")).ReturnsAsync("ok");
         _factory.MockRconClientFactory

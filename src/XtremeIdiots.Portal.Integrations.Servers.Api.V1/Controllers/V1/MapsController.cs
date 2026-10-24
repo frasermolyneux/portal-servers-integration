@@ -169,7 +169,8 @@ public class MapsController(
 
                 using var download = await OpenRedirectFile(file, cancellationToken);
                 await using var stream = await download.Content.ReadAsStreamAsync(cancellationToken);
-                await session.UploadStream(destination, stream, cancellationToken).ConfigureAwait(false);
+                using var validated = StagedFileUpload.WithExpectedLength(stream, file.Bytes);
+                await session.UploadStream(destination, validated, cancellationToken).ConfigureAwait(false);
             }
 
             if (!await HasCompleteFiles(session, mapDirectoryPath, files, cancellationToken))

@@ -33,6 +33,28 @@ public class GameScopedRconEndpointsTests : IClassFixture<CustomWebApplicationFa
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    [Theory]
+    [InlineData("cod2", GameType.CallOfDuty2)]
+    [InlineData("cod4", GameType.CallOfDuty4)]
+    [InlineData("cod5", GameType.CallOfDuty5)]
+    public async Task Set_AllowsEmptyValueToClearRotation(string route, GameType gameType)
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, gameType);
+        SetupRconConfiguration(gameServerId, "{\"password\":\"secret\"}");
+        var rcon = new Mock<IRconClient>();
+        rcon.Setup(x => x.SetDvar("sv_maprotation", "")).ReturnsAsync("ok");
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(gameType, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(rcon.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/{route}/set",
+            new SetDvarRequest { DvarName = "sv_maprotation", Value = "" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        rcon.Verify(x => x.SetDvar("sv_maprotation", ""), Times.Once);
+    }
+
     [Fact]
     public async Task Cod2Status_WhenServerNotFound_ReturnsNotFoundWithExpectedErrorCode()
     {

@@ -160,14 +160,13 @@ internal sealed class GameServerFileTransportFactory(
         public async Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default)
         {
             await using var stream = new MemoryStream(content);
-            var status = await _client.UploadStream(stream, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
-            if (status != FtpStatus.Success)
-            {
-                throw new IOException("The FTP host did not acknowledge a successful config upload.");
-            }
+            await UploadStaged(path, stream, allowEmpty: true, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
+        public Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
+            => UploadStaged(path, content, allowEmpty: false, cancellationToken);
+
+        private async Task UploadStaged(string path, Stream content, bool allowEmpty, CancellationToken cancellationToken)
         {
             if (content.CanSeek)
             {
@@ -195,7 +194,7 @@ internal sealed class GameServerFileTransportFactory(
                     {
                         await _client.DeleteFile(temporary).ConfigureAwait(false);
                     }
-                }, cancellationToken).ConfigureAwait(false);
+                }, cancellationToken, allowEmpty).ConfigureAwait(false);
         }
 
         public Task DeleteFile(string path, CancellationToken cancellationToken = default)
@@ -314,16 +313,16 @@ internal sealed class GameServerFileTransportFactory(
             }, cancellationToken);
         }
 
-        public Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default)
+        public async Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() =>
-            {
-                using var stream = new MemoryStream(content);
-                _client.UploadFile(stream, path, true);
-            }, cancellationToken);
+            await using var stream = new MemoryStream(content);
+            await UploadStaged(path, stream, allowEmpty: true, cancellationToken).ConfigureAwait(false);
         }
 
         public Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
+            => UploadStaged(path, content, allowEmpty: false, cancellationToken);
+
+        private Task UploadStaged(string path, Stream content, bool allowEmpty, CancellationToken cancellationToken)
         {
             if (content.CanSeek)
             {
@@ -343,7 +342,7 @@ internal sealed class GameServerFileTransportFactory(
                     {
                         _client.DeleteFile(temporary);
                     }
-                }), cancellationToken);
+                }), cancellationToken, allowEmpty);
         }
 
         public Task DeleteFile(string path, CancellationToken cancellationToken = default)

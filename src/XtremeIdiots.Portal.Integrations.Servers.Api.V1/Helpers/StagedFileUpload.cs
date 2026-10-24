@@ -49,7 +49,8 @@ internal static class StagedFileUpload
         Func<string, CancellationToken, Task<long>> getSize,
         Func<string, string, CancellationToken, Task> replace,
         Func<string, Task> cleanup,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowEmpty = false)
     {
         var temporary = $"{destination}.portal-{Guid.NewGuid():N}.tmp";
         using var counted = new CountingReadStream(content);
@@ -57,7 +58,8 @@ internal static class StagedFileUpload
         {
             await upload(temporary, counted, cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            if (counted.BytesRead == 0 || await getSize(temporary, cancellationToken).ConfigureAwait(false) != counted.BytesRead)
+            if ((!allowEmpty && counted.BytesRead == 0) ||
+                await getSize(temporary, cancellationToken).ConfigureAwait(false) != counted.BytesRead)
             {
                 throw new IOException("The staged upload is empty or its retained size differs from the transferred bytes.");
             }

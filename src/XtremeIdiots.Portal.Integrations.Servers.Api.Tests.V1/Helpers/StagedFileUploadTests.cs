@@ -8,6 +8,36 @@ public class StagedFileUploadTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ExplicitEmptyByteUploadsRemainSupportedWithoutAllowingEmptyMaps(bool allowEmpty)
+    {
+        using var source = new MemoryStream();
+        var published = false;
+        async Task Upload()
+        {
+            await StagedFileUpload.Upload("server.cfg", source,
+                (_, stream, token) => stream.CopyToAsync(Stream.Null, token),
+                (_, _) => Task.FromResult(0L),
+                (_, _, _) =>
+                {
+                    published = true;
+                    return Task.CompletedTask;
+                },
+                _ => Task.CompletedTask, CancellationToken.None, allowEmpty);
+        }
+        if (allowEmpty)
+        {
+            await Upload();
+        }
+        else
+        {
+            await Assert.ThrowsAsync<IOException>(Upload);
+        }
+        Assert.Equal(allowEmpty, published);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task PortableReplacementRestoresOriginalIfPublicationFails(bool fails)
     {
         var files = new Dictionary<string, int> { ["map.ff"] = 1, ["stage.tmp"] = 2 };

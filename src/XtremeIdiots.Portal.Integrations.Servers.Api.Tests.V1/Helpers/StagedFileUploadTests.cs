@@ -150,6 +150,88 @@ public class StagedFileUploadTests
         Assert.Single(files);
     }
 
+    [Fact]
+    public async Task OverlappingPublicationRetainsBothTheOtherPublisherAndAnIdentifiedOriginalBackup()
+    {
+        var files = new Dictionary<string, int> { ["server.cfg"] = 1, ["stage.tmp"] = 2 };
+        string? backup = null;
+
+        var error = await Assert.ThrowsAsync<AggregateException>(() => StagedFileUpload.ReplacePreservingOriginal(
+            "stage.tmp", "server.cfg",
+            (path, _) => Task.FromResult(files.ContainsKey(path)),
+            (source, target, _) =>
+            {
+                if (source == "stage.tmp")
+                {
+                    files.Add(target, 3);
+                    throw new IOException("Another publisher filled the destination before rename.");
+                }
+                Assert.False(files.ContainsKey(target));
+                files.Add(target, files[source]);
+                files.Remove(source);
+                backup = target;
+                return Task.CompletedTask;
+            },
+            (path, _) =>
+            {
+                files.Remove(path);
+                return Task.CompletedTask;
+            }, CancellationToken.None));
+
+        Assert.NotNull(backup);
+        Assert.Contains(backup, error.Message);
+        Assert.Equal(1, files[backup]);
+        Assert.Equal(3, files["server.cfg"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("/mods/sniper/configs/")]
+    [InlineData("mods\\sniper\\configs\\")]
+    public async Task StagingAndBackupNamesFitRemoteComponentLimitsInTheSameParent(string parent)
+    {
+        var destination = parent + new string('m', 230) + ".ff";
+        var files = new Dictionary<string, int> { [destination] = 1 };
+        using var source = new MemoryStream([2]);
+        void CheckPath(string path)
+        {
+            Assert.StartsWith(parent, path);
+            var name = path[parent.Length..];
+            Assert.DoesNotContain('/', name);
+            Assert.DoesNotContain('\\', name);
+            Assert.InRange(System.Text.Encoding.UTF8.GetByteCount(name), 1, 255);
+        }
+        Task Rename(string from, string to, CancellationToken token)
+        {
+            CheckPath(from);
+            CheckPath(to);
+            Assert.False(files.ContainsKey(to));
+            files.Add(to, files[from]);
+            files.Remove(from);
+            return Task.CompletedTask;
+        }
+        Task Delete(string path, CancellationToken token)
+        {
+            files.Remove(path);
+            return Task.CompletedTask;
+        }
+
+        await StagedFileUpload.Upload(destination, source,
+            async (path, stream, token) =>
+            {
+                CheckPath(path);
+                await stream.CopyToAsync(Stream.Null, token);
+                files.Add(path, 2);
+            },
+            (_, _) => Task.FromResult(1L),
+            (from, to, token) => StagedFileUpload.ReplacePreservingOriginal(from, to,
+                (path, _) => Task.FromResult(files.ContainsKey(path)), Rename, Delete, token),
+            path => Delete(path, CancellationToken.None), CancellationToken.None);
+
+        Assert.Single(files);
+        Assert.Equal(2, files[destination]);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(2)]

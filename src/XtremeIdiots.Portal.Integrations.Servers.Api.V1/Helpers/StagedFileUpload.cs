@@ -17,7 +17,7 @@ internal static class StagedFileUpload
             return;
         }
 
-        var backup = $"{destination}.portal-backup-{Guid.NewGuid():N}";
+        var backup = SiblingPath(destination, "backup");
         try
         {
             await rename(destination, backup, cancellationToken).ConfigureAwait(false);
@@ -27,9 +27,12 @@ internal static class StagedFileUpload
         {
             try
             {
-                if (await exists(backup, CancellationToken.None).ConfigureAwait(false) &&
-                    !await exists(destination, CancellationToken.None).ConfigureAwait(false))
+                if (await exists(backup, CancellationToken.None).ConfigureAwait(false))
                 {
+                    if (await exists(destination, CancellationToken.None).ConfigureAwait(false))
+                    {
+                        throw new IOException($"Restoration was blocked by another file at '{destination}'; the original remains at '{backup}'.");
+                    }
                     await rename(backup, destination, CancellationToken.None).ConfigureAwait(false);
                 }
             }
@@ -51,7 +54,7 @@ internal static class StagedFileUpload
         Func<string, Task> cleanup,
         CancellationToken cancellationToken)
     {
-        var temporary = $"{destination}.portal-{Guid.NewGuid():N}.tmp";
+        var temporary = SiblingPath(destination, "upload") + ".tmp";
         using var counted = new CountingReadStream(content);
         try
         {
@@ -76,6 +79,12 @@ internal static class StagedFileUpload
             }
             throw;
         }
+    }
+
+    private static string SiblingPath(string destination, string purpose)
+    {
+        var parentLength = destination.LastIndexOfAny(['/', '\\']) + 1;
+        return $"{destination[..parentLength]}.portal-{purpose}-{Guid.NewGuid():N}";
     }
 
     private sealed class CountingReadStream(Stream inner, long? expectedBytes = null) : Stream

@@ -169,7 +169,8 @@ public class MapsController(
 
                 using var download = await OpenRedirectFile(file, cancellationToken);
                 await using var stream = await download.Content.ReadAsStreamAsync(cancellationToken);
-                await session.UploadStream(destination, stream, cancellationToken).ConfigureAwait(false);
+                using var validated = StagedFileUpload.WithExpectedLength(stream, file.Bytes);
+                await session.UploadStream(destination, validated, cancellationToken).ConfigureAwait(false);
             }
 
             if (!await HasCompleteFiles(session, mapDirectoryPath, files, cancellationToken))
@@ -402,7 +403,7 @@ public class MapsController(
             {
                 throw new InvalidDataException("The redirect manifest contains an unsafe game-server file path.");
             }
-            if (file.Bytes < 0 || string.IsNullOrWhiteSpace(file.Version) || directories.Contains(relative) || !paths.Add(relative))
+            if (file.Bytes <= 0 || string.IsNullOrWhiteSpace(file.Version) || directories.Contains(relative) || !paths.Add(relative))
             {
                 throw new InvalidDataException("The redirect manifest contains invalid or colliding game files.");
             }

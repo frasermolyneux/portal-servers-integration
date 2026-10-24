@@ -286,6 +286,19 @@ public class MapsControllerTests
     }
 
     [Fact]
+    public async Task PushServerMapToHost_RejectsEmptySourceGameFilesBeforeRemoteWrites()
+    {
+        var serverId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(serverId, CreateRedirectFile("mp_custom.ff", 0));
+
+        var result = await CreateController().PushServerMapToHost(serverId, "mp_custom");
+
+        Assert.Equal(502, Assert.IsAssignableFrom<StatusCodeResult>(result).StatusCode);
+        session.Verify(x => x.CreateDirectory(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.UploadStream(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task PushServerMapToHost_ReportsFailedStreamInsteadOfSuccessfulFolderPresence()
     {
         var gameServerId = Guid.NewGuid();

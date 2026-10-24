@@ -12,6 +12,29 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         private static readonly Guid TestServerId = Guid.NewGuid();
         private const string TestRconPassword = "testpass";
 
+        [Theory]
+        [InlineData("set")]
+        [InlineData("seta")]
+        [InlineData("sets")]
+        [InlineData("setu")]
+        public async Task ClearRotation_EmitsExplicitEmptyQuotedValue(string command)
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+            var received = RegisterExactCommandHandler(server, $"{command} sv_maprotation \"\"");
+            server.Start();
+
+            await (command switch
+            {
+                "set" => client.Set("sv_maprotation", ""),
+                "seta" => client.Seta("sv_maprotation", ""),
+                "sets" => client.Sets("sv_maprotation", ""),
+                _ => client.Setu("sv_maprotation", "")
+            });
+
+            Assert.True(received());
+        }
+
         [Fact]
         public async Task PermBan_SendsExpectedCommand()
         {

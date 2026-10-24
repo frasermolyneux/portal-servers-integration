@@ -35,6 +35,25 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task Set_EmptyRotationValue_IsPassedToRcon()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+        var rcon = new Mock<IRconClient>();
+        rcon.As<ICallOfDuty4xRconClient>().Setup(x => x.Set("sv_maprotation", "")).ReturnsAsync("ok");
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(rcon.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/set",
+            new CoD4xSetDvarRequestDto { DvarName = "sv_maprotation", Value = "" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        rcon.As<ICallOfDuty4xRconClient>().Verify(x => x.Set("sv_maprotation", ""), Times.Once);
+    }
+
+    [Fact]
     public async Task CoD4xBanUser_WhenValidRequest_ReturnsOkAndCallsRconClient()
     {
         var gameServerId = Guid.NewGuid();

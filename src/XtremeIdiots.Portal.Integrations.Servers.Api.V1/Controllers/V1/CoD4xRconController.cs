@@ -1532,7 +1532,7 @@ public class CoD4xRconController(
     private static ApiResult<string>? RequireSetRequest(CoD4xSetDvarRequestDto request)
     {
         var dvarName = TrimOrNull(request.DvarName);
-        var value = TrimOrNull(request.Value);
+        var value = request.Value;
 
         if (dvarName == null)
         {
@@ -1545,7 +1545,7 @@ public class CoD4xRconController(
         }
 
         return value == null
-            ? new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Value cannot be null or empty.")).ToBadRequestResult()
+            ? new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Value cannot be null.")).ToBadRequestResult()
             : IsValidCommandText(value)
                 ? null
                 : InvalidRequestCharactersResult("Value");

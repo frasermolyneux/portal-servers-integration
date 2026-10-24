@@ -320,27 +320,7 @@ public class MapsController(
 
         try
         {
-            var results = new List<MapVerificationResultDto>();
-            foreach (var mapName in mapNames)
-            {
-                if (BuiltInMaps.IsBuiltIn(gameServerApiResponse.Result.Data.GameType, mapName))
-                {
-                    results.Add(new MapVerificationResultDto(mapName, true));
-                    continue;
-                }
-
-                try
-                {
-                    var files = await GetRedirectFiles(gameServerApiResponse.Result.Data.GameType, mapName, cancellationToken);
-                    var complete = files.Count > 0 && await HasCompleteFiles(session, JoinPath(mapsDirectoryPath, mapName), files, cancellationToken);
-                    results.Add(new MapVerificationResultDto(mapName, complete));
-                }
-                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    results.Add(new MapVerificationResultDto(mapName, false));
-                }
-            }
-
+            var results = await VerifyMaps(gameServerApiResponse.Result.Data.GameType, mapNames, session, mapsDirectoryPath, cancellationToken);
             var data = new MapVerificationCollectionDto(results);
             return new ApiResponse<MapVerificationCollectionDto>(data).ToApiResult();
         }
@@ -356,6 +336,38 @@ public class MapsController(
         finally
         {
             telemetryClient.StopOperation(operation);
+        }
+    }
+
+    private async Task<List<MapVerificationResultDto>> VerifyMaps(GameType gameType, List<string> mapNames,
+        IGameServerFileTransportSession session, string mapsDirectoryPath, CancellationToken cancellationToken)
+    {
+        var results = new List<MapVerificationResultDto>();
+        foreach (var mapName in mapNames)
+        {
+            results.Add(await VerifyMap(gameType, mapName, session, mapsDirectoryPath, cancellationToken));
+        }
+
+        return results;
+    }
+
+    private async Task<MapVerificationResultDto> VerifyMap(GameType gameType, string mapName,
+        IGameServerFileTransportSession session, string mapsDirectoryPath, CancellationToken cancellationToken)
+    {
+        if (BuiltInMaps.IsBuiltIn(gameType, mapName))
+        {
+            return new MapVerificationResultDto(mapName, true);
+        }
+
+        try
+        {
+            var files = await GetRedirectFiles(gameType, mapName, cancellationToken);
+            var complete = files.Count > 0 && await HasCompleteFiles(session, JoinPath(mapsDirectoryPath, mapName), files, cancellationToken);
+            return new MapVerificationResultDto(mapName, complete);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return new MapVerificationResultDto(mapName, false);
         }
     }
 

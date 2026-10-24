@@ -160,7 +160,11 @@ internal sealed class GameServerFileTransportFactory(
         public async Task UploadBytes(string path, byte[] content, CancellationToken cancellationToken = default)
         {
             await using var stream = new MemoryStream(content);
-            await _client.UploadStream(stream, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
+            var status = await _client.UploadStream(stream, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
+            if (status != FtpStatus.Success)
+            {
+                throw new IOException("The FTP host did not acknowledge a successful config upload.");
+            }
         }
 
         public async Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
@@ -170,11 +174,28 @@ internal sealed class GameServerFileTransportFactory(
                 content.Position = 0;
             }
 
-            var status = await _client.UploadStream(content, path, FtpRemoteExists.Overwrite, true, null, cancellationToken).ConfigureAwait(false);
-            if (status != FtpStatus.Success)
-            {
-                throw new IOException("The FTP host did not acknowledge a successful file upload.");
-            }
+            await StagedFileUpload.Upload(path, content,
+                async (temporary, stream, token) =>
+                {
+                    var status = await _client.UploadStream(stream, temporary, FtpRemoteExists.Overwrite, true, null, token).ConfigureAwait(false);
+                    if (status != FtpStatus.Success)
+                    {
+                        throw new IOException("The FTP host did not acknowledge a successful file upload.");
+                    }
+                },
+                (temporary, token) => _client.GetFileSize(temporary, -1, token),
+                (temporary, destination, token) => StagedFileUpload.ReplacePreservingOriginal(
+                    temporary, destination,
+                    (file, ct) => _client.FileExists(file, ct),
+                    (source, target, ct) => _client.Rename(source, target, ct),
+                    (file, ct) => _client.DeleteFile(file, ct), token),
+                async temporary =>
+                {
+                    if (await _client.FileExists(temporary).ConfigureAwait(false))
+                    {
+                        await _client.DeleteFile(temporary).ConfigureAwait(false);
+                    }
+                }, cancellationToken).ConfigureAwait(false);
         }
 
         public Task DeleteFile(string path, CancellationToken cancellationToken = default)
@@ -304,15 +325,25 @@ internal sealed class GameServerFileTransportFactory(
 
         public Task UploadStream(string path, Stream content, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() =>
+            if (content.CanSeek)
             {
-                if (content.CanSeek)
+                content.Position = 0;
+            }
+            return StagedFileUpload.Upload(path, content,
+                (temporary, stream, token) => Task.Run(() => _client.UploadFile(stream, temporary, true), token),
+                (temporary, token) => Task.Run(() => _client.GetAttributes(temporary).Size, token),
+                (temporary, destination, token) => StagedFileUpload.ReplacePreservingOriginal(
+                    temporary, destination,
+                    (file, ct) => Task.Run(() => _client.Exists(file), ct),
+                    (source, target, ct) => Task.Run(() => _client.RenameFile(source, target), ct),
+                    (file, ct) => Task.Run(() => _client.DeleteFile(file), ct), token),
+                temporary => Task.Run(() =>
                 {
-                    content.Position = 0;
-                }
-
-                _client.UploadFile(content, path, true);
-            }, cancellationToken);
+                    if (_client.Exists(temporary))
+                    {
+                        _client.DeleteFile(temporary);
+                    }
+                }), cancellationToken);
         }
 
         public Task DeleteFile(string path, CancellationToken cancellationToken = default)

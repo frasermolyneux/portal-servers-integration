@@ -636,7 +636,7 @@ public abstract class GameScopedRconControllerBase(
             return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "DvarName is required.")).ToBadRequestResult();
         }
 
-        if (string.IsNullOrWhiteSpace(request.Value))
+        if (request.Value is null)
         {
             return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Value is required.")).ToBadRequestResult();
         }

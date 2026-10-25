@@ -19,26 +19,26 @@
     <PackageReference Include="Microsoft.ApplicationInsights.Profiler.AspNetCore" Version="3.0.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.23.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.21.0" />
-    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.6.0" />
+    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.6.1" />
     <PackageReference Include="Asp.Versioning.Mvc" Version="10.2.1" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="MX.Api.Client" Version="2.3.81" />
     <PackageReference Include="MX.Api.Web.Extensions" Version="2.3.81" />
     <PackageReference Include="MX.Observability.ApplicationInsights.AspNetCore" Version="1.1.33" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.18.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.18.3" />
     <PackageReference Include="FluentFTP" Version="55.1.0" />
     <PackageReference Include="FluentFTP.Logging" Version="1.0.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.16.1" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Polly" Version="8.8.0" />
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
-    <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.50" />
-    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.50" />
-    <PackageReference Include="XtremeIdiots.Portal.Server.Events.Abstractions.V1" Version="1.1.195" />
-    <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.2.50" />
-    <PackageReference Include="XtremeIdiots.Redirect.Api.Abstractions.V1" Version="1.0.1" />
-    <PackageReference Include="XtremeIdiots.Redirect.Api.Client.V1" Version="1.0.1" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.61" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.61" />
+    <PackageReference Include="XtremeIdiots.Portal.Server.Events.Abstractions.V1" Version="1.1.202" />
+    <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.2.61" />
+    <PackageReference Include="XtremeIdiots.Redirect.Api.Abstractions.V1" Version="1.0.15" />
+    <PackageReference Include="XtremeIdiots.Redirect.Api.Client.V1" Version="1.0.15" />
   </ItemGroup>
 
   <ItemGroup>

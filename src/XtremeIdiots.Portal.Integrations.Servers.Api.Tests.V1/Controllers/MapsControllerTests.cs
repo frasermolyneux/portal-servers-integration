@@ -389,7 +389,9 @@ public class MapsControllerTests
             new MapVerificationRequestDto { MapNames = ["mp_backlot", "mp_missing"] });
 
         var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(result).Value);
-        Assert.Collection(response.Data!.Items,
+        Assert.NotNull(response.Data);
+        Assert.NotNull(response.Data.Items);
+        Assert.Collection(response.Data.Items,
             item =>
             {
                 Assert.Equal("mp_backlot", item.MapName);

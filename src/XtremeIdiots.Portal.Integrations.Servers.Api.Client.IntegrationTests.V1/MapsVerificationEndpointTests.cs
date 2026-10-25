@@ -14,6 +14,8 @@ using XtremeIdiots.Redirect.Api.Abstractions.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V1;
 
+/// <summary>Exercises map verification through the HTTP host with mocked external services.</summary>
+/// <param name="factory">The in-process host factory.</param>
 [Trait("Category", "Integration")]
 public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory factory)
     : IClassFixture<MapsVerificationWebApplicationFactory>, IAsyncLifetime
@@ -23,14 +25,23 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
     private readonly MapsVerificationWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateClient();
 
+    /// <summary>Resets shared mocks before each test.</summary>
+    /// <returns>A completed initialization task.</returns>
     public Task InitializeAsync()
     {
         _factory.ResetMocks();
         return Task.CompletedTask;
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    /// <summary>Completes the fixture lifecycle without disposing its shared client.</summary>
+    /// <returns>A completed cleanup task.</returns>
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
+    }
 
+    /// <summary>Verifies that complete redirect files produce a successful map result.</summary>
+    /// <returns>The asynchronous test operation.</returns>
     [Fact]
     public async Task VerifyMaps_WhenRedirectFilesArePresent_ReturnsSuccessfulVerification()
     {
@@ -45,18 +56,18 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
             FileTransportEnabled = true,
             FileTransportType = FileTransportType.Sftp,
             FtpEnabled = true
-        }))!;
-        _factory.MockRepositoryApiClient
+        }));
+        _ = _factory.MockRepositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(gameServer)));
 
         var session = new Mock<IGameServerFileTransportSession>();
-        session.SetupGet(x => x.Transport).Returns(new ResolvedFileTransport(FileTransportType.Sftp, "sftp",
+        _ = session.SetupGet(x => x.Transport).Returns(new ResolvedFileTransport(FileTransportType.Sftp, "sftp",
             new FileTransportCredentials("sftp-host", 22, "demo", "secret", "aa:bb")));
-        session.Setup(x => x.DirectoryExists("usermaps/mp_custom", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
+        _ = session.Setup(x => x.DirectoryExists("usermaps/mp_custom", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _ = session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
             .ReturnsAsync([new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 3, null)]);
-        _factory.MockGameServerFileTransportFactory
+        _ = _factory.MockGameServerFileTransportFactory
             .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(HttpStatusCode.OK,
                 new ApiResponse<IGameServerFileTransportSession>(session.Object)));
@@ -64,7 +75,7 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
         var file = new ContentEntry("redirect/cod4/usermaps/mp_custom/mp_custom.ff", "mp_custom.ff", false, 3,
             DateTimeOffset.UtcNow, "current-version", "https://untrusted.invalid/not-a-download-source");
         var manifest = new MapManifest("cod4", "mp_custom", "redirect/cod4/usermaps/mp_custom", [file], 3, "catalogue-version");
-        _factory.MockRedirectApiClient
+        _ = _factory.MockRedirectApiClient
             .Setup(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<MapManifest>(HttpStatusCode.OK, new ApiResponse<MapManifest>(manifest)));
 
@@ -80,19 +91,21 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
     }
 }
 
+/// <summary>Replaces external map services with the fixture's test doubles.</summary>
 public class MapsVerificationWebApplicationFactory : CustomWebApplicationFactory
 {
+    /// <inheritdoc />
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         base.ConfigureWebHost(builder);
-        builder.ConfigureTestServices(services =>
+        _ = builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IGameServerFileTransportFactory>();
-            services.RemoveAll<IRedirectApiClient>();
-            services.RemoveAll<IRedirectDownloadClient>();
-            services.AddSingleton(MockGameServerFileTransportFactory.Object);
-            services.AddSingleton(MockRedirectApiClient.Object);
-            services.AddSingleton(MockRedirectDownloadClient.Object);
+            _ = services.RemoveAll<IGameServerFileTransportFactory>();
+            _ = services.RemoveAll<IRedirectApiClient>();
+            _ = services.RemoveAll<IRedirectDownloadClient>();
+            _ = services.AddSingleton(MockGameServerFileTransportFactory.Object);
+            _ = services.AddSingleton(MockRedirectApiClient.Object);
+            _ = services.AddSingleton(MockRedirectDownloadClient.Object);
         });
     }
 }

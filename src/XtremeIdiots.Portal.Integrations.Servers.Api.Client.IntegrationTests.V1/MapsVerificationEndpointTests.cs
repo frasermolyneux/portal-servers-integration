@@ -15,18 +15,13 @@ using XtremeIdiots.Redirect.Api.Abstractions.V1;
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.IntegrationTests.V1;
 
 [Trait("Category", "Integration")]
-public class MapsVerificationEndpointTests : IClassFixture<MapsVerificationWebApplicationFactory>, IAsyncLifetime
+public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory factory)
+    : IClassFixture<MapsVerificationWebApplicationFactory>, IAsyncLifetime
 {
     private static readonly string[] MapNames = ["mp_custom"];
 
-    private readonly MapsVerificationWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-
-    public MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
+    private readonly MapsVerificationWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateClient();
 
     public Task InitializeAsync()
     {
@@ -78,7 +73,10 @@ public class MapsVerificationEndpointTests : IClassFixture<MapsVerificationWebAp
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var apiResponse = JsonConvert.DeserializeObject<ApiResponse<MapVerificationCollectionDto>>(
             await response.Content.ReadAsStringAsync());
-        Assert.True(Assert.Single(apiResponse!.Data!.Items).ExistsOnServer);
+        Assert.NotNull(apiResponse);
+        Assert.NotNull(apiResponse.Data);
+        Assert.NotNull(apiResponse.Data.Items);
+        Assert.True(Assert.Single(apiResponse.Data.Items).ExistsOnServer);
     }
 }
 

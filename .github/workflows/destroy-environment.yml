@@ -35,15 +35,16 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+        uses: frasermolyneux/actions/terraform-setup@terraform-setup/v1.0.0
         with:
-          terraform_wrapper: false
+          terraform-folder: terraform
+          terraform_wrapper: "false"
 
       - name: Terraform Init
         shell: bash
         run: |
           cd terraform
-          terraform init -backend-config=${{ inputs.environment == 'prd' && 'backends/prd.backend.hcl' || 'backends/dev.backend.hcl' }} -var-file=${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}
+          terraform init -lockfile=readonly -backend-config=${{ inputs.environment == 'prd' && 'backends/prd.backend.hcl' || 'backends/dev.backend.hcl' }} -var-file=${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}
         env:
           ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -72,7 +73,7 @@ jobs:
           ARM_USE_AZUREAD: true
           ARM_USE_OIDC: true
 
-      - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v1.3
+      - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v2.0.0
         with:
           terraform-folder: "terraform"
           terraform-var-file: ${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "producers": [
+    {
+      "workflow": ".github/workflows/codequality.yml",
+      "suites": {
+        "Unit": "unit"
+      }
+    }
+  ]
+}

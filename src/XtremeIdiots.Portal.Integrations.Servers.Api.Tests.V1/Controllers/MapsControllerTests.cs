@@ -378,6 +378,31 @@ public class MapsControllerTests
     }
 
     [Fact]
+    public async Task VerifyServerMaps_ReturnsBuiltInAndMissingMapsInRequestOrder()
+    {
+        var gameServerId = Guid.NewGuid();
+        ConfigureMapTransfer(gameServerId);
+        _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_missing", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<MapManifest>(HttpStatusCode.NotFound));
+
+        var result = await CreateController().VerifyServerMaps(gameServerId,
+            new MapVerificationRequestDto { MapNames = ["mp_backlot", "mp_missing"] });
+
+        var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Collection(response.Data!.Items,
+            item =>
+            {
+                Assert.Equal("mp_backlot", item.MapName);
+                Assert.True(item.ExistsOnServer);
+            },
+            item =>
+            {
+                Assert.Equal("mp_missing", item.MapName);
+                Assert.False(item.ExistsOnServer);
+            });
+    }
+
+    [Fact]
     public async Task VerifyServerMaps_RedirectUnavailableReturnsFailureInsteadOfMissingMaps()
     {
         var gameServerId = Guid.NewGuid();
@@ -388,7 +413,10 @@ public class MapsControllerTests
 
         var result = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto { MapNames = ["mp_custom"] });
 
-        Assert.Equal(502, Assert.IsType<ObjectResult>(result).StatusCode);
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(502, objectResult.StatusCode);
+        var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(objectResult.Value);
+        Assert.Equal(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, response.Errors?.FirstOrDefault()?.Code);
     }
 
     [Theory]

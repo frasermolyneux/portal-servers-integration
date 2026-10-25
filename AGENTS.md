@@ -18,7 +18,7 @@ dotnet build src/XtremeIdiots.Portal.Integrations.Servers.slnx
 dotnet test src --filter "FullyQualifiedName!~IntegrationTests"
 dotnet format src/XtremeIdiots.Portal.Integrations.Servers.slnx --verify-no-changes
 terraform -chdir=terraform fmt -check -recursive
-terraform -chdir=terraform init -backend-config=backends/dev.backend.hcl
+terraform -chdir=terraform init -lockfile=readonly -backend-config=backends/dev.backend.hcl
 terraform -chdir=terraform validate
 ```
 
@@ -36,9 +36,9 @@ Run integration tests only when their API identity, configuration, and reachable
 
 ## Infrastructure and delivery
 
-- Terraform requires `>= 1.15.6`, AzureRM `~> 5.0.1`, and the `azurerm` backend. Environment backend files are under `terraform/backends/`; variables are under `terraform/tfvars/`.
+- Terraform CLI compatibility and provider bounds are defined in `terraform/providers.tf`; exact selections come from the committed root CLI pin and provider lock. Keep the `azurerm` backend. Environment backend files are under `terraform/backends/`; variables are under `terraform/tfvars/`.
 - Remote state is consumed from platform workloads, platform monitoring, portal environments, and portal core. Do not change backend/state keys or output contracts casually.
 - Development and production deployment use GitHub environments, OIDC, Terraform, App Service deployment, and APIM wiring. NuGet release is version/tag driven. Never introduce client secrets or embedded FTP credentials.
-- `.terraform.lock.hcl` is intentionally untracked.
+- Commit each root's `.terraform-version` and `.terraform.lock.hcl`. Select the exact root CLI pin before invoking Terraform; normal initialization uses `-lockfile=readonly`. Regenerate provider selections only in a reviewed dependency-update PR; never commit state, plans, or `.terraform/`.
 
 Use the repository README and focused docs for human operational detail; keep this file limited to implementation constraints that affect safe changes.

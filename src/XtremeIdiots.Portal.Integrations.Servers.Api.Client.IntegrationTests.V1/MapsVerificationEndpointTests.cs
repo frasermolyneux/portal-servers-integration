@@ -56,7 +56,7 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
             FileTransportEnabled = true,
             FileTransportType = FileTransportType.Sftp,
             FtpEnabled = true
-        }))!;
+        }));
         _ = _factory.MockRepositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(gameServer)));

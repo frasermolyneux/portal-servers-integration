@@ -25,8 +25,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public Mock<IQueryClientFactory> MockQueryClientFactory { get; } = new();
     public Mock<IRconClientFactory> MockRconClientFactory { get; } = new();
     public Mock<IRepositoryApiClient> MockRepositoryApiClient { get; } = new();
+    /// <summary>Gets the mocked game-server file transport factory.</summary>
     public Mock<IGameServerFileTransportFactory> MockGameServerFileTransportFactory { get; } = new();
+    /// <summary>Gets the mocked redirect catalogue client.</summary>
     public Mock<IRedirectApiClient> MockRedirectApiClient { get; } = new();
+    /// <summary>Gets the mocked redirect download client.</summary>
     public Mock<IRedirectDownloadClient> MockRedirectDownloadClient { get; } = new();
     public Mock<IBanLifecycleEventPublisher> MockBanLifecycleEventPublisher { get; } = new();
 

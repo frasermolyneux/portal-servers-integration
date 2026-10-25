@@ -377,12 +377,14 @@ public class MapsControllerTests
         Assert.Equal(complete, Assert.Single(response.Data!.Items).ExistsOnServer);
     }
 
+    /// <summary>Verifies that built-in and missing maps retain request ordering.</summary>
+    /// <returns>The asynchronous test operation.</returns>
     [Fact]
     public async Task VerifyServerMaps_ReturnsBuiltInAndMissingMapsInRequestOrder()
     {
         var gameServerId = Guid.NewGuid();
-        ConfigureMapTransfer(gameServerId);
-        _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_missing", null, It.IsAny<CancellationToken>()))
+        _ = ConfigureMapTransfer(gameServerId);
+        _ = _mockRedirectApiClient.Setup(x => x.Manifest("cod4", "mp_missing", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<MapManifest>(HttpStatusCode.NotFound));
 
         var result = await CreateController().VerifyServerMaps(gameServerId,

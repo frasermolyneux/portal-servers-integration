@@ -200,13 +200,17 @@ public class MapsControllerTests
         _mockRepositoryApiClient.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task PushServerMapToHost_RefreshesExistingFoldersFromCurrentVersionPinnedNestedFiles()
+    [Theory]
+    [InlineData(GameType.CallOfDuty4)]
+    [InlineData(GameType.CallOfDuty4x)]
+    public async Task PushServerMapToHost_RefreshesExistingFoldersFromCurrentVersionPinnedNestedFiles(GameType gameType)
     {
         var gameServerId = Guid.NewGuid();
         var session = ConfigureMapTransfer(gameServerId,
             CreateRedirectFile("mp_custom.ff", 3), CreateRedirectFile("nested/assets.iwd", 2),
             CreateRedirectFile("readme?.txt", 1));
+        _mockRepositoryApiClient.Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(CreateGameServerDto(gameType))));
         session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
             .ReturnsAsync([new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 3, null)]);
         session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
@@ -235,6 +239,7 @@ public class MapsControllerTests
         _mockRedirectDownloadClient.Verify(x => x.OpenFile(
             It.Is<ContentEntry>(file => file.Version == "current-version"), 0, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _mockRepositoryApiClient.Verify(x => x.Maps.V1.GetMap(It.IsAny<GameType>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRedirectApiClient.Verify(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -514,12 +519,14 @@ public class MapsControllerTests
         $"redirect/cod4/usermaps/mp_custom/{relativePath}", relativePath.Split('/')[^1], false, bytes,
         DateTimeOffset.UtcNow, "current-version", "https://untrusted.invalid/not-a-download-source");
 
-    [Fact]
-    public async Task BuiltInMapOperations_DoNotLogMapName()
+    [Theory]
+    [InlineData(GameType.CallOfDuty4)]
+    [InlineData(GameType.CallOfDuty4x)]
+    public async Task BuiltInMapOperations_DoNotLogMapName(GameType gameType)
     {
         const string mapName = "mp_backlot";
         var gameServerId = Guid.NewGuid();
-        var gameServer = CreateGameServerDto();
+        var gameServer = CreateGameServerDto(gameType);
 
         _mockRepositoryApiClient
             .Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
@@ -537,15 +544,38 @@ public class MapsControllerTests
 
         Assert.Equal(2, logMessages.Count);
         Assert.All(logMessages, message => Assert.DoesNotContain(mapName, message));
+        _mockFileTransportFactory.VerifyNoOtherCalls();
+        _mockRedirectApiClient.VerifyNoOtherCalls();
     }
 
-    private static GameServerDto CreateGameServerDto()
+    [Theory]
+    [InlineData(GameType.CallOfDuty4)]
+    [InlineData(GameType.CallOfDuty4x)]
+    public async Task VerifyStockAndCustomMaps_StockNeverNeedsARedirectManifest(GameType gameType)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("mp_custom.ff", 3));
+        _mockRepositoryApiClient.Setup(x => x.GameServers.V1.GetGameServer(gameServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(CreateGameServerDto(gameType))));
+        session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 3, null)]);
+
+        var result = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto { MapNames = ["mp_bog", "mp_custom"] });
+
+        var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.All(response.Data!.Items, map => Assert.True(map.ExistsOnServer));
+        Assert.Equal(2, response.Data.Items.Count());
+        _mockRedirectApiClient.Verify(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()), Times.Once);
+        _mockRedirectApiClient.VerifyNoOtherCalls();
+    }
+
+    private static GameServerDto CreateGameServerDto(GameType gameType = GameType.CallOfDuty4)
     {
         var json = JsonConvert.SerializeObject(new
         {
             GameServerId = Guid.NewGuid(),
             Title = "Server",
-            GameType = GameType.CallOfDuty4,
+            GameType = gameType,
             Hostname = "localhost",
             QueryPort = 28960,
             FileTransportEnabled = true,

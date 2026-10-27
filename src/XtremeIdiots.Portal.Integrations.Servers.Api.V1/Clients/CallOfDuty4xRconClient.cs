@@ -1,4 +1,5 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
@@ -196,22 +197,22 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
 
     public Task<string> Set(string dvarName, string value)
     {
-        return ExecuteCommand($"set {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true)}", "Attempting CoD4x set for dvar {DvarName}", "Failed to execute CoD4x set command", dvarName);
+        return ExecuteCommand($"set {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true, allowMapList: CoD4xRconValidation.IsAacpMapList(dvarName, value))}", "Attempting CoD4x set for dvar {DvarName}", "Failed to execute CoD4x set command", dvarName);
     }
 
     public Task<string> Seta(string dvarName, string value)
     {
-        return ExecuteCommand($"seta {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true)}", "Attempting CoD4x seta for dvar {DvarName}", "Failed to execute CoD4x seta command", dvarName);
+        return ExecuteCommand($"seta {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true, allowMapList: CoD4xRconValidation.IsAacpMapList(dvarName, value))}", "Attempting CoD4x seta for dvar {DvarName}", "Failed to execute CoD4x seta command", dvarName);
     }
 
     public Task<string> Sets(string dvarName, string value)
     {
-        return ExecuteCommand($"sets {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true)}", "Attempting CoD4x sets for dvar {DvarName}", "Failed to execute CoD4x sets command", dvarName);
+        return ExecuteCommand($"sets {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true, allowMapList: CoD4xRconValidation.IsAacpMapList(dvarName, value))}", "Attempting CoD4x sets for dvar {DvarName}", "Failed to execute CoD4x sets command", dvarName);
     }
 
     public Task<string> Setu(string dvarName, string value)
     {
-        return ExecuteCommand($"setu {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true)}", "Attempting CoD4x setu for dvar {DvarName}", "Failed to execute CoD4x setu command", dvarName);
+        return ExecuteCommand($"setu {FormatCommandToken(dvarName, nameof(dvarName))} {Quote(value, allowEmpty: true, allowMapList: CoD4xRconValidation.IsAacpMapList(dvarName, value))}", "Attempting CoD4x setu for dvar {DvarName}", "Failed to execute CoD4x setu command", dvarName);
     }
 
     public Task<string> CvarList()
@@ -331,7 +332,7 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
             : $"{command} {Quote(reason)}";
     }
 
-    private static string Quote(string value, bool allowEmpty = false)
+    private static string Quote(string value, bool allowEmpty = false, bool allowMapList = false)
     {
         ArgumentNullException.ThrowIfNull(value);
         if (!allowEmpty)
@@ -340,7 +341,7 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         }
         var normalized = value.Trim();
 
-        if (normalized.IndexOfAny(InvalidCommandTextCharacters) >= 0)
+        if (!allowMapList && normalized.IndexOfAny(InvalidCommandTextCharacters) >= 0)
         {
             throw new ArgumentException("Value contains unsupported characters.", nameof(value));
         }

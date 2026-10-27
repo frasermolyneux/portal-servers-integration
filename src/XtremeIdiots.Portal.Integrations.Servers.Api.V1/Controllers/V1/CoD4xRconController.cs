@@ -1546,7 +1546,7 @@ public class CoD4xRconController(
 
         return value == null
             ? new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Value cannot be null.")).ToBadRequestResult()
-            : IsValidCommandText(value)
+            : IsValidCommandText(value) || CoD4xRconValidation.IsAacpMapList(dvarName, value)
                 ? null
                 : InvalidRequestCharactersResult("Value");
     }

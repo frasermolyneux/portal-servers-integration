@@ -17,6 +17,43 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         [InlineData("seta")]
         [InlineData("sets")]
         [InlineData("setu")]
+        public async Task AacpMapList_RemainsOneQuotedDvarValue(string command)
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+            var received = RegisterExactCommandHandler(server, $"{command} scr_aacp_maps_1 \"mp_bog;mp_custom\"");
+            server.Start();
+
+            await (command switch
+            {
+                "set" => client.Set("scr_aacp_maps_1", "mp_bog;mp_custom"),
+                "seta" => client.Seta("scr_aacp_maps_1", "mp_bog;mp_custom"),
+                "sets" => client.Sets("scr_aacp_maps_1", "mp_bog;mp_custom"),
+                _ => client.Setu("scr_aacp_maps_1", "mp_bog;mp_custom")
+            });
+
+            Assert.True(received());
+        }
+
+        [Theory]
+        [InlineData("scr_aacp_maps_1", "mp_bog;mp_custom\nquit")]
+        [InlineData("scr_aacp_maps_1", "mp_bog;mp_custom\rquit")]
+        [InlineData("scr_aacp_maps_1", "mp_bog\";quit")]
+        [InlineData("scr_aacp_maps_1", "mp_bog;mp_custom map_restart")]
+        [InlineData("sv_hostname", "mp_bog;mp_custom")]
+        public async Task AacpMapList_DoesNotRelaxOtherCommandValidation(string variable, string value)
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.Set(variable, value));
+        }
+
+        [Theory]
+        [InlineData("set")]
+        [InlineData("seta")]
+        [InlineData("sets")]
+        [InlineData("setu")]
         public async Task ClearRotation_EmitsExplicitEmptyQuotedValue(string command)
         {
             using var server = new MockUdpServer();

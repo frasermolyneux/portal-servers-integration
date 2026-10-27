@@ -44,4 +44,4 @@ Run integration tests only when their API identity, configuration, and reachable
 Use the repository README and focused docs for human operational detail; keep this file limited to implementation constraints that affect safe changes.
 
 
-CI-only main pushes run change detection but skip cloud/backend deployment jobs. Automatic deployment requires a change to the workload inputs already declared by the deployment filters; scheduled maintenance and explicit workflow dispatch retain their existing behavior. A deployment-workflow-only change requires explicit dispatch to exercise cloud operations.
+CI-only main pushes are excluded by deployment push-path filters before workflow concurrency; they do not enqueue or displace cloud/backend deployments. Automatic deployment requires a change to the workload inputs already declared by the deployment filters; scheduled maintenance and explicit workflow dispatch retain their existing behavior. A deployment-workflow-only change requires explicit dispatch to exercise cloud operations.

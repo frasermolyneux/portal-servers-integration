@@ -4,9 +4,16 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MX.Api.Abstractions;
+using MX.Api.Client;
+using RestSharp;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Config;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
@@ -30,6 +37,52 @@ public class ConfigControllerTests
         _mockLogger.Object,
         _mockFileTransportFactory.Object,
         _telemetryClient);
+
+    [Theory]
+    [InlineData("set sv_mapRotation \"map mp_bog\"", false, null)]
+    [InlineData("set sv_mapRotation \"map mp_bog\"", true, "CONFIG_OPERATION_FAILED")]
+    public async Task UpdateConfigVariable_ThroughHttpAndTypedClient_PreservesTheResponseEnvelope(
+        string content, bool uploadFails, string? expectedError)
+    {
+        var session = SetupConfigFile(content);
+        if (uploadFails)
+        {
+            session.Setup(x => x.UploadBytes(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new IOException("Synthetic upload failure"));
+        }
+
+        using var bootFactory = new RepositoryApiClientRegistrationTests.HostBootFactory();
+        using var factory = bootFactory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IGameServerFileTransportFactory>();
+            services.AddSingleton(_mockFileTransportFactory.Object);
+            services.RemoveAll<TelemetryClient>();
+            services.AddSingleton(_telemetryClient);
+        }));
+        using var httpClient = factory.CreateClient();
+        using var restClient = new RestClient(httpClient);
+        var restClientService = new Mock<IRestClientService>();
+        restClientService.Setup(x => x.ExecuteAsync(It.IsAny<string>(), It.IsAny<RestRequest>(), It.IsAny<CancellationToken>()))
+            .Returns((string _, RestRequest request, CancellationToken token) => restClient.ExecuteAsync(request, token));
+        var client = new ConfigApi(NullLogger<BaseApi<ServersApiClientOptions>>.Instance, null,
+            restClientService.Object, new ServersApiClientOptions { BaseUrl = httpClient.BaseAddress!.ToString() });
+
+        var result = await client.UpdateConfigVariable(Guid.NewGuid(), "rotation.cfg", "sv_maprotation", "gametype war map mp_farm");
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.NotNull(result.Result);
+        if (expectedError is null)
+        {
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Result.Errors ?? []);
+        }
+        else
+        {
+            Assert.Equal(expectedError, Assert.Single(result.Result.Errors!).Code);
+        }
+
+        session.Verify(x => x.UploadBytes("rotation.cfg", It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     [Theory]
     [InlineData("//set sv_mapRotation \"map mp_bog\"")]
@@ -79,7 +132,7 @@ public class ConfigControllerTests
         var result = await CreateController().UpdateConfigVariable(Guid.NewGuid(), "rotation.cfg", "sv_maprotation",
             new UpdateConfigVariableRequest { Value = "gametype war map mp_farm" });
 
-        Assert.Equal(200, Assert.IsType<StatusCodeResult>(result).StatusCode);
+        Assert.Equal(200, Assert.IsType<ObjectResult>(result).StatusCode);
         Assert.NotNull(uploaded);
         Assert.Equal("//set sv_mapRotation \"map mp_bog\"\r\nset SV_MAPROTATION \"gametype war map mp_farm\"\r\n", Encoding.UTF8.GetString(uploaded));
     }

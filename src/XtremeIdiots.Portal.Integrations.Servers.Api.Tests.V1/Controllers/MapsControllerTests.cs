@@ -524,7 +524,7 @@ public class MapsControllerTests
     [InlineData(GameType.CallOfDuty4x)]
     public async Task BuiltInMapOperations_DoNotLogMapName(GameType gameType)
     {
-        const string mapName = "mp_backlot";
+        const string mapName = "mp_farm";
         var gameServerId = Guid.NewGuid();
         var gameServer = CreateGameServerDto(gameType);
 
@@ -560,11 +560,14 @@ public class MapsControllerTests
         session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
             .ReturnsAsync([new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 3, null)]);
 
-        var result = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto { MapNames = ["mp_bog", "mp_custom"] });
+        var result = await CreateController().VerifyServerMaps(gameServerId, new MapVerificationRequestDto
+        {
+            MapNames = ["mp_bog", "mp_farm", "mp_convoy", "mp_citystreets", "mp_carentan", "mp_crash_snow", "mp_custom"]
+        });
 
         var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(result).Value);
         Assert.All(response.Data!.Items, map => Assert.True(map.ExistsOnServer));
-        Assert.Equal(2, response.Data.Items.Count());
+        Assert.Equal(7, response.Data.Items.Count());
         _mockRedirectApiClient.Verify(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()), Times.Once);
         _mockRedirectApiClient.VerifyNoOtherCalls();
     }

@@ -33,8 +33,8 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Polly" Version="8.8.0" />
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
-    <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.78" />
-    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.78" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Abstractions.V1" Version="4.2.79" />
+    <PackageReference Include="XtremeIdiots.Portal.Repository.Api.Client.V1" Version="4.2.79" />
     <PackageReference Include="XtremeIdiots.Portal.Server.Events.Abstractions.V1" Version="1.1.202" />
     <PackageReference Include="XtremeIdiots.Portal.Settings.Contracts.V1" Version="4.2.61" />
     <PackageReference Include="XtremeIdiots.Redirect.Api.Abstractions.V1" Version="1.0.15" />

@@ -141,9 +141,7 @@ public class ConfigController(
 
         var response = await ((IConfigApi)this).UpdateConfigVariable(gameServerId, filePath, variableName, request.Value, request.CommentLines);
 
-        return response.IsSuccess && response.Result?.Errors?.Any() != true
-            ? response.ToHttpResult()
-            : StatusCode((int)response.StatusCode, response.Result);
+        return StatusCode((int)response.StatusCode, response.Result);
     }
 
     async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines, CancellationToken cancellationToken)

@@ -42,3 +42,6 @@ Run integration tests only when their API identity, configuration, and reachable
 - Commit each root's `.terraform-version` and `.terraform.lock.hcl`. Select the exact root CLI pin before invoking Terraform; normal initialization uses `-lockfile=readonly`. Regenerate provider selections only in a reviewed dependency-update PR; never commit state, plans, or `.terraform/`.
 
 Use the repository README and focused docs for human operational detail; keep this file limited to implementation constraints that affect safe changes.
+
+
+CI-only main pushes run change detection but skip cloud/backend deployment jobs. Automatic deployment requires a change to the workload inputs already declared by the deployment filters; scheduled maintenance and explicit workflow dispatch retain their existing behavior. A deployment-workflow-only change requires explicit dispatch to exercise cloud operations.

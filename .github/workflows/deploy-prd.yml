@@ -30,6 +30,7 @@ jobs:
     outputs:
       src: ${{ inputs.scope == 'maps-bootstrap' || steps.changes.outputs.src == 'true' }}
       terraform: ${{ steps.changes.outputs.terraform }}
+      workload: ${{ steps.changes.outputs.workload }}
     steps:
       - name: Require approved main for maps bootstrap
         if: inputs.scope == 'maps-bootstrap' && github.ref != 'refs/heads/main'
@@ -43,9 +44,12 @@ jobs:
           filters: |
             src:src/**
             terraform:terraform/**
-
+            workload:src/**,terraform/**
   terraform-state-check-dev:
-    if: github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap'
+    needs: [detect-changes]
+    if: |
+      (github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap') &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -67,7 +71,8 @@ jobs:
 
   build-and-test:
     if: |
-      !failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
+      (!failure() && !cancelled() && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')) &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -91,7 +96,9 @@ jobs:
       build_version: ${{ steps.v1-ci.outputs.build_version }}
 
   terraform-plan-and-apply-dev:
-    if: github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap'
+    if: |
+      (github.event_name != 'schedule' && inputs.scope != 'maps-bootstrap') &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -150,7 +157,8 @@ jobs:
 
   app-service-deploy-dev:
     if: |
-      !failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
+      (!failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')) &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -182,7 +190,8 @@ jobs:
 
   apim-api-import-dev:
     if: |
-      !failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')
+      (!failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && github.event_name != 'schedule' && (needs.detect-changes.outputs.src == 'true' || needs.terraform-state-check-dev.outputs.state_tainted == 'true')) &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -217,7 +226,8 @@ jobs:
 
   terraform-plan-and-apply-prd:
     if: |
-      !failure() && !cancelled() && (inputs.scope == 'maps-bootstrap' || needs.terraform-plan-and-apply-dev.result == 'success' || github.event_name == 'schedule')
+      (!failure() && !cancelled() && (inputs.scope == 'maps-bootstrap' || needs.terraform-plan-and-apply-dev.result == 'success' || github.event_name == 'schedule')) &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -279,7 +289,8 @@ jobs:
 
   app-service-deploy-prd:
     if: |
-      !failure() && !cancelled() && needs.terraform-plan-and-apply-prd.result == 'success' && needs.detect-changes.outputs.src == 'true'
+      (!failure() && !cancelled() && needs.terraform-plan-and-apply-prd.result == 'success' && needs.detect-changes.outputs.src == 'true') &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write
@@ -310,7 +321,8 @@ jobs:
 
   apim-api-import-prd:
     if: |
-      !failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && needs.terraform-plan-and-apply-prd.result == 'success' && needs.detect-changes.outputs.src == 'true'
+      (!failure() && !cancelled() && inputs.scope != 'maps-bootstrap' && needs.terraform-plan-and-apply-prd.result == 'success' && needs.detect-changes.outputs.src == 'true') &&
+      (github.event_name != 'push' || needs.detect-changes.outputs.workload == 'true')
     permissions:
       contents: read
       id-token: write

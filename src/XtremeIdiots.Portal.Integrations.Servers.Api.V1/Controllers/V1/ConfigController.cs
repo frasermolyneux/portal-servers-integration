@@ -136,12 +136,14 @@ public class ConfigController(
     {
         if (request == null)
         {
-            return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToApiResult());
+            return BadRequest(new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")));
         }
 
         var response = await ((IConfigApi)this).UpdateConfigVariable(gameServerId, filePath, variableName, request.Value, request.CommentLines);
 
-        return response.ToHttpResult();
+        return response.IsSuccess && response.Result?.Errors?.Any() != true
+            ? response.ToHttpResult()
+            : StatusCode((int)response.StatusCode, response.Result);
     }
 
     async Task<ApiResult> IConfigApi.UpdateConfigVariable(Guid gameServerId, string filePath, string variableName, string value, string[]? commentLines, CancellationToken cancellationToken)
@@ -200,7 +202,8 @@ public class ConfigController(
 
             if (!match.Success)
             {
-                return new ApiResponse(new ApiError(ErrorCodes.CONFIG_VARIABLE_NOT_FOUND, $"The variable '{variableName}' was not found in the config file '{filePath}'.")).ToBadRequestResult();
+                return new ApiResponse(new ApiError(ErrorCodes.CONFIG_VARIABLE_NOT_FOUND,
+                    $"The config file '{filePath}' does not contain an active, quoted 'set {variableName}' entry. Commented-out entries are not updated. Select a different file containing an active entry for '{variableName}' in the assignment settings, then retry. No configuration was written.")).ToBadRequestResult();
             }
 
             // Detect the file's newline style

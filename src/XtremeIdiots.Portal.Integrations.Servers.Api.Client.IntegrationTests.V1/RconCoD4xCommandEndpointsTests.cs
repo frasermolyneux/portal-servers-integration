@@ -35,6 +35,39 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task Set_AacpMapList_IsPassedToNativeRcon()
+    {
+        var gameServerId = Guid.NewGuid();
+        SetupGameServer(gameServerId, GameType.CallOfDuty4x);
+        SetupRconConfiguration(gameServerId, JsonConvert.SerializeObject(new { password = "secret" }));
+        var rcon = new Mock<IRconClient>();
+        rcon.As<ICallOfDuty4xRconClient>().Setup(x => x.Set("scr_aacp_maps_1", "mp_bog;mp_custom")).ReturnsAsync("ok");
+        _factory.MockRconClientFactory
+            .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
+            .Returns(rcon.Object);
+
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/set",
+            new CoD4xSetDvarRequestDto { DvarName = "scr_aacp_maps_1", Value = "mp_bog;mp_custom" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        rcon.As<ICallOfDuty4xRconClient>().Verify(x => x.Set("scr_aacp_maps_1", "mp_bog;mp_custom"), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("mp_bog;mp_custom\nquit")]
+    [InlineData("mp_bog;mp_custom\rquit")]
+    [InlineData("mp_bog\";quit")]
+    [InlineData("mp_bog;mp_custom map_restart")]
+    public async Task Set_AacpMapList_RejectsCommandTextOutsideMapTokens(string value)
+    {
+        var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{Guid.NewGuid()}/cod4x/set",
+            new CoD4xSetDvarRequestDto { DvarName = "scr_aacp_maps_1", Value = value });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        _factory.MockRconClientFactory.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task Set_EmptyRotationValue_IsPassedToRcon()
     {
         var gameServerId = Guid.NewGuid();

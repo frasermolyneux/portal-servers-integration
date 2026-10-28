@@ -23,7 +23,6 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
     [GeneratedRegex(@"map\s*:\s*(\S+)", RegexOptions.Compiled, 1000)]
     private static partial Regex MapRegex();
 
-    private GameType _gameType;
     private string? _hostname;
     private int _queryPort;
     private string? _rconPassword;
@@ -38,7 +37,6 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         ArgumentNullException.ThrowIfNull(logger);
         _logger.LogDebug("[{GameServerId}] Configuring Source rcon client for {GameType} with endpoint {Hostname}:{QueryPort}", gameServerId, gameType, hostname, queryPort);
 
-        _gameType = gameType;
         _serverId = gameServerId;
         _hostname = hostname;
         _queryPort = queryPort;

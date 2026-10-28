@@ -4,9 +4,15 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1;
 
+/// <summary>
+/// Verifies configuration logging remains independent of stored game-type state.
+/// </summary>
 [Trait("Category", "Unit")]
 public class SourceRconClientConfigurationTests
 {
+    /// <summary>
+    /// Verifies configuration logs the supplied server and endpoint.
+    /// </summary>
     [Fact]
     public void Configure_LogsGameTypeServerIdHostnameAndPort()
     {
@@ -21,6 +27,9 @@ public class SourceRconClientConfigurationTests
             GetLoggedMessages(loggerMock).Single());
     }
 
+    /// <summary>
+    /// Verifies repeated configuration logs each invocation's arguments.
+    /// </summary>
     [Fact]
     public void Configure_LogsArgumentsFromEachInvocation()
     {
@@ -40,20 +49,22 @@ public class SourceRconClientConfigurationTests
             GetLoggedMessages(loggerMock));
     }
 
+    /// <summary>
+    /// Verifies configuration preserves the null-logger failure contract.
+    /// </summary>
     [Fact]
     public void Configure_ThrowsArgumentNullExceptionWhenLoggerIsNull()
     {
         var client = new SourceRconClient(null!);
 
-        Assert.Throws<ArgumentNullException>(() =>
+        _ = Assert.Throws<ArgumentNullException>(() =>
             client.Configure(GameType.Insurgency, Guid.NewGuid(), "insurgency.example.test", 27015, "password"));
     }
 
     private static string[] GetLoggedMessages(Mock<ILogger> loggerMock)
     {
-        return loggerMock.Invocations
+        return [.. loggerMock.Invocations
             .Select(invocation => invocation.Arguments[2]?.ToString())
-            .OfType<string>()
-            .ToArray();
+            .OfType<string>()];
     }
 }

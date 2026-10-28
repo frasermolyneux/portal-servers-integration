@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Api.V1\XtremeIdiots.Portal.Integrations.Servers.Api.V1.csproj" />
     <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1\XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.csproj" />
+    <ProjectReference Include="..\XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1\XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1.csproj" />
   </ItemGroup>
 
   <ItemGroup>

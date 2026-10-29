@@ -460,30 +460,40 @@ public class MapsController(
             ? file.RelativePath[..file.RelativePath.LastIndexOf('/')] : string.Empty))
         {
             var directory = group.Key.Length == 0 ? mapDirectoryPath : JoinPath(mapDirectoryPath, group.Key);
-            if (!await session.DirectoryExists(directory, cancellationToken).ConfigureAwait(false))
+            if (!await HasCompleteDirectoryFiles(session, directory, group, cancellationToken).ConfigureAwait(false))
             {
                 return false;
             }
-            var entries = await session.GetListing(directory, cancellationToken).ConfigureAwait(false);
-            foreach (var (file, relativePath) in group)
+        }
+        return true;
+    }
+
+    private static async Task<bool> HasCompleteDirectoryFiles(IGameServerFileTransportSession session, string directory,
+        IEnumerable<(ContentEntry File, string RelativePath)> files, CancellationToken cancellationToken)
+    {
+        if (!await session.DirectoryExists(directory, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+        var entries = await session.GetListing(directory, cancellationToken).ConfigureAwait(false);
+        foreach (var (file, relativePath) in files)
+        {
+            var name = relativePath[(relativePath.LastIndexOf('/') + 1)..];
+            var exact = entries.FirstOrDefault(entry => entry.Name == name);
+            if (exact != null)
             {
-                var name = relativePath[(relativePath.LastIndexOf('/') + 1)..];
-                var exact = entries.FirstOrDefault(entry => entry.Name == name);
-                if (exact != null)
-                {
-                    if (exact.IsDirectory || exact.Size != file.Bytes)
-                    {
-                        return false;
-                    }
-                    continue;
-                }
-                var retained = entries.Where(entry => string.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
-                // Resolve the requested casing on the host, rather than assuming every FTP/SFTP filesystem is case-insensitive.
-                if (retained.Length != 1 || retained[0].IsDirectory || retained[0].Size != file.Bytes ||
-                    !await session.FileExists(JoinPath(directory, name), cancellationToken).ConfigureAwait(false))
+                if (exact.IsDirectory || exact.Size != file.Bytes)
                 {
                     return false;
                 }
+                continue;
+            }
+            var retained = entries.Where(entry => string.Equals(entry.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+            // Resolve the requested casing on the host, rather than assuming every FTP/SFTP filesystem is case-insensitive.
+            if (retained.Length != 1 || retained[0].IsDirectory || retained[0].Size != file.Bytes ||
+                !await session.FileExists(JoinPath(directory, name), cancellationToken).ConfigureAwait(false))
+            {
+                return false;
             }
         }
         return true;

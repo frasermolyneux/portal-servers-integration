@@ -20,6 +20,7 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 
+[Collection("HostBoot")]
 [Trait("Category", "Unit")]
 public class ConfigControllerTests
 {

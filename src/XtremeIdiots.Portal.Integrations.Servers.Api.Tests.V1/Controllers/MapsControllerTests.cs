@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MX.Api.Abstractions;
 using Newtonsoft.Json;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Maps;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Constants;
@@ -380,6 +381,211 @@ public class MapsControllerTests
 
         var response = Assert.IsType<ApiResponse<MapVerificationCollectionDto>>(Assert.IsType<ObjectResult>(result).Value);
         Assert.Equal(complete, Assert.Single(response.Data!.Items).ExistsOnServer);
+    }
+
+    [Fact]
+    public async Task VerifyServerMaps_EmptyRequestDoesNotAccessExternalServices()
+    {
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(Guid.NewGuid(), []);
+
+        Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        Assert.Equal(ErrorCodes.INVALID_REQUEST, Assert.Single(result.Result!.Errors!).Code);
+        _mockRepositoryApiClient.VerifyNoOtherCalls();
+        _mockFileTransportFactory.VerifyNoOtherCalls();
+        _mockRedirectApiClient.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task VerifyServerMaps_NoGameFilesDoesNotInspectDirectories(bool hasReadme)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, hasReadme ? [CreateRedirectFile("readme.txt", 1)] : []);
+
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(gameServerId, ["mp_custom"]);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.False(Assert.Single(result.Result!.Data!.Items).ExistsOnServer);
+        session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.FileExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task VerifyServerMaps_GroupsInManifestOrderWithOneListingAndForwardsCancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId,
+            CreateRedirectFile("nested/first.ff", 3), CreateRedirectFile("mp_custom.ff", 4),
+            CreateRedirectFile("nested/second.iwd", 5), CreateRedirectFile("assets.iwd", 6),
+            CreateRedirectFile("nested/deeper/last.ff", 7));
+        session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("first.ff", "", false, 3, null), new("second.iwd", "", false, 5, null)]);
+        session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("mp_custom.ff", "", false, 4, null), new("assets.iwd", "", false, 6, null)]);
+        session.Setup(x => x.GetListing("usermaps/mp_custom/nested/deeper", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("LAST.FF", "", false, 7, null)]);
+        session.Setup(x => x.FileExists("usermaps/mp_custom/nested/deeper/last.ff", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(gameServerId, ["mp_custom"], cancellation.Token);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        var map = Assert.Single(result.Result!.Data!.Items);
+        Assert.Equal("mp_custom", map.MapName);
+        Assert.True(map.ExistsOnServer);
+        var calls = session.Invocations.Where(invocation => invocation.Method.Name is
+            nameof(IGameServerFileTransportSession.DirectoryExists) or
+            nameof(IGameServerFileTransportSession.GetListing) or
+            nameof(IGameServerFileTransportSession.FileExists)).ToArray();
+        string[] expectedCalls =
+        [
+            "DirectoryExists:usermaps/mp_custom/nested", "GetListing:usermaps/mp_custom/nested",
+            "DirectoryExists:usermaps/mp_custom", "GetListing:usermaps/mp_custom",
+            "DirectoryExists:usermaps/mp_custom/nested/deeper", "GetListing:usermaps/mp_custom/nested/deeper",
+            "FileExists:usermaps/mp_custom/nested/deeper/last.ff"
+        ];
+        Assert.Equal(expectedCalls, calls.Select(invocation => $"{invocation.Method.Name}:{invocation.Arguments[0]}"));
+        Assert.All(calls, invocation => Assert.Equal(cancellation.Token, invocation.Arguments[^1]));
+    }
+
+    [Theory]
+    [InlineData("nested/first.ff", "mp_custom.ff", "usermaps/mp_custom/nested")]
+    [InlineData("mp_custom.ff", "nested/first.ff", "usermaps/mp_custom")]
+    public async Task VerifyServerMaps_MissingFirstDirectoryStopsBeforeListingOrNextGroup(
+        string firstFile, string secondFile, string firstDirectory)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile(firstFile, 3), CreateRedirectFile(secondFile, 3));
+        session.Setup(x => x.DirectoryExists(firstDirectory, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(gameServerId, ["mp_custom"]);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.False(Assert.Single(result.Result!.Data!.Items).ExistsOnServer);
+        session.Verify(x => x.DirectoryExists(firstDirectory, It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.FileExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null, false, 3)]
+    [InlineData("other.ff", false, 3)]
+    [InlineData("first.ff", true, 3)]
+    [InlineData("first.ff", false, 2)]
+    [InlineData("FIRST.FF", true, 3)]
+    [InlineData("FIRST.FF", false, 2)]
+    public async Task VerifyServerMaps_InvalidEntryStopsBeforeLaterFilesAndDirectories(string? name, bool isDirectory, long size)
+    {
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("nested/first.ff", 3),
+            CreateRedirectFile("nested/second.ff", 3), CreateRedirectFile("mp_custom.ff", 3));
+        session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(name == null ? [] :
+                [new FileTransportEntry(name, "", isDirectory, size, null), new("SECOND.FF", "", false, 3, null)]);
+
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(gameServerId, ["mp_custom"]);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.False(Assert.Single(result.Result!.Data!.Items).ExistsOnServer);
+        session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.FileExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(true, false, 3, false, false, true, 0)]
+    [InlineData(true, false, 3, true, false, true, 0)]
+    [InlineData(true, true, 3, false, true, false, 0)]
+    [InlineData(true, false, 2, false, true, false, 0)]
+    [InlineData(false, false, 3, true, true, false, 0)]
+    [InlineData(false, false, 3, false, true, true, 1)]
+    [InlineData(false, false, 3, false, false, false, 1)]
+    public async Task VerifyServerMaps_ExactEntryPrecedesFallbackAndFallbackRequiresUniqueCanonicalMatch(
+        bool includeExact, bool exactDirectory, long exactSize, bool duplicateFallback,
+        bool canonicalExists, bool complete, int lookups)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("nested/first.ff", 3));
+        var entries = new List<FileTransportEntry> { new("FIRST.FF", "", false, 3, null) };
+        if (includeExact)
+        {
+            entries.Add(new("first.ff", "", exactDirectory, exactSize, null));
+        }
+        if (duplicateFallback)
+        {
+            entries.Add(new("First.ff", "", false, 3, null));
+        }
+        session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>())).ReturnsAsync(entries);
+        session.Setup(x => x.FileExists("usermaps/mp_custom/nested/first.ff", cancellation.Token)).ReturnsAsync(canonicalExists);
+
+        var result = await ((IMapsApi)CreateController()).VerifyServerMaps(gameServerId, ["mp_custom"], cancellation.Token);
+
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        Assert.Equal(complete, Assert.Single(result.Result!.Data!.Items).ExistsOnServer);
+        session.Verify(x => x.GetListing("usermaps/mp_custom/nested", cancellation.Token), Times.Once);
+        session.Verify(x => x.FileExists("usermaps/mp_custom/nested/first.ff", cancellation.Token), Times.Exactly(lookups));
+        session.Verify(x => x.FileExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(lookups));
+    }
+
+    [Theory]
+    [InlineData("DirectoryExists", false)]
+    [InlineData("GetListing", false)]
+    [InlineData("FileExists", false)]
+    [InlineData("DirectoryExists", true)]
+    [InlineData("GetListing", true)]
+    [InlineData("FileExists", true)]
+    public async Task VerifyServerMaps_TransportErrorsReachBoundaryAndCallerCancellationPropagates(string operation, bool callerCancelled)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var gameServerId = Guid.NewGuid();
+        var session = ConfigureMapTransfer(gameServerId, CreateRedirectFile("nested/first.ff", 3), CreateRedirectFile("mp_custom.ff", 3));
+        session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new FileTransportEntry("FIRST.FF", "", false, 3, null)]);
+        Exception error = callerCancelled ? new OperationCanceledException(cancellation.Token) : new IOException("Transport unavailable.");
+        Task<T> Fail<T>()
+        {
+            if (callerCancelled)
+            {
+                cancellation.Cancel();
+            }
+            return Task.FromException<T>(error);
+        }
+        switch (operation)
+        {
+            case "DirectoryExists":
+                session.Setup(x => x.DirectoryExists("usermaps/mp_custom/nested", cancellation.Token)).Returns(Fail<bool>);
+                break;
+            case "GetListing":
+                session.Setup(x => x.GetListing("usermaps/mp_custom/nested", cancellation.Token)).Returns(Fail<IReadOnlyList<FileTransportEntry>>);
+                break;
+            case "FileExists":
+                session.Setup(x => x.FileExists("usermaps/mp_custom/nested/first.ff", cancellation.Token)).Returns(Fail<bool>);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operation));
+        }
+
+        var api = (IMapsApi)CreateController();
+        if (callerCancelled)
+        {
+            var thrown = await Assert.ThrowsAsync<OperationCanceledException>(() => api.VerifyServerMaps(gameServerId, ["mp_custom"], cancellation.Token));
+            Assert.Same(error, thrown);
+        }
+        else
+        {
+            var result = await api.VerifyServerMaps(gameServerId, ["mp_custom"], cancellation.Token);
+            Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
+            Assert.Equal(ErrorCodes.FILE_TRANSPORT_OPERATION_FAILED, Assert.Single(result.Result!.Errors!).Code);
+            Assert.Contains(_mockLogger.Invocations, invocation => invocation.Arguments.Contains(error));
+        }
+        session.Verify(x => x.DirectoryExists("usermaps/mp_custom", It.IsAny<CancellationToken>()), Times.Never);
+        session.Verify(x => x.DisposeAsync(), Times.Once);
     }
 
     /// <summary>Verifies that built-in and missing maps retain request ordering.</summary>

@@ -40,10 +40,17 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
         return Task.CompletedTask;
     }
 
-    /// <summary>Verifies that complete redirect files produce a successful map result.</summary>
+    /// <summary>Verifies the HTTP status and DTO for complete and incomplete nested maps.</summary>
+    /// <param name="nestedDirectoryExists">Whether the nested directory exists.</param>
+    /// <param name="nestedBytes">The nested file's size on the host.</param>
+    /// <param name="complete">The expected map completeness.</param>
     /// <returns>The asynchronous test operation.</returns>
-    [Fact]
-    public async Task VerifyMaps_WhenRedirectFilesArePresent_ReturnsSuccessfulVerification()
+    [Theory]
+    [InlineData(true, 2, true)]
+    [InlineData(false, 2, false)]
+    [InlineData(true, 1, false)]
+    public async Task VerifyMaps_WithRootAndNestedFiles_PreservesStatusAndVerification(
+        bool nestedDirectoryExists, long nestedBytes, bool complete)
     {
         var gameServerId = Guid.NewGuid();
         var gameServer = JsonConvert.DeserializeObject<GameServerDto>(JsonConvert.SerializeObject(new
@@ -67,6 +74,10 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
         _ = session.Setup(x => x.DirectoryExists("usermaps/mp_custom", It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _ = session.Setup(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()))
             .ReturnsAsync([new FileTransportEntry("mp_custom.ff", "usermaps/mp_custom/mp_custom.ff", false, 3, null)]);
+        _ = session.Setup(x => x.DirectoryExists("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nestedDirectoryExists);
+        _ = session.Setup(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new FileTransportEntry("assets.iwd", "usermaps/mp_custom/nested/assets.iwd", false, nestedBytes, null)]);
         _ = _factory.MockGameServerFileTransportFactory
             .Setup(x => x.CreateSession(gameServerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<IGameServerFileTransportSession>(HttpStatusCode.OK,
@@ -74,7 +85,9 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
 
         var file = new ContentEntry("redirect/cod4/usermaps/mp_custom/mp_custom.ff", "mp_custom.ff", false, 3,
             DateTimeOffset.UtcNow, "current-version", "https://untrusted.invalid/not-a-download-source");
-        var manifest = new MapManifest("cod4", "mp_custom", "redirect/cod4/usermaps/mp_custom", [file], 3, "catalogue-version");
+        var nestedFile = new ContentEntry("redirect/cod4/usermaps/mp_custom/nested/assets.iwd", "assets.iwd", false, 2,
+            DateTimeOffset.UtcNow, "current-version", "https://untrusted.invalid/not-a-download-source");
+        var manifest = new MapManifest("cod4", "mp_custom", "redirect/cod4/usermaps/mp_custom", [file, nestedFile], 5, "catalogue-version");
         _ = _factory.MockRedirectApiClient
             .Setup(x => x.Manifest("cod4", "mp_custom", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApiResult<MapManifest>(HttpStatusCode.OK, new ApiResponse<MapManifest>(manifest)));
@@ -87,7 +100,12 @@ public class MapsVerificationEndpointTests(MapsVerificationWebApplicationFactory
         Assert.NotNull(apiResponse);
         Assert.NotNull(apiResponse.Data);
         Assert.NotNull(apiResponse.Data.Items);
-        Assert.True(Assert.Single(apiResponse.Data.Items).ExistsOnServer);
+        var map = Assert.Single(apiResponse.Data.Items);
+        Assert.Equal("mp_custom", map.MapName);
+        Assert.Equal(complete, map.ExistsOnServer);
+        session.Verify(x => x.GetListing("usermaps/mp_custom", It.IsAny<CancellationToken>()), Times.Once);
+        session.Verify(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()),
+            Times.Exactly(nestedDirectoryExists ? 1 : 0));
     }
 }
 

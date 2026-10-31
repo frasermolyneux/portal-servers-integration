@@ -64,6 +64,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1;
 /// (<c>FullyQualifiedName!~IntegrationTests</c>).
 /// </para>
 /// </remarks>
+[CollectionDefinition("HostBoot", DisableParallelization = true)]
+public sealed class HostBootExecution
+{
+}
+
+[Collection("HostBoot")]
 [Trait("Category", "Unit")]
 public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiClientRegistrationTests.HostBootFactory>
 {

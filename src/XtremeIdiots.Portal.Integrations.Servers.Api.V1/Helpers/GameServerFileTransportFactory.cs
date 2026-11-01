@@ -108,7 +108,9 @@ internal sealed class GameServerFileTransportFactory(
             ResolvedFileTransport transport,
             IConfiguration configuration,
             CancellationToken cancellationToken,
-            Func<ResolvedFileTransport, AsyncFtpClient>? clientFactory = null)
+            Func<ResolvedFileTransport, AsyncFtpClient>? clientFactory = null,
+            Func<AsyncFtpClient, CancellationToken, Task<FtpProfile>>? autoConnect = null,
+            Func<AsyncFtpClient, ValueTask>? disposeAsync = null)
         {
             var client = (clientFactory ?? (static transport => new AsyncFtpClient(
                 transport.Credentials.Hostname,
@@ -130,12 +132,12 @@ internal sealed class GameServerFileTransportFactory(
 
             try
             {
-                await client.AutoConnect(cancellationToken).ConfigureAwait(false);
+                await (autoConnect ?? ((client, token) => client.AutoConnect(token)))(client, cancellationToken).ConfigureAwait(false);
                 return new FtpGameServerFileTransportSession(transport, client);
             }
             catch
             {
-                await client.DisposeAsync().ConfigureAwait(false);
+                await (disposeAsync ?? (client => client.DisposeAsync()))(client).ConfigureAwait(false);
                 throw;
             }
         }

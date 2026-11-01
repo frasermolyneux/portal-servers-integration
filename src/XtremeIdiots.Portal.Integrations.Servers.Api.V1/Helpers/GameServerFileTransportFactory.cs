@@ -92,7 +92,7 @@ internal sealed class GameServerFileTransportFactory(
         }
     }
 
-    private sealed class FtpGameServerFileTransportSession : IGameServerFileTransportSession
+    internal sealed class FtpGameServerFileTransportSession : IGameServerFileTransportSession
     {
         private readonly AsyncFtpClient _client;
 
@@ -104,13 +104,19 @@ internal sealed class GameServerFileTransportFactory(
 
         public ResolvedFileTransport Transport { get; }
 
-        public static async Task<FtpGameServerFileTransportSession> CreateAsync(ResolvedFileTransport transport, IConfiguration configuration, CancellationToken cancellationToken)
+        internal static async Task<FtpGameServerFileTransportSession> CreateAsync(
+            ResolvedFileTransport transport,
+            IConfiguration configuration,
+            CancellationToken cancellationToken,
+            Func<ResolvedFileTransport, AsyncFtpClient>? clientFactory = null,
+            Func<AsyncFtpClient, CancellationToken, Task<FtpProfile>>? autoConnect = null,
+            Func<AsyncFtpClient, ValueTask>? disposeAsync = null)
         {
-            var client = new AsyncFtpClient(
+            var client = (clientFactory ?? (static transport => new AsyncFtpClient(
                 transport.Credentials.Hostname,
                 transport.Credentials.Username,
                 transport.Credentials.Password,
-                transport.Credentials.Port);
+                transport.Credentials.Port)))(transport);
 
             client.Config.ConnectTimeout = 10000;
             client.Config.ReadTimeout = 10000;
@@ -126,12 +132,12 @@ internal sealed class GameServerFileTransportFactory(
 
             try
             {
-                await client.AutoConnect(cancellationToken).ConfigureAwait(false);
+                await (autoConnect ?? ((client, token) => client.AutoConnect(token)))(client, cancellationToken).ConfigureAwait(false);
                 return new FtpGameServerFileTransportSession(transport, client);
             }
             catch
             {
-                client.Dispose();
+                await (disposeAsync ?? (client => client.DisposeAsync()))(client).ConfigureAwait(false);
                 throw;
             }
         }

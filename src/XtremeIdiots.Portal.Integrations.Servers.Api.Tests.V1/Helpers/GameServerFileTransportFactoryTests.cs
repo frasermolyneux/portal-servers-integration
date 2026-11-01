@@ -42,7 +42,8 @@ public class GameServerFileTransportFactoryTests
             disposalCompleted = true;
         }
 
-        await disposalStarted.Task;
+        var completed = await Task.WhenAny(disposalStarted.Task, creation);
+        Assert.Same(disposalStarted.Task, completed);
         Assert.False(creation.IsCompleted);
 
         releaseDisposal.SetResult();

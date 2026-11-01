@@ -92,7 +92,7 @@ internal sealed class GameServerFileTransportFactory(
         }
     }
 
-    private sealed class FtpGameServerFileTransportSession : IGameServerFileTransportSession
+    internal sealed class FtpGameServerFileTransportSession : IGameServerFileTransportSession
     {
         private readonly AsyncFtpClient _client;
 
@@ -104,13 +104,17 @@ internal sealed class GameServerFileTransportFactory(
 
         public ResolvedFileTransport Transport { get; }
 
-        public static async Task<FtpGameServerFileTransportSession> CreateAsync(ResolvedFileTransport transport, IConfiguration configuration, CancellationToken cancellationToken)
+        internal static async Task<FtpGameServerFileTransportSession> CreateAsync(
+            ResolvedFileTransport transport,
+            IConfiguration configuration,
+            CancellationToken cancellationToken,
+            Func<ResolvedFileTransport, AsyncFtpClient>? clientFactory = null)
         {
-            var client = new AsyncFtpClient(
+            var client = (clientFactory ?? (static transport => new AsyncFtpClient(
                 transport.Credentials.Hostname,
                 transport.Credentials.Username,
                 transport.Credentials.Password,
-                transport.Credentials.Port);
+                transport.Credentials.Port)))(transport);
 
             client.Config.ConnectTimeout = 10000;
             client.Config.ReadTimeout = 10000;
@@ -131,7 +135,7 @@ internal sealed class GameServerFileTransportFactory(
             }
             catch
             {
-                client.Dispose();
+                await client.DisposeAsync().ConfigureAwait(false);
                 throw;
             }
         }

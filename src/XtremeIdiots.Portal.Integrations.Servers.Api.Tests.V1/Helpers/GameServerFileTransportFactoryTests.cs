@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 
+using FluentFTP;
 using Renci.SshNet;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
+using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Settings.Contracts.V1.Contracts.FileTransport;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
@@ -12,6 +14,61 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 [Trait("Category", "Unit")]
 public class GameServerFileTransportFactoryTests
 {
+    private static readonly ResolvedFileTransport FtpTransport = new(
+        FileTransportType.Ftp,
+        "ftp",
+        new FileTransportCredentials("ftp.example.local", 21, "demo", "secret"));
+
+    [Fact]
+    public async Task FtpSession_WhenAutoConnectFails_AwaitsAsyncDisposalBeforeRethrowing()
+    {
+        var disposalStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseDisposal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var client = new TestAsyncFtpClient(
+            autoConnect: () => Task.FromException<FtpProfile>(new InvalidOperationException("connect failed")),
+            disposeAsync: async () =>
+            {
+                disposalStarted.SetResult();
+                await releaseDisposal.Task;
+            });
+
+        var creation = GameServerFileTransportFactory.FtpGameServerFileTransportSession.CreateAsync(
+            FtpTransport,
+            new ConfigurationBuilder().Build(),
+            CancellationToken.None,
+            _ => client);
+
+        await disposalStarted.Task;
+        Assert.False(creation.IsCompleted);
+
+        releaseDisposal.SetResult();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => creation);
+        Assert.True(client.DisposalCompleted);
+    }
+
+    [Fact]
+    public async Task FtpSession_WhenAutoConnectSucceeds_TransfersClientOwnershipToSession()
+    {
+        var clientDisposalCompleted = false;
+        var client = new TestAsyncFtpClient(
+            autoConnect: () => Task.FromResult(new FtpProfile()),
+            disposeAsync: () =>
+            {
+                clientDisposalCompleted = true;
+                return ValueTask.CompletedTask;
+            });
+
+        var session = await GameServerFileTransportFactory.FtpGameServerFileTransportSession.CreateAsync(
+            FtpTransport,
+            new ConfigurationBuilder().Build(),
+            CancellationToken.None,
+            _ => client);
+
+        Assert.False(clientDisposalCompleted);
+        await session.DisposeAsync();
+        Assert.True(clientDisposalCompleted);
+    }
+
     /// <summary>
     /// Verifies password settings select SSH.NET password authentication.
     /// </summary>
@@ -81,5 +138,21 @@ public class GameServerFileTransportFactoryTests
             () => GameServerFileTransportFactory.CreateSftpConnectionInfo(credentials));
 
         Assert.Equal("The sftp.privateKey setting is required for private-key authentication.", exception.Message);
+    }
+
+    private sealed class TestAsyncFtpClient(
+        Func<Task<FtpProfile>> autoConnect,
+        Func<ValueTask> disposeAsync) : AsyncFtpClient()
+    {
+        public bool DisposalCompleted { get; private set; }
+
+        public override Task<FtpProfile> AutoConnect(CancellationToken token)
+            => autoConnect();
+
+        public override async ValueTask DisposeAsync()
+        {
+            await disposeAsync();
+            DisposalCompleted = true;
+        }
     }
 }

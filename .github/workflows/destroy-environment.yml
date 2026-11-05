@@ -35,7 +35,7 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
-        uses: frasermolyneux/actions/terraform-setup@terraform-setup/v1.0.0
+        uses: frasermolyneux/actions/terraform-setup@terraform-setup/v1.1.0
         with:
           terraform-folder: terraform
           terraform_wrapper: "false"
@@ -73,7 +73,7 @@ jobs:
           ARM_USE_AZUREAD: true
           ARM_USE_OIDC: true
 
-      - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v2.0.0
+      - uses: frasermolyneux/actions/terraform-destroy@terraform-destroy/v2.0.1
         with:
           terraform-folder: "terraform"
           terraform-var-file: ${{ inputs.environment == 'prd' && 'tfvars/prd.tfvars' || 'tfvars/dev.tfvars' }}

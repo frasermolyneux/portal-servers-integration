@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: v1-ci
-        uses: frasermolyneux/actions/dotnet-web-ci@dotnet-web-ci/v2.1
+        uses: frasermolyneux/actions/dotnet-web-ci@a6271c58ed8e8f3b6fbdb738ac7566863fdc38c8 # dotnet-web-ci/v3.0.1
         with:
           test-reporting: "true"
           dotnet-project: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
@@ -36,9 +36,10 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/terraform-plan-and-apply@terraform-plan-and-apply/v2.0.1
+      - uses: frasermolyneux/actions/terraform-plan-and-apply@027d7e31bb32b734090aaed01b36d74f1d658b61 # terraform-plan-and-apply/v5.0.0
         with:
           terraform-folder: "terraform"
+          terraform-version: "1.17.1"
           terraform-var-file: "tfvars/dev.tfvars"
           terraform-backend-file: "backends/dev.backend.hcl"
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -80,7 +81,7 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/deploy-app-service@deploy-app-service/v1.3
+      - uses: frasermolyneux/actions/deploy-app-service@027d7e31bb32b734090aaed01b36d74f1d658b61 # deploy-app-service/v1.3.1
         with:
           web-artifact-name: "XtremeIdiots.Portal.Integrations.Servers.Api.V1"
           web-app-name: ${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}
@@ -91,7 +92,7 @@ jobs:
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - uses: frasermolyneux/actions/wait-for-version@wait-for-version/v1.0
+      - uses: frasermolyneux/actions/wait-for-version@027d7e31bb32b734090aaed01b36d74f1d658b61 # wait-for-version/v1.0.2
         with:
           info-url: "https://${{ needs.terraform-plan-and-apply-dev.outputs.web_app_name_v1 }}.azurewebsites.net/v1.0/info"
           expected-version: ${{ needs.build-and-test.outputs.build_version }}
@@ -106,7 +107,7 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-dev
     steps:
-      - uses: frasermolyneux/actions/apim-api-import@apim-api-import/v1.0
+      - uses: frasermolyneux/actions/apim-api-import@a6271c58ed8e8f3b6fbdb738ac7566863fdc38c8 # apim-api-import/v1.0.4
         with:
           api-id: "servers-integration-api-v1"
           api-display-name: "Servers Integration API"

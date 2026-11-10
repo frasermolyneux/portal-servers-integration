@@ -34,7 +34,7 @@
 
 ### NuGet Packaging
 - **release-version-and-tag.yml**: Calculates semantic version with Nerdbank.GitVersioning on push to `main` (src changes) or manual dispatch; optionally tags release commits
-- **release-publish-nuget.yml**: Runs after successful tagging workflow; publishes `nuget-packages` artifact to NuGet.org and creates GitHub release when a `v*` tag is present
+- **release-publish-nuget.yml**: Runs after successful tagging workflow; publishes `nuget-packages` artifact to NuGet.org using OIDC Trusted Publishing and creates GitHub release when a `v*` tag is present
 
 ## Standard Developer Flow
 
@@ -109,11 +109,11 @@ graph TD
 | Version/tag calculation | release-version-and-tag | Push to main (src)       | ❌             | ❌       | Prepares tag |
 | Publish NuGet release   | release-publish-nuget   | After successful tagging | ❌             | ❌       | ✅            |
 
-## Environment Secrets
+## Environment Variables
 
 OIDC authentication uses GitHub environment variables (not secrets):
 - `AZURE_CLIENT_ID`: Service principal app ID
 - `AZURE_TENANT_ID`: Azure AD tenant
 - `AZURE_SUBSCRIPTION_ID`: Target subscription
 
-Defined in **Development**, **Production**, and **NuGet** environments within GitHub repository settings.
+Defined in **Development**, **Production**, and **NuGet** environments within GitHub repository settings. The **NuGet** environment must also define `NUGET_USER`, the NuGet.org username that created the trusted publishing policy. NuGet publishing uses the GitHub OIDC token (`id-token: write`) and requires a GitHub-hosted runner version of at least 2.327.1 for NuGet's Node 24 login action.

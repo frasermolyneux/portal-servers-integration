@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      id-token: write
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment: NuGet
     runs-on: ubuntu-latest
@@ -44,14 +45,13 @@ jobs:
 
     - name: Publish to NuGet.org
       if: env.HAS_RELEASE_TAG == 'true'
-      uses: frasermolyneux/actions/publish-nuget-packages@027d7e31bb32b734090aaed01b36d74f1d658b61 # publish-nuget-packages/v2.0.3
+      uses: frasermolyneux/actions/publish-nuget-packages@f335f9f14d0062304978193d016f4a43a2e797f4 # publish-nuget-packages/v3.0.0
       with:
         artifact-name: nuget-packages
         artifact-run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         artifact-output-path: nuget-packages
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        nuget-user: ${{ vars.NUGET_USER }}
 
     - name: Create GitHub release
       if: env.HAS_RELEASE_TAG == 'true'

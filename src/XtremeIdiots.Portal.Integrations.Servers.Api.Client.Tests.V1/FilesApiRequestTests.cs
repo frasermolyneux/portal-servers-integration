@@ -82,11 +82,11 @@ public class FilesApiRequestTests
         var api = CreateApi(restClientService);
         var gameServerId = Guid.NewGuid();
 
-        var putException = await Assert.ThrowsAsync<HttpRequestException>(
+        var putException = await Assert.ThrowsAsync<ApiHttpRequestException>(
             () => api.PutContent(gameServerId, new PutFileContentRequestDto()));
-        var directoryException = await Assert.ThrowsAsync<HttpRequestException>(
+        var directoryException = await Assert.ThrowsAsync<ApiHttpRequestException>(
             () => api.CreateDirectory(gameServerId, new CreateDirectoryRequestDto()));
-        var patchException = await Assert.ThrowsAsync<HttpRequestException>(
+        var patchException = await Assert.ThrowsAsync<ApiHttpRequestException>(
             () => api.PatchEntry(gameServerId, new PatchFileEntryRequestDto()));
 
         Assert.Contains("BadRequest", putException.Message);

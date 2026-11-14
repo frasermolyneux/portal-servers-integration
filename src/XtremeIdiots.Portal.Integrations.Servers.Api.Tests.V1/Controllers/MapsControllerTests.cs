@@ -408,7 +408,7 @@ public class MapsControllerTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var items = result.Result?.Data?.Items;
         Assert.NotNull(items);
-        Assert.False(Assert.Single(items).ExistsOnServer);
+        Assert.False(Assert.Single(items!).ExistsOnServer);
         session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         session.Verify(x => x.FileExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -437,7 +437,7 @@ public class MapsControllerTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var items = result.Result?.Data?.Items;
         Assert.NotNull(items);
-        var map = Assert.Single(items);
+        var map = Assert.Single(items!);
         Assert.Equal("mp_custom", map.MapName);
         Assert.True(map.ExistsOnServer);
         var calls = session.Invocations.Where(invocation => invocation.Method.Name is
@@ -470,7 +470,7 @@ public class MapsControllerTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var items = result.Result?.Data?.Items;
         Assert.NotNull(items);
-        Assert.False(Assert.Single(items).ExistsOnServer);
+        Assert.False(Assert.Single(items!).ExistsOnServer);
         session.Verify(x => x.DirectoryExists(firstDirectory, It.IsAny<CancellationToken>()), Times.Once);
         session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -498,7 +498,7 @@ public class MapsControllerTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var items = result.Result?.Data?.Items;
         Assert.NotNull(items);
-        Assert.False(Assert.Single(items).ExistsOnServer);
+        Assert.False(Assert.Single(items!).ExistsOnServer);
         session.Verify(x => x.DirectoryExists(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         session.Verify(x => x.GetListing("usermaps/mp_custom/nested", It.IsAny<CancellationToken>()), Times.Once);
         session.Verify(x => x.GetListing(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);

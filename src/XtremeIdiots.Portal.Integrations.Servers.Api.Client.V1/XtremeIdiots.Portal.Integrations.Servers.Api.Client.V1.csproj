@@ -24,7 +24,7 @@
 	<PackageReference Include="Azure.Identity" Version="1.21.0" />
 	<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.14" />
 	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.14" />
-  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
   <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.14" />
 	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
 	<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />

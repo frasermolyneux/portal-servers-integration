@@ -10,4 +10,5 @@ public record CoD4xStatusResponseDto
     public string? MapName { get; set; }
     public IList<CoD4xStatusPlayerDto> Players { get; set; } = [];
     public string RawResponse { get; set; } = string.Empty;
+    public RconRosterObservationDto? Roster { get; set; }
 }

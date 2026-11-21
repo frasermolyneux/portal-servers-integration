@@ -7,11 +7,13 @@ using System.Text.RegularExpressions;
 
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Models.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
-public partial class Quake3RconClient(ILogger logger) : IRconClient
+public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRosterRconClient
 {
     private readonly ILogger _logger = logger;
 
@@ -59,9 +61,18 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
     {
         _logger.LogDebug("[{GameServerId}] Attempting to get a list of players from the server", ServerId);
 
-        var players = new List<IRconPlayer>();
+        return ParsePlayers(PlayerStatus());
+    }
 
-        var playerStatus = PlayerStatus();
+    public (List<IRconPlayer> Players, RconRosterObservationDto Roster) GetPlayersWithRoster(CancellationToken cancellationToken)
+    {
+        var status = PlayerStatus(cancellationToken);
+        return (ParsePlayers(status), RconRosterParser.Parse(status, GameTypeRegex(GameType), "guid"));
+    }
+
+    private List<IRconPlayer> ParsePlayers(string playerStatus)
+    {
+        var players = new List<IRconPlayer>();
         var lines = playerStatus.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
         for (var i = 3; i < lines.Count; i++)
         {
@@ -87,7 +98,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             int.TryParse(ping, out int pingInt);
             int.TryParse(rate, out int rateInt);
 
-            _logger.LogDebug("[{GameServerId}] Player {Name} with {Guid} and {IpAddress} parsed from result", ServerId, name, guid, ipAddress);
+            _logger.LogDebug("[{GameServerId}] Player in slot {Slot} parsed from result", ServerId, numInt);
 
             players.Add(new Quake3RconPlayer
             {
@@ -494,11 +505,11 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient
             playerIdentifier);
     }
 
-    private string PlayerStatus()
+    private string PlayerStatus(CancellationToken cancellationToken = default)
     {
-        var packets = Policy.Handle<Exception>()
+        var packets = Policy.Handle<Exception>(ex => ex is not OperationCanceledException)
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", ServerId, retryCount); })
-            .Execute(() => GetCommandPackets("status"));
+            .Execute(() => GetCommandPackets("status", cancellationToken: cancellationToken));
 
         _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", ServerId, packets.Count);
 

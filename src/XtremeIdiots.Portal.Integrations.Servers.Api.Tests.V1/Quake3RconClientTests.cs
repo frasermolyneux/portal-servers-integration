@@ -686,6 +686,33 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.Empty(roster.Players);
         }
 
+        [Fact]
+        public async Task GetPlayersWithRoster_CancellationInterruptsStatusRequest()
+        {
+            using var received = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            using var cancellation = new CancellationTokenSource();
+            _mockServer.RegisterCommandHandler("status", _ =>
+            {
+                received.Set();
+                release.Wait(TimeSpan.FromSeconds(10));
+                return MockUdpServer.CreateQuake3Response("");
+            });
+            _mockServer.Start();
+
+            var request = Task.Run(() => _rconClient.GetPlayersWithRoster(cancellation.Token));
+            try
+            {
+                Assert.True(received.Wait(TimeSpan.FromSeconds(5)));
+                cancellation.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await request.WaitAsync(TimeSpan.FromSeconds(2)));
+            }
+            finally
+            {
+                release.Set();
+            }
+        }
+
         public void Dispose()
         {
             _mockServer?.Dispose();

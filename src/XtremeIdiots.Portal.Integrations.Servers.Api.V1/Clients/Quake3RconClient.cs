@@ -509,7 +509,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     {
         var packets = Policy.Handle<Exception>(ex => ex is not OperationCanceledException)
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", ServerId, retryCount); })
-            .Execute(() => GetCommandPackets("status", cancellationToken: cancellationToken));
+            .Execute(token => GetCommandPackets("status", cancellationToken: token), cancellationToken);
 
         _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", ServerId, packets.Count);
 

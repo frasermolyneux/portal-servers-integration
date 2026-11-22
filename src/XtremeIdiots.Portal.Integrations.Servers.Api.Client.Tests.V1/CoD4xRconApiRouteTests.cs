@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Moq;
 using MX.Api.Client;
@@ -65,6 +66,29 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task Status_DeserializesAdditiveRoster()
+    {
+        var restClientService = new FakeRestClientService
+        {
+            Content = JsonSerializer.Serialize(new
+            {
+                data = new
+                {
+                    hostname = "Test",
+                    players = new[] { new { num = 1, playerIdentifier = "123456" } },
+                    roster = new { state = "Partial", players = new[] { new { slot = 1, playerIdentifier = "123456" } } }
+                }
+            })
+        };
+        var result = await CreateApi(restClientService).Status(Guid.NewGuid());
+
+        Assert.Equal("Test", result.Result!.Data!.Hostname);
+        Assert.Equal("123456", Assert.Single(result.Result.Data.Players).PlayerIdentifier);
+        Assert.Equal(RconRosterState.Partial, result.Result.Data.Roster!.State);
+        Assert.Equal("123456", Assert.Single(result.Result.Data.Roster.Players).PlayerIdentifier);
+    }
+
+    [Fact]
     public async Task GetMaps_UsesCod4xMapsRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -128,17 +152,18 @@ public class CoD4xRconApiRouteTests
     private sealed class FakeRestClientService : IRestClientService
     {
         public RestRequest? LastRequest { get; private set; }
+        public string? Content { get; init; }
 
         public Task<RestResponse> ExecuteAsync(string baseUrl, RestRequest request, CancellationToken cancellationToken = default)
         {
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK });
+            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
         }
 
         public Task<RestResponse> ExecuteWithNamedOptionsAsync(string optionsName, RestRequest request, CancellationToken cancellationToken = default)
         {
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK });
+            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
         }
 
         public void Dispose()

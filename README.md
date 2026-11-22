@@ -34,6 +34,18 @@ return an error; retrying a push retransfers its selected files. Resumable
 browser uploads/downloads and ZIP collections belong to the redirect manager,
 not a game-server transfer journal.
 
+## RCON roster observations
+
+CoD2, CoD4, CoD5 and CoD4x status responses include an optional `roster` observation.
+Recognized status output is `Partial`: RCON has no reliable response terminator or
+player count, so even an empty roster cannot establish absence. Invalid responses
+are `Failed`; transport failures use the existing API error response. Missing
+`roster` on older servers means unknown, not complete. Partial observations expose
+parsed identifiers and counts of unresolved rows, missing identifiers and explicit
+bot-address rows. Identifiers are not proof of human players; bots without an
+explicit marker cannot be distinguished. The observation contains no addresses or
+raw responses; legacy status fields are unchanged.
+
 ## NuGet Packages
 
 | Package                                                                                                                                                     | Latest                                                                                                                                                                                                  | Description                                               |

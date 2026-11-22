@@ -33,10 +33,19 @@ public abstract class GameScopedRconControllerBase(
             gameServerId,
             operationName,
             AuditAction.Execute,
-            (client, ct) => Task.FromResult(client.GetPlayers()),
-            players => new RconStatusResponseDto
+            (client, ct) =>
             {
-                Players = players.Select(player => new RconStatusPlayerDto
+                if (client is IPlayerRosterRconClient rosterClient)
+                {
+                    var (players, roster) = rosterClient.GetPlayersWithRoster(ct);
+                    return Task.FromResult(new RconPlayersSnapshot(players, roster));
+                }
+
+                return Task.FromResult(new RconPlayersSnapshot(client.GetPlayers(), null));
+            },
+            snapshot => new RconStatusResponseDto
+            {
+                Players = snapshot.Players.Select(player => new RconStatusPlayerDto
                 {
                     Num = player.Num,
                     Guid = player.Guid ?? string.Empty,
@@ -44,7 +53,8 @@ public abstract class GameScopedRconControllerBase(
                     IpAddress = player.IpAddress ?? string.Empty,
                     Rate = player.Rate,
                     Ping = player.Ping
-                }).ToList()
+                }).ToList(),
+                Roster = snapshot.Roster
             },
             cancellationToken,
             emitAuditAndEvent: false);
@@ -643,6 +653,8 @@ public abstract class GameScopedRconControllerBase(
 
         return null;
     }
+
+    private sealed record RconPlayersSnapshot(List<IRconPlayer> Players, RconRosterObservationDto? Roster);
 
     private sealed record RconContext(Guid GameServerId, string GameType, string Hostname, int QueryPort, IRconClient Client);
 }

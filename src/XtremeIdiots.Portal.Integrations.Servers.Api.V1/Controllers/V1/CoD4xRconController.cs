@@ -36,7 +36,7 @@ public class CoD4xRconController(
     private const int MaxCoD4xTempBanDurationMinutes = 525600;
     private const string DefaultCoD4xBanReason = "Banned by XtremeIdiots Portal";
     private static readonly Regex CoD4xPlayerIdentifierRegex = new(@"^[0-9]{17,21}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-    private static readonly Regex CoD4xStatusPlayerRegex = new(@"^\s*(?<num>\d+)\s+(?<score>-?\d+)\s+(?<ping>CNCT|ZMBI|PRIM|\d+)\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<steamid>\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<name>.+?)\s+(?<lastmsg>\d+)\s+(?<address>\[?[0-9a-fA-F:.]+\]?:\d+)\s+(?<qport>\d+)\s+(?<rate>\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xStatusPlayerRegex = new(@"^\s*(?<num>\d+)\s+(?<score>-?\d+)\s+(?<ping>CNCT|ZMBI|PRIM|\d+)\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<steamid>\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<name>.+?)\s+(?<lastmsg>\d+)\s+(?<address>\[?[0-9a-fA-F:.]+\]?:\d+)\s+(?<qport>-?\d+)\s+(?<rate>\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xDumpBanListEntryRegex = new(@"^(?<index>\d+) playerid: (?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); nick: (?<nick>.*?); adminsteamid: (?<admin>System/Rcon|\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); expire: (?<expire>Never|.+?); reason: (?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xDumpBanListCountRegex = new(@"^(?<count>\d+) Active bans$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xBanAddedOnlineRegex = new(@"^(?:attempting to add Banrecord for player:|Banrecord added for player:)\s*(?<name>.+)\s+id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -644,9 +644,13 @@ public class CoD4xRconController(
         return response;
     }
 
-    private static CoD4xStatusResponseDto ParseStatusResponse(string result)
+    internal static CoD4xStatusResponseDto ParseStatusResponse(string result)
     {
-        var response = new CoD4xStatusResponseDto { RawResponse = result };
+        var response = new CoD4xStatusResponseDto
+        {
+            RawResponse = result,
+            Roster = RconRosterParser.Parse(result, CoD4xStatusPlayerRegex, "playerid")
+        };
         var lines = result.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         foreach (var line in lines)

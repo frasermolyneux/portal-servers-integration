@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Moq;
 using MX.Api.Client;
@@ -138,6 +139,27 @@ public class GameScopedRconApiRouteTests
     }
 
     [Fact]
+    public async Task Cod5Status_DeserializesAdditiveRoster()
+    {
+        var restClientService = new FakeRestClientService
+        {
+            Content = JsonSerializer.Serialize(new
+            {
+                data = new
+                {
+                    players = new[] { new { num = 1, guid = "123", name = "Player" } },
+                    roster = new { state = "Partial", players = new[] { new { slot = 1, playerIdentifier = "123" } } }
+                }
+            })
+        };
+        var result = await CreateCod5Api(restClientService).Status(Guid.NewGuid());
+
+        Assert.Equal("123", Assert.Single(result.Result!.Data!.Players).Guid);
+        Assert.Equal(RconRosterState.Partial, result.Result.Data.Roster!.State);
+        Assert.Equal("123", Assert.Single(result.Result.Data.Roster.Players).PlayerIdentifier);
+    }
+
+    [Fact]
     public async Task Cod5Ban_UsesCod5BanRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -215,17 +237,18 @@ public class GameScopedRconApiRouteTests
     private sealed class FakeRestClientService : IRestClientService
     {
         public RestRequest? LastRequest { get; private set; }
+        public string? Content { get; init; }
 
         public Task<RestResponse> ExecuteAsync(string baseUrl, RestRequest request, CancellationToken cancellationToken = default)
         {
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK });
+            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
         }
 
         public Task<RestResponse> ExecuteWithNamedOptionsAsync(string optionsName, RestRequest request, CancellationToken cancellationToken = default)
         {
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK });
+            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
         }
 
         public void Dispose()

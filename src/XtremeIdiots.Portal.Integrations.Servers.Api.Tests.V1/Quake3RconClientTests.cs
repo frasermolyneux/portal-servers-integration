@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
@@ -637,6 +638,79 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.Equal(0, players[1].Ping);
             Assert.Equal("3333333333333333333", players[2].Guid);
             Assert.Equal(0, players[2].Ping);
+        }
+
+        [Theory]
+        [InlineData(GameType.CallOfDuty2, "123456789")]
+        [InlineData(GameType.CallOfDuty4, "abcdef0123456789abcdef0123456789")]
+        [InlineData(GameType.CallOfDuty5, "123456789")]
+        public void GetPlayersWithRoster_PreservesObservedIdentitiesAndReportsUnresolvedRows(GameType gameType, string identity)
+        {
+            _rconClient.Configure(gameType, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            var missingIdentity = gameType == GameType.CallOfDuty4 ? new string('0', 32) : "0";
+            var response =
+                "map: mp_test\n" +
+                "num score ping guid name lastmsg address qport rate\n" +
+                "--- ----- ---- ---- ---- ------- ------- ----- ----\n" +
+                $"0 10 50 {identity} Alice 1 127.0.0.1:28960 42 25000\n" +
+                $"1 0 50 {missingIdentity} Pending 1 127.0.0.2:28960 42 25000\n" +
+                "2 0 0 0 TestBot 0 bot 0 25000\n" +
+                "3 malformed human row\n";
+            _mockServer.RegisterCommandHandler("status", _ => MockUdpServer.CreateQuake3Response(response));
+            _mockServer.Start();
+
+            var (_, roster) = _rconClient.GetPlayersWithRoster(CancellationToken.None);
+
+            Assert.Equal(RconRosterState.Partial, roster.State);
+            var player = Assert.Single(roster.Players);
+            Assert.Equal(identity, player.PlayerIdentifier);
+            Assert.Equal(0, player.Slot);
+            Assert.Equal(1, roster.MissingIdentityCount);
+            Assert.Equal(1, roster.KnownBotCount);
+            Assert.Equal(1, roster.UnparsedRowCount);
+        }
+
+        [Theory]
+        [InlineData("map: mp_test\nnum score ping guid name lastmsg address qport rate\n--- ----- ---- ---- ---- ------- ------- ----- ----\n", RconRosterState.Partial)]
+        [InlineData("", RconRosterState.Failed)]
+        [InlineData("Bad rconpassword.", RconRosterState.Failed)]
+        [InlineData("map: mp_test\nnum score ping guid name lastmsg address qport rate\n", RconRosterState.Failed)]
+        public void GetPlayersWithRoster_DistinguishesEmptyStatusFromInvalidResponse(string response, RconRosterState expected)
+        {
+            _mockServer.RegisterCommandHandler("status", _ => MockUdpServer.CreateQuake3Response(response));
+            _mockServer.Start();
+
+            var (_, roster) = _rconClient.GetPlayersWithRoster(CancellationToken.None);
+
+            Assert.Equal(expected, roster.State);
+            Assert.Empty(roster.Players);
+        }
+
+        [Fact]
+        public async Task GetPlayersWithRoster_CancellationInterruptsStatusRequest()
+        {
+            using var received = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            using var cancellation = new CancellationTokenSource();
+            _mockServer.RegisterCommandHandler("status", _ =>
+            {
+                received.Set();
+                release.Wait(TimeSpan.FromSeconds(10));
+                return MockUdpServer.CreateQuake3Response("");
+            });
+            _mockServer.Start();
+
+            var request = Task.Run(() => _rconClient.GetPlayersWithRoster(cancellation.Token));
+            try
+            {
+                Assert.True(received.Wait(TimeSpan.FromSeconds(5)));
+                cancellation.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await request.WaitAsync(TimeSpan.FromSeconds(2)));
+            }
+            finally
+            {
+                release.Set();
+            }
         }
 
         public void Dispose()

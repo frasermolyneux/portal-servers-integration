@@ -1,10 +1,13 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using MX.Api.Client;
 using MX.Api.Abstractions;
 using MX.Observability.ApplicationInsights.Auditing;
+using MX.Observability.ApplicationInsights.Auditing.Models;
 using Newtonsoft.Json;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
@@ -63,14 +66,50 @@ public class RulesNativeActionControllerTests
             expected == "Dispatched" ? Times.Once() : Times.Never());
     }
 
-    [Fact]
-    public async Task Kick_WithReason_IsNotSilentlyDowngraded()
+    [Theory]
+    [InlineData(GameType.CallOfDuty2)]
+    [InlineData(GameType.CallOfDuty4)]
+    [InlineData(GameType.CallOfDuty5)]
+    [InlineData(GameType.CallOfDuty4x)]
+    public async Task Kick_WithReason_DispatchesSlotOnlyAndPreservesReason(GameType gameType)
     {
-        var fixture = new Fixture(GameType.CallOfDuty4);
+        const string reason = "Configured reason";
+        var fixture = new Fixture(gameType);
+        CreateGameServerEventDto? createdEvent = null;
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<CreateGameServerEventDto, CancellationToken>((dto, _) => createdEvent = dto)
+            .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer) with
-        { Effect = new RuleNativeEffect { Type = RuleNativeEffectType.DropPlayer, Reason = "Reason" } });
-        Assert.Equal("SkippedUnsupported", Outcome(result));
-        Assert.Empty(fixture.Audit.Invocations);
+        {
+            LogicalEffectId = "effect",
+            Effect = new RuleNativeEffect { Type = RuleNativeEffectType.DropPlayer, Reason = reason }
+        });
+
+        Assert.Equal("Dispatched", Outcome(result));
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Single(fixture.Audit.Invocations);
+        Assert.Contains(reason, JsonConvert.SerializeObject(fixture.Audit.Invocations.Single().Arguments[0]));
+        Assert.NotNull(createdEvent);
+        Assert.Equal("NativeAction.DropPlayer.Rcon.Dispatched", createdEvent.EventType);
+        Assert.Equal(Guid.Parse("9a894997-6307-2788-bb0a-82e5c6a00a53"), createdEvent.IdempotencyKey);
+
+        using var eventData = JsonDocument.Parse(createdEvent.EventData);
+        var root = eventData.RootElement;
+        Assert.Equal("DropPlayer", root.GetProperty("effect").GetString());
+        Assert.Equal("Rcon", root.GetProperty("source").GetString());
+        Assert.Equal("Dispatched", root.GetProperty("outcome").GetString());
+        Assert.True(root.GetProperty("actionType").ValueKind == JsonValueKind.Null);
+        Assert.Equal("abc", root.GetProperty("playerGuid").GetString());
+        Assert.Equal(3, root.GetProperty("slotId").GetInt32());
+        Assert.Equal(reason, root.GetProperty("reason").GetString());
+        Assert.True(root.GetProperty("adminActionId").ValueKind == JsonValueKind.Null);
     }
 
     [Fact]
@@ -80,12 +119,22 @@ public class RulesNativeActionControllerTests
         var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.PublicMessage, "hello"));
         Assert.Equal("SkippedUnsupported", Outcome(result));
         Assert.Empty(fixture.Audit.Invocations);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
     public async Task PublicMessage_DispatchesAndWritesAudit()
     {
         var fixture = new Fixture(GameType.CallOfDuty2);
+        CreateGameServerEventDto? createdEvent = null;
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<CreateGameServerEventDto, CancellationToken>((dto, _) => createdEvent = dto)
+            .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
         fixture.Client.As<IRulesNativeRconClient>()
             .Setup(x => x.DispatchPublicMessage("hello", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -95,6 +144,111 @@ public class RulesNativeActionControllerTests
         Assert.Equal(fixture.ServerId, response.Data!.GameServerId);
         fixture.Client.As<IRulesNativeRconClient>().Verify(x => x.DispatchPublicMessage("hello", It.IsAny<CancellationToken>()), Times.Once);
         Assert.Single(fixture.Audit.Invocations);
+        Assert.NotNull(createdEvent);
+        Assert.Equal("NativeAction.PublicMessage.Rcon.Dispatched", createdEvent.EventType);
+        using var eventData = JsonDocument.Parse(createdEvent.EventData);
+        Assert.Equal("PublicMessage", eventData.RootElement.GetProperty("effect").GetString());
+        Assert.Equal("hello", eventData.RootElement.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task Kick_WhenEventWriteConflicts_LogsFailureAndDoesNotRetryDispatch()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty5);
+        var conflict = new ApiHttpRequestException("Conflict", HttpStatusCode.Conflict, new ApiResponse());
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(conflict);
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer));
+
+        var response = Assert.IsType<ApiResponse<RuleActionResult>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, response.Data!.Outcome);
+        Assert.Contains("persistence failed; do not retry", response.Data.Detail, StringComparison.OrdinalIgnoreCase);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        fixture.Logger.Verify(logger => logger.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to write rules action event", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == conflict),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Kick_WhenAuditWriteFails_LogsFailureAndStillWritesEventWithoutRetryingDispatch()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty5);
+        var auditException = new InvalidOperationException("Audit store unavailable");
+        fixture.Audit.Setup(x => x.LogAudit(It.IsAny<AuditEvent>()))
+            .Throws(auditException);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer));
+
+        var response = Assert.IsType<ApiResponse<RuleActionResult>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, response.Data!.Outcome);
+        Assert.Contains("persistence failed; do not retry", response.Data.Detail, StringComparison.OrdinalIgnoreCase);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        fixture.Logger.Verify(logger => logger.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to write rules action audit", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == auditException),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Kick_WhenEventWriteReturnsFailure_LogsFailureAndDoesNotRetryDispatch()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty5);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.InternalServerError, new ApiResponse()));
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer));
+
+        var response = Assert.IsType<ApiResponse<RuleActionResult>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, response.Data!.Outcome);
+        Assert.Contains("persistence failed; do not retry", response.Data.Detail, StringComparison.OrdinalIgnoreCase);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        fixture.Logger.Verify(logger => logger.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Repository returned", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == null),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Theory]
@@ -123,6 +277,10 @@ public class RulesNativeActionControllerTests
         var result = await fixture.Controller.Execute(fixture.ServerId, command);
         Assert.Equal(expected, Outcome(result));
         fixture.Client.As<IRulesNativeRconClient>().Verify(x => x.DispatchPublicMessage(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
         Assert.Empty(fixture.Audit.Invocations);
     }
 
@@ -192,6 +350,7 @@ public class RulesNativeActionControllerTests
         public Mock<IRepositoryApiClient> Repository { get; } = new() { DefaultValue = DefaultValue.Mock };
         public Mock<IRconClient> Client { get; } = new();
         public Mock<IAuditLogger> Audit { get; } = new();
+        public Mock<ILogger<RulesNativeActionController>> Logger { get; } = new();
         public RulesNativeActionController Controller { get; }
         private readonly Guid _connectionId = Guid.NewGuid();
         private readonly RuleRuntimeDescriptor _runtime = new()
@@ -262,7 +421,7 @@ public class RulesNativeActionControllerTests
                     Players = [new() { Slot = 3, PlayerIdentifier = "abc" }]
                 }));
             factory.Setup(x => x.CreateInstance(gameType, ServerId, "127.0.0.1", 28960, "test")).Returns(Client.Object);
-            Controller = new RulesNativeActionController(Mock.Of<ILogger<RulesNativeActionController>>(), Repository.Object, factory.Object, Audit.Object)
+            Controller = new RulesNativeActionController(Logger.Object, Repository.Object, factory.Object, Audit.Object)
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
             };

@@ -55,9 +55,11 @@ raw responses; legacy status fields are unchanged.
 The service-account-only `v1/rcon/{serverId}/rules-action` accepts one shared
 `RuleActionCommand` and returns a correlated `RuleActionResult`. CoD2, CoD4,
 CoD5 and CoD4x can dispatch kicks and public/private messages when configured
-for RCON; Source games are unsupported by this adapter. Requested kick reasons
-and messages that cannot be represented safely by the ASCII RCON transport are
-skipped, not altered. Bans and expiry remain cloud/agent responsibilities.
+for RCON; Source games are unsupported by this adapter. A configured kick reason
+is retained in audit/event data but is not sent to the game server because these
+RCON adapters issue slot-only kicks. Messages that cannot be represented safely
+by the ASCII RCON transport are skipped, not altered. Bans and expiry remain
+cloud/agent responsibilities.
 
 The RCON adapter accepts only agent-observed identities, verifies the current
 fresh repository binding, then rechecks the slot and identifier immediately
@@ -66,6 +68,9 @@ incomplete roster cannot establish absence, and RCON cannot verify a native
 connection generation or eliminate slot-reuse races. UDP dispatch is not
 confirmation: `Dispatched` and `OutcomeUnknown` must never be blindly retried
 or treated as `Applied`. Dry runs send nothing.
+Successful dispatches emit `NativeAction.{effect}.Rcon.Dispatched` events with
+a deterministic per-effect idempotency key. Event write failures are logged and
+do not cause the native command to be sent again.
 
 ## NuGet Packages
 

@@ -1,5 +1,6 @@
-using System.Text.Json;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +42,7 @@ public class RulesNativeActionController(
             return BadRequest("The rules action command is invalid.");
         }
 
-        IActionResult Result(RuleActionExecutionOutcome outcome, string detail) =>
+        IActionResult Result(RuleActionExecutionOutcome outcome, string detail, DateTimeOffset? occurredAtUtc = null) =>
             new ApiResponse<RuleActionResult>(new RuleActionResult
             {
                 ExecutionId = request.ExecutionId,
@@ -50,7 +51,7 @@ public class RulesNativeActionController(
                 LogicalEffectId = request.LogicalEffectId,
                 Correlation = request.Correlation,
                 Outcome = outcome,
-                OccurredAtUtc = DateTimeOffset.UtcNow,
+                OccurredAtUtc = occurredAtUtc ?? DateTimeOffset.UtcNow,
                 Detail = detail
             }).ToApiResult().ToHttpResult();
 
@@ -62,11 +63,6 @@ public class RulesNativeActionController(
         if (request.Effect.Type is not (RuleNativeEffectType.DropPlayer or RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage))
         {
             return Result(RuleActionExecutionOutcome.SkippedUnsupported, "The requested native effect is not supported.");
-        }
-
-        if (request.Effect.Type == RuleNativeEffectType.DropPlayer && !string.IsNullOrWhiteSpace(request.Effect.Reason))
-        {
-            return Result(RuleActionExecutionOutcome.SkippedUnsupported, "This RCON adapter cannot deliver a kick reason.");
         }
 
         if ((request.Effect.Type == RuleNativeEffectType.DropPlayer && request.Effect.Message is not null) ||
@@ -234,8 +230,10 @@ public class RulesNativeActionController(
             return Result(RuleActionExecutionOutcome.OutcomeUnknown, "The native command may have been sent; do not retry blindly.");
         }
 
-        var operation = $"RulesNativeAction.{request.Effect.Type}.Dispatched";
-        var audit = AuditEvent.ServerAction(operation, AuditAction.Moderate)
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var eventType = $"NativeAction.{request.Effect.Type}.Rcon.Dispatched";
+        var auditOperation = $"RulesNativeAction.{request.Effect.Type}.Dispatched";
+        var auditBuilder = AuditEvent.ServerAction(auditOperation, AuditAction.Moderate)
             .WithGameContext(server.GameType.ToString(), gameServerId)
             .WithSource(nameof(RulesNativeActionController))
             .WithTarget(request.PlayerGuid, "Player")
@@ -243,33 +241,82 @@ public class RulesNativeActionController(
             .WithProperty("ExecutionId", request.ExecutionId.ToString())
             .WithProperty("LogicalEffectId", request.LogicalEffectId)
             .WithProperty("FeatureId", request.Correlation.FeatureId)
-            .WithProperty("RuleId", request.Correlation.RuleId)
-            .Build();
-        auditLogger.LogAudit(audit);
-        var data = JsonSerializer.Serialize(new
+            .WithProperty("RuleId", request.Correlation.RuleId);
+        if (!string.IsNullOrWhiteSpace(request.Effect.Reason))
         {
-            request.Effect.Type,
-            request.SlotId,
-            request.PlayerGuid,
-            request.Effect.Message,
-            request.ConnectionId,
-            request.ConnectionGeneration,
-            request.ExecutionId,
-            request.LogicalEffectId,
-            request.ActionId,
-            request.Correlation.FeatureId,
-            request.Correlation.RuleId,
-            request.Correlation.TriggerOccurrenceId,
-            Outcome = "Dispatched"
-        });
+            auditBuilder = auditBuilder.WithProperty("Reason", request.Effect.Reason);
+        }
+
+        var auditWriteFailed = false;
         try
         {
-            await repository.GameServersEvents.V1.CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, operation, data), ct).ConfigureAwait(false);
+            auditLogger.LogAudit(auditBuilder.Build());
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to write rules action dispatch event for server {GameServerId}", gameServerId);
+            auditWriteFailed = true;
+            logger.LogError(ex, "Failed to write rules action audit for server {GameServerId}, execution {ExecutionId}", gameServerId, request.ExecutionId);
         }
-        return Result(RuleActionExecutionOutcome.Dispatched, "UDP command sent without confirmation; connection generation was not validated.");
+
+        const string dispatchDetail = "UDP command sent without confirmation; connection generation was not validated.";
+        var data = JsonSerializer.Serialize(new
+        {
+            request.ExecutionId,
+            request.LogicalEffectId,
+            request.ActionId,
+            ActionType = (string?)null,
+            Effect = request.Effect.Type.ToString(),
+            Source = "Rcon",
+            Outcome = "Dispatched",
+            OccurredAtUtc = occurredAtUtc,
+            Detail = dispatchDetail,
+            AdminActionId = (string?)null,
+            request.PlayerGuid,
+            request.SlotId,
+            request.Effect.Reason,
+            request.Effect.Message,
+            request.ConnectionId,
+            request.ConnectionGeneration,
+            Correlation = request.Correlation
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var eventWriteFailed = false;
+        try
+        {
+            var eventResult = await repository.GameServersEvents.V1
+                .CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, eventType, data)
+                {
+                    IdempotencyKey = CreateEventIdempotencyKey(request.LogicalEffectId, eventType)
+                }, ct)
+                .ConfigureAwait(false);
+            if (!eventResult.IsSuccess)
+            {
+                eventWriteFailed = true;
+                logger.LogError(
+                    "Repository returned {StatusCode} while writing rules action event {EventType} for server {GameServerId}",
+                    eventResult.StatusCode,
+                    eventType,
+                    gameServerId);
+            }
+        }
+        catch (Exception ex)
+        {
+            eventWriteFailed = true;
+            logger.LogError(ex, "Failed to write rules action event for server {GameServerId}, execution {ExecutionId}", gameServerId, request.ExecutionId);
+        }
+
+        var resultDetail = dispatchDetail;
+        if (auditWriteFailed || eventWriteFailed)
+        {
+            resultDetail += " Audit or event persistence failed; do not retry the native command.";
+        }
+
+        return Result(RuleActionExecutionOutcome.Dispatched, resultDetail, occurredAtUtc);
+    }
+
+    private static Guid CreateEventIdempotencyKey(string logicalEffectId, string eventType)
+    {
+        var identity = Encoding.UTF8.GetBytes($"RulesNativeAction|{logicalEffectId}|{eventType}");
+        var hash = SHA256.HashData(identity);
+        return new Guid(hash.AsSpan(0, 16));
     }
 }

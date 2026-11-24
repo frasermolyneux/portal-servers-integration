@@ -329,6 +329,11 @@ public class CoD4xRconController(
     public Task<IActionResult> PluginInfo(Guid gameServerId, [FromBody] CoD4xPluginRequestDto? request) =>
         ExecuteAction(gameServerId, "RconCoD4xPluginInfo", null, request, RequirePluginRequest, (client, dto, ct) => client.PluginInfo(dto.PluginName!), HttpContext.RequestAborted);
 
+    [HttpGet]
+    [Route("rcon/{gameServerId}/cod4x/plugins/portal-health")]
+    public async Task<IActionResult> PortalPluginHealth(Guid gameServerId) =>
+        (await ExecuteAction(gameServerId, "RconCoD4xPortalPluginHealth", null, (client, ct) => client.PortalPluginHealth(ct), null, HttpContext.RequestAborted).ConfigureAwait(false)).ToHttpResult();
+
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screenshot")]
     public Task<IActionResult> TakeScreenshot(Guid gameServerId, [FromBody] TakeScreenshotRequestDto? request) =>

@@ -688,7 +688,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var packets = Policy.Handle<Exception>()
+        var packets = Policy.Handle<Exception>(ex => ex is not OperationCanceledException)
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
             {
                 _logger.LogWarning("[{GameServerId}] " + warningMessage + " - retry count: {Count}", [ServerId, .. debugMessageArgs, retryCount]);

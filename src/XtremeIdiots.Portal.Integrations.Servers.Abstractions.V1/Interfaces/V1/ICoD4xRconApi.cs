@@ -59,6 +59,8 @@ public interface ICoD4xRconApi
     Task<ApiResult<string>> UnloadPlugin(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> Plugins(Guid gameServerId, CancellationToken cancellationToken = default);
     Task<ApiResult<string>> PluginInfo(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default);
+    Task<ApiResult<string>> PortalPluginHealth(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("Portal plugin health is not implemented by this client.");
 
     Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default);
     Task<ApiResult<CoD4xBanCommandResponseDto>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default);

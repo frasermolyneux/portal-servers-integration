@@ -12,6 +12,20 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         private static readonly Guid TestServerId = Guid.NewGuid();
         private const string TestRconPassword = "testpass";
 
+        [Fact]
+        public async Task PortalPluginHealth_ReturnsRconOutput()
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+            server.RegisterCommandHandler("portalpluginhealth", _ =>
+                MockUdpServer.CreateQuake3Response("rulesProtocolVersion=1 nativeCapabilities=cod4x.player.drop"));
+            server.Start();
+
+            var response = await client.PortalPluginHealth(CancellationToken.None);
+
+            Assert.Contains("rulesProtocolVersion=1 nativeCapabilities=cod4x.player.drop", response);
+        }
+
         [Theory]
         [InlineData("set")]
         [InlineData("seta")]

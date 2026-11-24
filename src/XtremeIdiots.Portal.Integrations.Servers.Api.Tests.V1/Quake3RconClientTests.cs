@@ -32,6 +32,36 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             );
         }
 
+        [Theory]
+        [InlineData("kick", "clientkick 3")]
+        [InlineData("public", "say \" hello \"")]
+        [InlineData("private", "tell 3 \" hello \"")]
+        public async Task RulesNativeDispatch_SendsOneUnconfirmedCommand(string effect, string expectedCommand)
+        {
+            var received = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _mockServer.RegisterCommandHandler(expectedCommand, command =>
+            {
+                received.TrySetResult(command);
+                return MockUdpServer.CreateQuake3Response("ok");
+            });
+            _mockServer.Start();
+
+            switch (effect)
+            {
+                case "kick":
+                    await _rconClient.DispatchKick(3, CancellationToken.None);
+                    break;
+                case "public":
+                    await _rconClient.DispatchPublicMessage(" hello ", CancellationToken.None);
+                    break;
+                case "private":
+                    await _rconClient.DispatchPrivateMessage(3, " hello ", CancellationToken.None);
+                    break;
+            }
+
+            Assert.Equal(expectedCommand, await received.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
         [Fact]
         public async Task KickPlayerByName_SendsCorrectCommand()
         {

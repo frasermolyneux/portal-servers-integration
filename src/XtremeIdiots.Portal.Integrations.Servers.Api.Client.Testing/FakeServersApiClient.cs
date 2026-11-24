@@ -10,6 +10,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing;
 public class FakeServersApiClient : IServersApiClient
 {
     public FakeQueryApi FakeQuery { get; } = new();
+    public FakeRulesNativeActionApi FakeRulesNativeAction { get; } = new();
     public FakeCoD4xRconApi FakeCoD4xRcon { get; } = new();
     public FakeCod2RconApi FakeCod2Rcon { get; } = new();
     public FakeCod4RconApi FakeCod4Rcon { get; } = new();
@@ -58,6 +59,7 @@ public class FakeServersApiClient : IServersApiClient
     }
 
     public IVersionedQueryApi Query => _versionedQuery.Value;
+    public IVersionedRulesNativeActionApi RulesNativeAction => new VersionedRulesNativeActionApi(FakeRulesNativeAction);
     public IVersionedCoD4xRconApi CoD4xRcon => _versionedCoD4xRcon.Value;
     public IVersionedCod2RconApi Cod2Rcon => _versionedCod2Rcon.Value;
     public IVersionedCod4RconApi Cod4Rcon => _versionedCod4Rcon.Value;
@@ -75,6 +77,7 @@ public class FakeServersApiClient : IServersApiClient
     public void Reset()
     {
         FakeQuery.Reset();
+        FakeRulesNativeAction.Reset();
         FakeCoD4xRcon.Reset();
         FakeCod2Rcon.Reset();
         FakeCod4Rcon.Reset();

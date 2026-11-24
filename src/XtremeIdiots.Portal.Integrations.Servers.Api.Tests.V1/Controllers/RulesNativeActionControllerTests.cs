@@ -7,6 +7,7 @@ using Moq;
 using MX.Api.Client;
 using MX.Api.Abstractions;
 using MX.Observability.ApplicationInsights.Auditing;
+using MX.Observability.ApplicationInsights.Auditing.Models;
 using Newtonsoft.Json;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
@@ -179,6 +180,73 @@ public class RulesNativeActionControllerTests
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to write rules action event", StringComparison.Ordinal)),
                 It.Is<Exception?>(exception => exception == conflict),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Kick_WhenAuditWriteFails_LogsFailureAndStillWritesEventWithoutRetryingDispatch()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty5);
+        var auditException = new InvalidOperationException("Audit store unavailable");
+        fixture.Audit.Setup(x => x.LogAudit(It.IsAny<AuditEvent>()))
+            .Throws(auditException);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer));
+
+        var response = Assert.IsType<ApiResponse<RuleActionResult>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, response.Data!.Outcome);
+        Assert.Contains("persistence failed; do not retry", response.Data.Detail, StringComparison.OrdinalIgnoreCase);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        fixture.Logger.Verify(logger => logger.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to write rules action audit", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == auditException),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Kick_WhenEventWriteReturnsFailure_LogsFailureAndDoesNotRetryDispatch()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty5);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchKick(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.InternalServerError, new ApiResponse()));
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.DropPlayer));
+
+        var response = Assert.IsType<ApiResponse<RuleActionResult>>(Assert.IsType<ObjectResult>(result).Value);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, response.Data!.Outcome);
+        Assert.Contains("persistence failed; do not retry", response.Data.Detail, StringComparison.OrdinalIgnoreCase);
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Verify(x => x.DispatchKick(3, It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        fixture.Logger.Verify(logger => logger.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Repository returned", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == null),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }

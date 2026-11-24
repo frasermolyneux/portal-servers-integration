@@ -7,12 +7,55 @@ using MX.Api.Client.Configuration;
 using RestSharp;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.RulesEngine;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.Tests.V1;
 
 [Trait("Category", "Unit")]
 public class CoD4xRconApiRouteTests
 {
+    [Fact]
+    public async Task RulesAction_UsesSharedCommandAndResult()
+    {
+        var id = Guid.NewGuid();
+        var execution = Guid.NewGuid();
+        var service = new FakeRestClientService
+        {
+            Content = JsonSerializer.Serialize(new { data = new { executionId = execution, outcome = "Dispatched" } })
+        };
+        var api = new RulesNativeActionApi(Mock.Of<ILogger<BaseApi<ServersApiClientOptions>>>(), null, service,
+            new ServersApiClientOptions { BaseUrl = "https://localhost" });
+        var result = await api.Execute(id, new RuleActionCommand { ExecutionId = execution });
+        Assert.Equal($"v1/rcon/{id}/rules-action", service.LastRequest!.Resource);
+        Assert.Equal(Method.Post, service.LastRequest.Method);
+        Assert.Single(service.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+        Assert.Equal(execution, result.Result!.Data!.ExecutionId);
+        Assert.Equal(RuleActionExecutionOutcome.Dispatched, result.Result.Data.Outcome);
+    }
+
+    [Fact]
+    public async Task RulesAction_DoesNotRetryAnAmbiguousTransportFailure()
+    {
+        var service = new FakeRestClientService { ThrowOnExecute = true };
+        var api = new RulesNativeActionApi(Mock.Of<ILogger<BaseApi<ServersApiClientOptions>>>(), null, service,
+            new ServersApiClientOptions { BaseUrl = "https://localhost" });
+        await Assert.ThrowsAsync<HttpRequestException>(() => api.Execute(Guid.NewGuid(), new RuleActionCommand()));
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    public async Task RulesAction_DoesNotRetryAnUnsuccessfulResponse(HttpStatusCode statusCode)
+    {
+        var service = new FakeRestClientService { StatusCode = statusCode };
+        var api = new RulesNativeActionApi(Mock.Of<ILogger<BaseApi<ServersApiClientOptions>>>(), null, service,
+            new ServersApiClientOptions { BaseUrl = "https://localhost" });
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => api.Execute(Guid.NewGuid(), new RuleActionCommand()));
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
     [Fact]
     public async Task PermBan_UsesCod4xPermBanRoute()
     {
@@ -153,17 +196,30 @@ public class CoD4xRconApiRouteTests
     {
         public RestRequest? LastRequest { get; private set; }
         public string? Content { get; init; }
+        public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;
+        public bool ThrowOnExecute { get; init; }
+        public int ExecutionCount { get; private set; }
 
         public Task<RestResponse> ExecuteAsync(string baseUrl, RestRequest request, CancellationToken cancellationToken = default)
         {
+            ExecutionCount++;
+            if (ThrowOnExecute)
+            {
+                throw new HttpRequestException("Ambiguous transport failure");
+            }
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
+            return Task.FromResult(new RestResponse { StatusCode = StatusCode, Content = Content });
         }
 
         public Task<RestResponse> ExecuteWithNamedOptionsAsync(string optionsName, RestRequest request, CancellationToken cancellationToken = default)
         {
+            ExecutionCount++;
+            if (ThrowOnExecute)
+            {
+                throw new HttpRequestException("Ambiguous transport failure");
+            }
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
+            return Task.FromResult(new RestResponse { StatusCode = StatusCode, Content = Content });
         }
 
         public void Dispose()

@@ -3,6 +3,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
     public interface IServersApiClient
     {
         public IVersionedQueryApi Query { get; }
+        public IVersionedRulesNativeActionApi RulesNativeAction => throw new NotSupportedException("This client does not implement rules native actions.");
         public IVersionedCoD4xRconApi CoD4xRcon { get; }
         public IVersionedCod2RconApi Cod2Rcon { get; }
         public IVersionedCod4RconApi Cod4Rcon { get; }

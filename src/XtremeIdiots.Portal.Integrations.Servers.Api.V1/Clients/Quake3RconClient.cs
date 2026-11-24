@@ -13,7 +13,7 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
-public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRosterRconClient
+public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRosterRconClient, IRulesNativeRconClient
 {
     private readonly ILogger _logger = logger;
 
@@ -354,6 +354,37 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
             .Execute(() => GetCommandPackets($"tell {clientId} \"{sanitizedMessage}\"", skipReceive: true));
 
         return Task.FromResult("Tell command sent to player");
+    }
+
+    public Task DispatchKick(int clientId, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(clientId);
+        GetCommandPackets($"clientkick {clientId}", skipReceive: true, cancellationToken: cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    public Task DispatchPublicMessage(string message, CancellationToken cancellationToken)
+    {
+        ValidateRulesMessage(message);
+        GetCommandPackets($"say \"{message}\"", skipReceive: true, cancellationToken: cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    public Task DispatchPrivateMessage(int clientId, string message, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(clientId);
+        ValidateRulesMessage(message);
+        GetCommandPackets($"tell {clientId} \"{message}\"", skipReceive: true, cancellationToken: cancellationToken);
+        return Task.CompletedTask;
+    }
+
+    private static void ValidateRulesMessage(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        if (message.Length > 256 || message.Any(c => c < 32 || c > 126 || c is ';' or '"' or '\\'))
+        {
+            throw new ArgumentException("Message cannot be safely represented in a Quake RCON command.", nameof(message));
+        }
     }
 
     private static string SanitizeTellMessage(string message)

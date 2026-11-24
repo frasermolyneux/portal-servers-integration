@@ -101,6 +101,7 @@ public class FakeCoD4xRconApi : ICoD4xRconApi
     public Task<ApiResult<string>> UnloadPlugin(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("UnloadPlugin", gameServerId, request);
     public Task<ApiResult<string>> Plugins(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("Plugins", gameServerId);
     public Task<ApiResult<string>> PluginInfo(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("PluginInfo", gameServerId, request);
+    public Task<ApiResult<string>> PortalPluginHealth(Guid gameServerId, CancellationToken cancellationToken = default) => LogAndReturn("PortalPluginHealth", gameServerId);
     public Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) => LogAndReturn("TakeScreenshot", gameServerId, request);
     public Task<ApiResult<CoD4xBanCommandResponseDto>> BanPlayerByPlayerIdentifier(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
         LogAndReturnTyped("BanPlayerByPlayerIdentifier", gameServerId, new CoD4xBanCommandResponseDto { Outcome = "AddedOffline", IsSuccess = true, PlayerIdentifier = request.PlayerIdentifier ?? string.Empty }, request);

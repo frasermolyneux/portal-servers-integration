@@ -187,6 +187,9 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
     public Task<ApiResult<string>> PluginInfo(Guid gameServerId, CoD4xPluginRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "plugins/info", request, cancellationToken);
 
+    public Task<ApiResult<string>> PortalPluginHealth(Guid gameServerId, CancellationToken cancellationToken = default) =>
+        GetString(gameServerId, "plugins/portal-health", cancellationToken);
+
     public Task<ApiResult<string>> TakeScreenshot(Guid gameServerId, TakeScreenshotRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "screenshot", request, cancellationToken);
 

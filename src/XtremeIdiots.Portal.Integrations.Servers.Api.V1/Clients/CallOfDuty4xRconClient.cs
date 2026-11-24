@@ -245,6 +245,9 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         return ExecuteCommand($"pluginInfo {FormatCommandToken(pluginName, nameof(pluginName))}", "Attempting CoD4x pluginInfo for {PluginName}", "Failed to execute CoD4x pluginInfo command", pluginName);
     }
 
+    public Task<string> PortalPluginHealth(CancellationToken cancellationToken) =>
+        SendCommandWithRetry("portalpluginhealth", "Attempting CoD4x portal plugin health", "Failed to get CoD4x portal plugin health", cancellationToken);
+
     public Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier, string reason)
     {
         return ExecuteCommand(

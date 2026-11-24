@@ -20,6 +20,10 @@
 ## Overview
 Versioned REST API that bridges the XtremeIdiots Portal with game servers: querying live status, running RCON operations, and syncing maps over FTP or SFTP. Uses ASP.NET Core 9 with Microsoft.Identity.Web for Entra-protected controllers, Application Insights telemetry with sampling, optional Azure App Configuration, and a generated Repository API client for portal data. Packages abstractions and API clients for reuse across the ecosystem and deploys to Azure App Service via Terraform with OIDC authentication.
 
+The service-account-only CoD4x `plugins/portal-health` endpoint returns the raw
+`portalpluginhealth` RCON response. Unsupported or absent plugin health output
+is not evidence of installed capabilities; confirm the actual response at runtime.
+
 ## Redirect-backed map transfers
 
 The managed identity requires `Maps.Read`, with `RedirectApi:BaseUrl` and

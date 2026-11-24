@@ -12,6 +12,50 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         private static readonly Guid TestServerId = Guid.NewGuid();
         private const string TestRconPassword = "testpass";
 
+        [Fact]
+        public async Task PortalPluginHealth_ReturnsRconOutput()
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+            server.RegisterCommandHandler("portalpluginhealth", _ =>
+                MockUdpServer.CreateQuake3Response("rulesProtocolVersion=1 nativeCapabilities=cod4x.player.drop"));
+            server.Start();
+
+            var response = await client.PortalPluginHealth(CancellationToken.None);
+
+            Assert.Contains("rulesProtocolVersion=1 nativeCapabilities=cod4x.player.drop", response);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PortalPluginHealth_CancellationDoesNotRetry(bool cancelBeforeSend)
+        {
+            using var server = new MockUdpServer();
+            using var cancellation = new CancellationTokenSource();
+            var logger = new Mock<ILogger<CallOfDuty4xRconClient>>();
+            var client = new CallOfDuty4xRconClient(logger.Object);
+            client.Configure(GameType.CallOfDuty4x, TestServerId, "127.0.0.1", server.Port, TestRconPassword);
+            var received = 0;
+            server.RegisterCommandHandler("portalpluginhealth", _ =>
+            {
+                Interlocked.Increment(ref received);
+                cancellation.Cancel();
+                return MockUdpServer.CreateQuake3Response("ok");
+            });
+            server.Start();
+            if (cancelBeforeSend)
+            {
+                cancellation.Cancel();
+            }
+
+            var action = Task.Run(() => client.PortalPluginHealth(cancellation.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => action.WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(cancelBeforeSend ? 0 : 1, Volatile.Read(ref received));
+            logger.Verify(x => x.Log(LogLevel.Warning, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+        }
+
         [Theory]
         [InlineData("set")]
         [InlineData("seta")]

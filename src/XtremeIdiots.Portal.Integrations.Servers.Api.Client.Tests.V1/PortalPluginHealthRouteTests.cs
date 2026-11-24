@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Moq;
 using MX.Api.Client;
@@ -39,7 +40,7 @@ public class PortalPluginHealthRouteTests
         private Task<RestResponse> Execute(RestRequest request)
         {
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = """{"data":"unknown command"}""" });
+            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = JsonSerializer.Serialize(new { data = "unknown command" }) });
         }
 
         public void Dispose() { }

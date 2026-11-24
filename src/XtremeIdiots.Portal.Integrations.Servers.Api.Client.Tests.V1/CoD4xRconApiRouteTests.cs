@@ -57,6 +57,17 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task RulesAction_DoesNotRetryANullResponse()
+    {
+        var service = new FakeRestClientService { ReturnNull = true };
+        var api = new RulesNativeActionApi(Mock.Of<ILogger<BaseApi<ServersApiClientOptions>>>(), null, service,
+            new ServersApiClientOptions { BaseUrl = "https://localhost" });
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => api.Execute(Guid.NewGuid(), new RuleActionCommand()));
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
+    [Fact]
     public async Task PermBan_UsesCod4xPermBanRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -198,6 +209,7 @@ public class CoD4xRconApiRouteTests
         public string? Content { get; init; }
         public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;
         public bool ThrowOnExecute { get; init; }
+        public bool ReturnNull { get; init; }
         public int ExecutionCount { get; private set; }
 
         public Task<RestResponse> ExecuteAsync(string baseUrl, RestRequest request, CancellationToken cancellationToken = default)
@@ -206,6 +218,10 @@ public class CoD4xRconApiRouteTests
             if (ThrowOnExecute)
             {
                 throw new HttpRequestException("Ambiguous transport failure");
+            }
+            if (ReturnNull)
+            {
+                return Task.FromResult<RestResponse>(null!);
             }
             LastRequest = request;
             return Task.FromResult(new RestResponse { StatusCode = StatusCode, Content = Content });

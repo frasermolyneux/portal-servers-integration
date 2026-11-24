@@ -58,6 +58,7 @@ public interface ICallOfDuty4xRconClient
     Task<string> UnloadPlugin(string pluginName);
     Task<string> Plugins();
     Task<string> PluginInfo(string pluginName);
+    Task<string> PortalPluginHealth(CancellationToken cancellationToken);
 
     Task<string> TakeScreenshot(string playerIdentifier, CancellationToken cancellationToken = default);
     Task<string> BanPlayerByPlayerIdentifier(string playerIdentifier, string reason);

@@ -28,6 +28,42 @@ public interface ICallOfDuty4xRconClient
     Task<string> ScreenTell(string client, string message);
     Task<string> ConTell(string client, string message);
 
+    Task Say(string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Say(message);
+    }
+
+    Task<string> ScreenSay(string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ScreenSay(message);
+    }
+
+    Task<string> ConSay(string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ConSay(message);
+    }
+
+    Task<string> Tell(string client, string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Tell(client, message);
+    }
+
+    Task<string> ScreenTell(string client, string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ScreenTell(client, message);
+    }
+
+    Task<string> ConTell(string client, string message, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ConTell(client, message);
+    }
+
     Task<string> Map(string mapName);
     Task<List<Quake3QueryMap>> GetMaps();
     Task<string> MapRestart();

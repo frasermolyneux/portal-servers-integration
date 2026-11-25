@@ -12,6 +12,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 
 public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
 {
+    private readonly IRestClientService _restClientService;
+
     public CoD4xRconApi(
         ILogger<BaseApi<ServersApiClientOptions>> logger,
         IApiTokenProvider? apiTokenProvider,
@@ -19,6 +21,7 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
         ServersApiClientOptions options)
         : base(logger, apiTokenProvider, restClientService, options)
     {
+        _restClientService = restClientService;
     }
 
     private async Task<ApiResult<TResponse>> GetResponse<TResponse>(Guid gameServerId, string route, CancellationToken cancellationToken = default)
@@ -45,6 +48,19 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
 
     private Task<ApiResult<string>> PostString(Guid gameServerId, string route, object? body = null, CancellationToken cancellationToken = default) =>
         PostResponse<string>(gameServerId, route, body, cancellationToken);
+
+    private async Task<ApiResult<string>> PostMessage(Guid gameServerId, string route, object body, CancellationToken cancellationToken)
+    {
+        var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/cod4x/{route}", Method.Post, cancellationToken).ConfigureAwait(false);
+        request.AddJsonBody(body);
+        var response = await _restClientService.ExecuteAsync(Options.BaseUrl, request, cancellationToken).ConfigureAwait(false);
+        if (response is null)
+        {
+            throw new HttpRequestException("Message request returned no response; dispatch outcome is unknown.");
+        }
+
+        return response.ToApiResult<string>();
+    }
 
     public Task<ApiResult<CoD4xBanCommandResponseDto>> PermBan(Guid gameServerId, CoD4xPermBanRequestDto request, CancellationToken cancellationToken = default) =>
         PostResponse<CoD4xBanCommandResponseDto>(gameServerId, "permban", request, cancellationToken);
@@ -92,22 +108,22 @@ public class CoD4xRconApi : BaseApi<ServersApiClientOptions>, ICoD4xRconApi
         GetString(gameServerId, "system-info", cancellationToken);
 
     public Task<ApiResult<string>> Say(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "say", request, cancellationToken);
+        PostMessage(gameServerId, "say", request, cancellationToken);
 
     public Task<ApiResult<string>> ScreenSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "screen-say", request, cancellationToken);
+        PostMessage(gameServerId, "screen-say", request, cancellationToken);
 
     public Task<ApiResult<string>> ConSay(Guid gameServerId, CoD4xMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "con-say", request, cancellationToken);
+        PostMessage(gameServerId, "con-say", request, cancellationToken);
 
     public Task<ApiResult<string>> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "tell", request, cancellationToken);
+        PostMessage(gameServerId, "tell", request, cancellationToken);
 
     public Task<ApiResult<string>> ScreenTell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "screen-tell", request, cancellationToken);
+        PostMessage(gameServerId, "screen-tell", request, cancellationToken);
 
     public Task<ApiResult<string>> ConTell(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "con-tell", request, cancellationToken);
+        PostMessage(gameServerId, "con-tell", request, cancellationToken);
 
     public Task<ApiResult<string>> Map(Guid gameServerId, CoD4xMapRequestDto request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "map", request, cancellationToken);

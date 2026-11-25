@@ -28,6 +28,67 @@ public class RulesNativeActionController(
     IRconClientFactory factory,
     IAuditLogger auditLogger) : Controller
 {
+    [HttpGet("message-budget")]
+    public async Task<IActionResult> GetMessageChannelBudget(Guid gameServerId, [FromQuery] string? channel)
+    {
+        var ct = HttpContext.RequestAborted;
+        if (channel is not (RuleMessageChannels.RconPublicChat or RuleMessageChannels.RconPrivateChat))
+        {
+            return BudgetResult(new RuleMessageChannelBudgetDto
+            {
+                Status = RuleMessageBudgetStatus.Unsupported,
+                Detail = "Only public and private RCON chat are supported by the native rules adapter."
+            });
+        }
+
+        var serverResult = await repository.GameServers.V1.GetGameServer(gameServerId, ct).ConfigureAwait(false);
+        var server = serverResult.Result?.Data;
+        if (server is null)
+        {
+            return BudgetResult(new RuleMessageChannelBudgetDto
+            {
+                Status = RuleMessageBudgetStatus.Unavailable,
+                Detail = "Game server could not be resolved."
+            });
+        }
+
+        if (server.GameType is not (GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty5 or GameType.CallOfDuty4x))
+        {
+            return BudgetResult(new RuleMessageChannelBudgetDto
+            {
+                Status = RuleMessageBudgetStatus.Unsupported,
+                Detail = "This game has no supported native rules adapter."
+            });
+        }
+
+        var config = await repository.GameServerConfigurations.V1.GetConfiguration(gameServerId, "rcon", ct).ConfigureAwait(false);
+        var password = RconConfigResolver.ParsePasswordFromConfig(config?.Result?.Data?.Configuration);
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return BudgetResult(new RuleMessageChannelBudgetDto
+            {
+                Status = RuleMessageBudgetStatus.Unavailable,
+                Detail = "RCON credentials are unavailable."
+            });
+        }
+
+        var client = factory.CreateInstance(server.GameType, gameServerId, server.Hostname, server.QueryPort, password);
+        if (client is not IRulesNativeRconClient)
+        {
+            return BudgetResult(new RuleMessageChannelBudgetDto
+            {
+                Status = RuleMessageBudgetStatus.Unsupported,
+                Detail = "The configured RCON client does not support native rules actions."
+            });
+        }
+
+        var budget = await MessageChannelBudgetResolver.ResolveAsync(server.GameType, channel, client, logger, ct).ConfigureAwait(false);
+        return BudgetResult(budget);
+    }
+
+    private static IActionResult BudgetResult(RuleMessageChannelBudgetDto budget) =>
+        new ApiResponse<RuleMessageChannelBudgetDto>(budget).ToApiResult().ToHttpResult();
+
     [HttpPost]
     public async Task<IActionResult> Execute(Guid gameServerId, [FromBody] RuleActionCommand? request)
     {
@@ -71,6 +132,21 @@ public class RulesNativeActionController(
             return BadRequest("The native effect contains unexpected parameters.");
         }
 
+        if (request.RecipientTarget is not null && request.Effect.Type != RuleNativeEffectType.PrivateMessage)
+        {
+            return BadRequest("A recipient target is only supported for private messages.");
+        }
+
+        if (request.DeliveryIdentity is { } delivery &&
+            (request.Effect.Type is not (RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage) ||
+             delivery.ParentLogicalEffectId is not { Length: 64 } || !delivery.ParentLogicalEffectId.All(Uri.IsHexDigit) ||
+             delivery.MessageIndex < 0 || delivery.FragmentIndex < 0 ||
+             delivery.RecipientConnectionId != request.RecipientTarget?.ConnectionId ||
+             !string.Equals(delivery.ToLogicalEffectId(), request.LogicalEffectId, StringComparison.Ordinal)))
+        {
+            return BadRequest("The message delivery identity is invalid.");
+        }
+
         if (request.SlotId < 0 || string.IsNullOrWhiteSpace(request.PlayerGuid))
         {
             return BadRequest("A non-negative slot and player identifier are required.");
@@ -89,17 +165,43 @@ public class RulesNativeActionController(
             return BadRequest("The agent runtime identity is invalid.");
         }
 
-        if (request.Effect.Type is RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage &&
-            (string.IsNullOrWhiteSpace(request.Effect.Message) || Encoding.UTF8.GetByteCount(request.Effect.Message) > 256 ||
-             request.Effect.Message.Any(c => c < 32 || c == 127)))
+        var recipient = request.RecipientTarget;
+        if (recipient is not null &&
+            (recipient.GameServerId != gameServerId || recipient.ConnectionId == Guid.Empty ||
+             recipient.SlotId < 0 || string.IsNullOrWhiteSpace(recipient.PlayerGuid) ||
+             recipient.Runtime is null))
         {
-            return BadRequest("A message of at most 256 UTF-8 bytes without control characters is required.");
+            return BadRequest("The private message recipient is invalid.");
         }
 
-        if (request.Effect.Type is RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage &&
-            request.Effect.Message!.Any(c => c > 126 || c is ';' or '"' or '\\'))
+        if (recipient is not null &&
+            (recipient.Runtime.Id != "server-agent" ||
+             recipient.Runtime.IdentityModel != RuleRuntimeIdentityModel.AgentObservedConnection ||
+             recipient.ConnectionGeneration is not null))
         {
-            return Result(RuleActionExecutionOutcome.SkippedUnsupported, "This RCON adapter cannot safely represent the requested message.");
+            return Result(RuleActionExecutionOutcome.SkippedUnsupported, "Only agent-observed recipients can use the RCON adapter.");
+        }
+
+        if (recipient is not null &&
+            (recipient.Runtime.ProtocolVersion != 1 || recipient.Runtime.InstanceId == Guid.Empty ||
+             recipient.Runtime.StartedAtUtc == default || string.IsNullOrWhiteSpace(recipient.Runtime.Version) ||
+             request.DeliveryIdentity is null ||
+             request.DeliveryIdentity.RecipientConnectionId != recipient.ConnectionId))
+        {
+            return BadRequest("The private message recipient identity is invalid.");
+        }
+
+        var targetSlot = recipient?.SlotId ?? request.SlotId;
+        var targetGuid = recipient?.PlayerGuid ?? request.PlayerGuid;
+        var targetConnectionId = recipient?.ConnectionId ?? request.ConnectionId;
+        var targetRuntime = recipient?.Runtime ?? request.Runtime;
+
+        if (request.Effect.Type is RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage &&
+            (string.IsNullOrEmpty(request.Effect.Message) ||
+             (request.DeliveryIdentity is null && string.IsNullOrWhiteSpace(request.Effect.Message)) ||
+             request.Effect.Message.Any(c => c < 32 || c == 127)))
+        {
+            return BadRequest("A non-empty message without control characters is required.");
         }
 
         var serverResult = await repository.GameServers.V1.GetGameServer(gameServerId, ct).ConfigureAwait(false);
@@ -114,7 +216,13 @@ public class RulesNativeActionController(
             return Result(RuleActionExecutionOutcome.SkippedUnsupported, "This game has no supported native rules adapter.");
         }
 
-        var bindingResult = await repository.RuleConnectionBindings.V1.GetCurrentBinding(gameServerId, request.SlotId, request.PlayerGuid, ct).ConfigureAwait(false);
+        if (request.Effect.Type is RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage &&
+            !MessageChannelBudgetResolver.IsRepresentable(server.GameType, request.Effect.Message!))
+        {
+            return Result(RuleActionExecutionOutcome.SkippedUnsupported, "This RCON adapter cannot safely represent the requested message.");
+        }
+
+        var bindingResult = await repository.RuleConnectionBindings.V1.GetCurrentBinding(gameServerId, targetSlot, targetGuid, ct).ConfigureAwait(false);
         var binding = bindingResult.Result?.Data;
         if (binding is null)
         {
@@ -129,15 +237,15 @@ public class RulesNativeActionController(
         }
 
         if (binding.GameServerId != gameServerId || binding.GameType != server.GameType ||
-            binding.SlotId != request.SlotId ||
-            !string.Equals(binding.PlayerGuid, request.PlayerGuid, StringComparison.OrdinalIgnoreCase) ||
-            binding.ConnectionId != request.ConnectionId || binding.ConnectionGeneration is not null ||
-            binding.Runtime is null || binding.Runtime.Id != request.Runtime.Id ||
+            binding.SlotId != targetSlot ||
+            !string.Equals(binding.PlayerGuid, targetGuid, StringComparison.OrdinalIgnoreCase) ||
+            binding.ConnectionId != targetConnectionId || binding.ConnectionGeneration is not null ||
+            binding.Runtime is null || binding.Runtime.Id != targetRuntime.Id ||
             binding.Runtime.IdentityModel != RuleRuntimeIdentityModel.AgentObservedConnection ||
-            binding.Runtime.Version != request.Runtime.Version ||
-            binding.Runtime.ProtocolVersion != request.Runtime.ProtocolVersion ||
-            binding.Runtime.InstanceId != request.Runtime.InstanceId ||
-            binding.Runtime.StartedAtUtc != request.Runtime.StartedAtUtc)
+            binding.Runtime.Version != targetRuntime.Version ||
+            binding.Runtime.ProtocolVersion != targetRuntime.ProtocolVersion ||
+            binding.Runtime.InstanceId != targetRuntime.InstanceId ||
+            binding.Runtime.StartedAtUtc != targetRuntime.StartedAtUtc)
         {
             return Result(RuleActionExecutionOutcome.Stale, "The agent-observed connection binding no longer matches the command.");
         }
@@ -153,6 +261,26 @@ public class RulesNativeActionController(
         if (client is not IRulesNativeRconClient native || client is not IPlayerRosterRconClient rosterClient)
         {
             return Result(RuleActionExecutionOutcome.SkippedUnsupported, "The configured RCON client does not support native rules actions.");
+        }
+
+        if (request.Effect.Type is RuleNativeEffectType.PublicMessage or RuleNativeEffectType.PrivateMessage)
+        {
+            var channel = request.Effect.Type == RuleNativeEffectType.PublicMessage
+                ? RuleMessageChannels.RconPublicChat
+                : RuleMessageChannels.RconPrivateChat;
+            var budget = await MessageChannelBudgetResolver.ResolveAsync(server.GameType, channel, client, logger, ct).ConfigureAwait(false);
+            if (budget.Status != RuleMessageBudgetStatus.Available || budget.Budget is null)
+            {
+                var outcome = budget.Status == RuleMessageBudgetStatus.Unsupported
+                    ? RuleActionExecutionOutcome.SkippedUnsupported
+                    : RuleActionExecutionOutcome.Failed;
+                return Result(outcome, budget.Detail ?? "Message channel budget is unavailable.");
+            }
+
+            if (Encoding.UTF8.GetByteCount(request.Effect.Message!) + budget.Budget.ReservedPrefixUtf8Bytes > budget.Budget.MaxPayloadBytes)
+            {
+                return Result(RuleActionExecutionOutcome.SkippedUnsupported, "The frozen message fragment exceeds the current channel budget.");
+            }
         }
 
         {
@@ -173,7 +301,7 @@ public class RulesNativeActionController(
                 return Result(RuleActionExecutionOutcome.Failed, "The current player roster is incomplete.");
             }
 
-            var matches = roster.Players.Where(p => p.Slot == request.SlotId).ToArray();
+            var matches = roster.Players.Where(p => p.Slot == targetSlot).ToArray();
             if (matches.Length > 1)
             {
                 return Result(RuleActionExecutionOutcome.Failed, "The player slot is ambiguous.");
@@ -184,12 +312,12 @@ public class RulesNativeActionController(
                 return Result(RuleActionExecutionOutcome.Failed, "The partial roster does not establish whether the player is present.");
             }
 
-            if (!string.Equals(matches[0].PlayerIdentifier, request.PlayerGuid, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(matches[0].PlayerIdentifier, targetGuid, StringComparison.OrdinalIgnoreCase))
             {
                 return Result(RuleActionExecutionOutcome.Stale, "The player no longer occupies the expected slot.");
             }
 
-            if (roster.Players.Count(p => string.Equals(p.PlayerIdentifier, request.PlayerGuid, StringComparison.OrdinalIgnoreCase)) != 1)
+            if (roster.Players.Count(p => string.Equals(p.PlayerIdentifier, targetGuid, StringComparison.OrdinalIgnoreCase)) != 1)
             {
                 return Result(RuleActionExecutionOutcome.Failed, "The player identifier is ambiguous.");
             }
@@ -220,7 +348,7 @@ public class RulesNativeActionController(
                     await native.DispatchPublicMessage(request.Effect.Message!, ct).ConfigureAwait(false);
                     break;
                 case RuleNativeEffectType.PrivateMessage:
-                    await native.DispatchPrivateMessage(request.SlotId, request.Effect.Message!, ct).ConfigureAwait(false);
+                    await native.DispatchPrivateMessage(targetSlot, request.Effect.Message!, ct).ConfigureAwait(false);
                     break;
             }
         }
@@ -236,12 +364,19 @@ public class RulesNativeActionController(
         var auditBuilder = AuditEvent.ServerAction(auditOperation, AuditAction.Moderate)
             .WithGameContext(server.GameType.ToString(), gameServerId)
             .WithSource(nameof(RulesNativeActionController))
-            .WithTarget(request.PlayerGuid, "Player")
-            .WithProperty("SlotId", request.SlotId.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            .WithTarget(targetGuid, "Player")
+            .WithProperty("SlotId", targetSlot.ToString(System.Globalization.CultureInfo.InvariantCulture))
             .WithProperty("ExecutionId", request.ExecutionId.ToString())
             .WithProperty("LogicalEffectId", request.LogicalEffectId)
             .WithProperty("FeatureId", request.Correlation.FeatureId)
             .WithProperty("RuleId", request.Correlation.RuleId);
+        if (recipient is not null)
+        {
+            auditBuilder = auditBuilder
+                .WithProperty("TriggerPlayerGuid", request.PlayerGuid)
+                .WithProperty("TriggerSlotId", request.SlotId.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .WithProperty("RecipientConnectionId", recipient.ConnectionId.ToString());
+        }
         if (!string.IsNullOrWhiteSpace(request.Effect.Reason))
         {
             auditBuilder = auditBuilder.WithProperty("Reason", request.Effect.Reason);
@@ -277,6 +412,8 @@ public class RulesNativeActionController(
             request.Effect.Message,
             request.ConnectionId,
             request.ConnectionGeneration,
+            RecipientTarget = recipient,
+            request.DeliveryIdentity,
             Correlation = request.Correlation
         }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         var eventWriteFailed = false;
@@ -286,7 +423,7 @@ public class RulesNativeActionController(
                 .CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, eventType, data)
                 {
                     IdempotencyKey = CreateEventIdempotencyKey(request.LogicalEffectId, eventType)
-                }, ct)
+                }, CancellationToken.None)
                 .ConfigureAwait(false);
             if (!eventResult.IsSuccess)
             {

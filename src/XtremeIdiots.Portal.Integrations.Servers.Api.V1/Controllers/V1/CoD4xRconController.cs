@@ -162,36 +162,44 @@ public class CoD4xRconController(
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/say")]
     public Task<IActionResult> Say(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xSay", AuditAction.Execute, request, RequireMessage, static async (client, dto, ct) =>
+        ExecuteMessageBatch(gameServerId, "RconCoD4xSay", AuditAction.Execute, RuleMessageChannels.RconPublicChat,
+            request?.Message, request?.Messages, null, request is not null, static async (client, _, text, ct) =>
         {
-            await client.Say(dto.Message!).ConfigureAwait(false);
+            await client.Say(text, ct).ConfigureAwait(false);
             return string.Empty;
         }, HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screen-say")]
     public Task<IActionResult> ScreenSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xScreenSay", AuditAction.Execute, request, RequireMessage, (client, dto, ct) => client.ScreenSay(dto.Message!), HttpContext.RequestAborted);
+        ExecuteMessageBatch(gameServerId, "RconCoD4xScreenSay", AuditAction.Execute, RuleMessageChannels.RconPublicScreen,
+            request?.Message, request?.Messages, null, request is not null,
+            static (client, _, text, ct) => client.ScreenSay(text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/con-say")]
     public Task<IActionResult> ConSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xConSay", AuditAction.Execute, request, RequireMessage, (client, dto, ct) => client.ConSay(dto.Message!), HttpContext.RequestAborted);
+        ExecuteMessageBatch(gameServerId, "RconCoD4xConSay", AuditAction.Execute, RuleMessageChannels.RconPublicConsole,
+            request?.Message, request?.Messages, null, request is not null,
+            static (client, _, text, ct) => client.ConSay(text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/tell")]
     public Task<IActionResult> Tell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.Tell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteTargetMessageBatch(gameServerId, "RconCoD4xTell", RuleMessageChannels.RconPrivateChat, request,
+            static (client, target, text, ct) => client.Tell(target, text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/screen-tell")]
     public Task<IActionResult> ScreenTell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xScreenTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.ScreenTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteTargetMessageBatch(gameServerId, "RconCoD4xScreenTell", RuleMessageChannels.RconPrivateScreen, request,
+            static (client, target, text, ct) => client.ScreenTell(target, text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/con-tell")]
     public Task<IActionResult> ConTell(Guid gameServerId, [FromBody] CoD4xTargetMessageRequestDto? request) =>
-        ExecuteAction(gameServerId, "RconCoD4xConTell", AuditAction.Moderate, request, RequireTargetAndMessage, (client, dto, ct) => client.ConTell(dto.Target!, dto.Message!), HttpContext.RequestAborted);
+        ExecuteTargetMessageBatch(gameServerId, "RconCoD4xConTell", RuleMessageChannels.RconPrivateConsole, request,
+            static (client, target, text, ct) => client.ConTell(target, text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/map")]
@@ -338,6 +346,156 @@ public class CoD4xRconController(
     [Route("rcon/{gameServerId}/cod4x/screenshot")]
     public Task<IActionResult> TakeScreenshot(Guid gameServerId, [FromBody] TakeScreenshotRequestDto? request) =>
         ExecuteAction(gameServerId, "RconCoD4xScreenshot", AuditAction.Execute, request, RequirePlayerIdentifier, (client, dto, ct) => client.TakeScreenshot(dto.PlayerIdentifier!, ct), HttpContext.RequestAborted);
+
+    private Task<IActionResult> ExecuteTargetMessageBatch(
+        Guid gameServerId, string operationName, string channel, CoD4xTargetMessageRequestDto? request,
+        Func<ICallOfDuty4xRconClient, string, string, CancellationToken, Task<string>> dispatch,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            return Task.FromResult(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult());
+        }
+
+        var target = TrimOrNull(request.Target);
+        if (target is null)
+        {
+            return Task.FromResult(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Target cannot be null or empty.")).ToBadRequestResult().ToHttpResult());
+        }
+        if (!IsValidCommandTarget(target) || target.Any(c => c < 32 || c > 126 || c == '\\'))
+        {
+            return Task.FromResult(InvalidTargetResult().ToHttpResult());
+        }
+
+        return ExecuteMessageBatch(gameServerId, operationName, AuditAction.Moderate, channel,
+            request.Message, request.Messages, target, true,
+            (client, _, text, ct) => dispatch(client, target, text, ct), cancellationToken);
+    }
+
+    private async Task<IActionResult> ExecuteMessageBatch(
+        Guid gameServerId,
+        string operationName,
+        AuditAction auditAction,
+        string channel,
+        string? message,
+        IEnumerable<string>? messages,
+        string? target,
+        bool hasBody,
+        Func<ICallOfDuty4xRconClient, string?, string, CancellationToken, Task<string>> dispatch,
+        CancellationToken cancellationToken)
+    {
+        if (!hasBody)
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var (items, validationError) = RconMessageBatch.Normalize(GameType.CallOfDuty4x, message, messages);
+        if (items is null)
+        {
+            return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, validationError!);
+        }
+
+        var contextResult = await TryGetCoD4xContext(gameServerId, cancellationToken).ConfigureAwait(false);
+        if (contextResult.Error is not null)
+        {
+            logger.LogWarning("Failed to resolve {OperationName} context for game server {GameServerId}", operationName, gameServerId);
+            return contextResult.Error.ToHttpResult();
+        }
+
+        var context = contextResult.Context!;
+        if (context.Client is not IRconClient client)
+        {
+            return new ApiResponse<string>(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The configured client cannot prepare messages.")).ToBadRequestResult().ToHttpResult();
+        }
+
+        var operation = telemetryClient.StartOperation<DependencyTelemetry>(operationName);
+        operation.Telemetry.Type = $"{context.GameType}Server";
+        operation.Telemetry.Target = $"{context.Hostname}:{context.QueryPort}";
+        try
+        {
+            var budget = await MessageChannelBudgetResolver.ResolveAsync(GameType.CallOfDuty4x, channel, client, logger, cancellationToken).ConfigureAwait(false);
+            if (budget.Status != RuleMessageBudgetStatus.Available || budget.Budget is null)
+            {
+                var code = budget.Status == RuleMessageBudgetStatus.Unsupported ? ErrorCodes.OPERATION_NOT_IMPLEMENTED : ErrorCodes.RCON_OPERATION_FAILED;
+                return MessageError(HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
+            }
+
+            var (prepared, error) = RconMessageBatch.Prepare(GameType.CallOfDuty4x, items, budget.Budget);
+            if (prepared is null)
+            {
+                return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);
+            }
+
+            var result = await RconMessageBatch.DispatchAsync(gameServerId, GameType.CallOfDuty4x, channel, client, prepared,
+                async (text, ct) => await dispatch(context.Client, target, text, ct).ConfigureAwait(false),
+                logger, cancellationToken).ConfigureAwait(false);
+            var auditSucceeded = true;
+            if (result.CompletedFragments > 0)
+            {
+                var eventName = result.IsSuccess ? operationName : $"{operationName}.PartialDispatch";
+                var audit = AuditEvent.ServerAction(eventName, auditAction)
+                    .WithGameContext(context.GameType, gameServerId)
+                    .WithSource(nameof(CoD4xRconController))
+                    .WithProperty("CompletedFragments", result.CompletedFragments.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    .WithProperty("TotalFragments", result.TotalFragments.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    .WithProperty("Dispatch", "LocalUdpSend")
+                    .WithProperty("PlayerDelivery", "Unconfirmed");
+                if (target is not null)
+                {
+                    audit = audit.WithTarget(target, "Target");
+                }
+
+                var operatorData = new Dictionary<string, object?>
+                {
+                    ["Target"] = target,
+                    ["MessageCount"] = prepared.Items.Count,
+                    ["Message"] = prepared.Items.Count == 1 ? prepared.Items[0] : null,
+                    ["Messages"] = prepared.Items.Count > 1 ? prepared.Items : null,
+                    ["CompletedFragments"] = result.CompletedFragments,
+                    ["TotalFragments"] = result.TotalFragments,
+                    ["OutcomeUnknown"] = result.OutcomeUnknown,
+                    ["Dispatch"] = "LocalUdpSend",
+                    ["PlayerDelivery"] = "Unconfirmed"
+                };
+                try
+                {
+                    auditLogger.LogAudit(audit.Build());
+                }
+                catch (Exception ex)
+                {
+                    auditSucceeded = false;
+                    logger.LogError(ex, "Failed to write message audit for server {GameServerId}", gameServerId);
+                }
+                auditSucceeded &= await TryWriteOperatorEventAsync(gameServerId, eventName, operatorData, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            if (!result.IsSuccess)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = result.Detail;
+                var code = result.CompletedFragments > 0 ? ErrorCodes.RCON_MESSAGE_PARTIAL_FAILURE :
+                    result.NotImplemented ? ErrorCodes.OPERATION_NOT_IMPLEMENTED : ErrorCodes.RCON_OPERATION_FAILED;
+                var detail = result.DescribeFailure() + (auditSucceeded ? string.Empty : " Audit or event persistence also failed.");
+                return MessageError(HttpStatusCode.BadGateway, code, detail);
+            }
+
+            if (!auditSucceeded)
+            {
+                operation.Telemetry.Success = false;
+                return MessageError(HttpStatusCode.BadGateway, ErrorCodes.RCON_MESSAGE_PARTIAL_FAILURE,
+                    $"All {result.TotalFragments} fragments were dispatched, but audit or event persistence failed. Do not retry the batch.");
+            }
+
+            return new ApiResponse<string>(result.LastResponse ?? string.Empty).ToApiResult().ToHttpResult();
+        }
+        finally
+        {
+            telemetryClient.StopOperation(operation);
+        }
+    }
+
+    private static IActionResult MessageError(HttpStatusCode status, string code, string detail) =>
+        new ApiResult<string>(status, new ApiResponse<string>(new ApiError(code, detail))).ToHttpResult();
 
     private async Task<IActionResult> ExecuteAction<TRequest>(
         Guid gameServerId,
@@ -914,18 +1072,22 @@ public class CoD4xRconController(
         }
     }
 
-    private async Task TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken cancellationToken = default)
+    private async Task<bool> TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken? cancellationToken = null)
     {
         var eventData = JsonSerializer.Serialize(data);
-        var effectiveCancellationToken = cancellationToken == default
-            ? HttpContext.RequestAborted
-            : cancellationToken;
+        var effectiveCancellationToken = cancellationToken ?? HttpContext.RequestAborted;
 
         try
         {
-            await repositoryApiClient.GameServersEvents.V1
+            var result = await repositoryApiClient.GameServersEvents.V1
                 .CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, eventType, eventData), effectiveCancellationToken)
                 .ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                logger.LogWarning("Repository returned {StatusCode} while writing {EventType} for game server {GameServerId}",
+                    result.StatusCode, eventType, gameServerId);
+            }
+            return result.IsSuccess;
         }
         catch (Exception ex)
         {
@@ -933,6 +1095,7 @@ public class CoD4xRconController(
                 "Failed to write {EventType} operator event for game server {GameServerId}",
                 eventType,
                 gameServerId);
+            return false;
         }
     }
 

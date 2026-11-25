@@ -131,16 +131,29 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
     }
 
     public Task Say(string message)
+        => Say(message, CancellationToken.None);
+
+    public Task Say(string message, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        cancellationToken.ThrowIfCancellationRequested();
 
         _logger.LogDebug("[{GameServerId}] Attempting to send source chat message to the server", _serverId);
 
-        CreateConnection();
+        using var cancellationRegistration = cancellationToken.Register(() => _tcpClient?.Dispose());
+        try
+        {
+            CreateConnection(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
-        // Source servers expect messages wrapped in quotes for the `say` command.
-        var safeMessage = message.Replace("\"", "\\\"", StringComparison.Ordinal);
-        GetCommandPackets($"say \"{safeMessage}\"");
+            // Source servers expect messages wrapped in quotes for the `say` command.
+            var safeMessage = message.Replace("\"", "\\\"", StringComparison.Ordinal);
+            GetCommandPackets($"say \"{safeMessage}\"");
+        }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Source message dispatch was cancelled.", ex, cancellationToken);
+        }
 
         return Task.CompletedTask;
     }
@@ -297,7 +310,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         return new SourceRconPacket(_sequenceId++, 0, string.Empty);
     }
 
-    private void CreateConnection()
+    private void CreateConnection(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -308,7 +321,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
             _logger.LogDebug("[{GameServerId}] Creating a new TcpClient and attempting to authenticate", _serverId);
 
-            _tcpClient = new TcpClient(_hostname, _queryPort) { ReceiveTimeout = 5000 };
+            _tcpClient = new TcpClient { ReceiveTimeout = 5000 };
+            cancellationToken.ThrowIfCancellationRequested();
+            _tcpClient.Connect(_hostname, _queryPort);
 
             var authPackets = GetAuthPackets(_rconPassword);
             var authResultPacket = authPackets.Find(packet => packet.Type == 2);
@@ -333,7 +348,7 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         var endpoint = _tcpClient.Client.RemoteEndPoint;
 
         var authPacket = AuthPacket(rconPassword);
-        _tcpClient.Client.Send(authPacket.PacketBytes);
+        SendPacket(authPacket.PacketBytes);
 
         var responsePackets = new List<SourceRconPacket>();
         byte[]? leftoverBytes = null;
@@ -341,6 +356,10 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         {
             var tempBuffer = new byte[8192];
             var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
+            if (bytesRead == 0)
+            {
+                throw new IOException("The Source RCON connection closed while awaiting authentication.");
+            }
 
             var bytesToProcess = tempBuffer[..bytesRead];
 
@@ -363,9 +382,9 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         var endpoint = _tcpClient.Client.RemoteEndPoint;
 
         var executeCommandPacket = ExecuteCommandPacket(command);
-        _tcpClient.Client.Send(executeCommandPacket.PacketBytes);
+        SendPacket(executeCommandPacket.PacketBytes);
         var emptyResponsePacket = EmptyResponsePacket();
-        _tcpClient.Client.Send(emptyResponsePacket.PacketBytes);
+        SendPacket(emptyResponsePacket.PacketBytes);
 
         var responsePackets = new List<SourceRconPacket>();
         byte[]? leftoverBytes = null;
@@ -373,6 +392,10 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         {
             var tempBuffer = new byte[8192];
             var bytesRead = _tcpClient.Client.ReceiveFrom(tempBuffer, SocketFlags.None, ref endpoint);
+            if (bytesRead == 0)
+            {
+                throw new IOException("The Source RCON connection closed while awaiting a command response.");
+            }
 
             var bytesToProcess = tempBuffer[..bytesRead];
 
@@ -388,6 +411,20 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
         } while (responsePackets.All(packet => packet.Id != emptyResponsePacket.Id));
 
         return responsePackets.Where(packet => packet.Id == executeCommandPacket.Id).ToList();
+    }
+
+    private void SendPacket(byte[] packet)
+    {
+        var sent = 0;
+        while (sent < packet.Length)
+        {
+            var count = _tcpClient!.Client.Send(packet.AsSpan(sent), SocketFlags.None);
+            if (count == 0)
+            {
+                throw new IOException("The Source RCON connection closed while sending a packet.");
+            }
+            sent += count;
+        }
     }
 
     private static (List<SourceRconPacket> packets, byte[]? leftover) BytesIntoPackets(byte[] bytes)
@@ -406,19 +443,19 @@ public partial class SourceRconClient(ILogger logger) : IRconClient
 
                 var size = BitConverter.ToInt32(bytes, offset);
 
-                if (size == 0)
+                if (size < 10)
                 {
-                    break;
+                    throw new InvalidDataException("A Source RCON packet has an invalid length.");
                 }
 
-                if (offset + size > bytes.Length)
+                if (size > bytes.Length - offset - 4)
                 {
                     break;
                 }
 
                 var id = BitConverter.ToInt32(bytes, offset + 4);
                 var type = BitConverter.ToInt32(bytes, offset + 8);
-                var body = Encoding.ASCII.GetString(bytes, offset + 12, size - 6).Trim();
+                var body = Encoding.ASCII.GetString(bytes, offset + 12, size - 10).Trim();
 
                 offset += 4 + size;
 

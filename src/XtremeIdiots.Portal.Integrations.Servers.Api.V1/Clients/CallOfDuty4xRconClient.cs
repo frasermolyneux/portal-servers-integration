@@ -29,7 +29,7 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
     public Task<string> TempBan(string player, int durationMinutes, string reason)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(durationMinutes, 1);
-        var command = AppendReason($"tempban {FormatCommandTarget(player)} {durationMinutes}", reason);
+        var command = AppendReason($"tempban {FormatCommandTarget(player)} {durationMinutes}m", reason);
         return ExecuteCommand(command, "Attempting CoD4x tempban for target {Target} with duration {DurationMinutes}", "Failed to execute CoD4x tempban command", player, durationMinutes);
     }
 
@@ -262,7 +262,7 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         ArgumentOutOfRangeException.ThrowIfLessThan(durationMinutes, 1);
 
         return ExecuteCommand(
-            AppendReason($"tempban {FormatCommandTarget(playerIdentifier)} {durationMinutes}", reason),
+            AppendReason($"tempban {FormatCommandTarget(playerIdentifier)} {durationMinutes}m", reason),
             "Attempting to temporarily ban CoD4x player identifier {PlayerIdentifier} for {DurationMinutes} minutes",
             "Failed to execute CoD4x temporary ban command",
             playerIdentifier,

@@ -153,8 +153,11 @@ public class RepositoryApiClientRegistrationTests : IClassFixture<RepositoryApiC
 
         Assert.StartsWith("3.0.", root.GetProperty("openapi").GetString());
         Assert.NotEmpty(paths);
+        Assert.Contains("/rcon/{gameServerId}/rules-action/message-budget", paths);
         Assert.All(paths, path => Assert.False(path.StartsWith("/v1.0", StringComparison.OrdinalIgnoreCase)));
         Assert.True(root.GetProperty("components").GetProperty("securitySchemes").TryGetProperty("Bearer", out _));
+        Assert.All(root.GetProperty("components").GetProperty("schemas").EnumerateObject(),
+            schema => Assert.Matches("^[a-zA-Z0-9._-]+$", schema.Name));
     }
 
     [Fact]

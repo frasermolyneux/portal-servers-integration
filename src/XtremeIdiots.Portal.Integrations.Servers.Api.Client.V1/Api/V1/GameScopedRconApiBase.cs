@@ -12,6 +12,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
 public abstract class GameScopedRconApiBase : BaseApi<ServersApiClientOptions>
 {
     private readonly string _routePrefix;
+    private readonly IRestClientService _restClientService;
 
     protected GameScopedRconApiBase(
         ILogger<BaseApi<ServersApiClientOptions>> logger,
@@ -22,6 +23,7 @@ public abstract class GameScopedRconApiBase : BaseApi<ServersApiClientOptions>
         : base(logger, apiTokenProvider, restClientService, options)
     {
         _routePrefix = routePrefix;
+        _restClientService = restClientService;
     }
 
     protected Task<ApiResult<RconCurrentMapDto>> GetCurrentMapCore(Guid gameServerId, CancellationToken cancellationToken = default) =>
@@ -52,7 +54,7 @@ public abstract class GameScopedRconApiBase : BaseApi<ServersApiClientOptions>
         PostNoResponse(gameServerId, "say", request, cancellationToken);
 
     protected Task<ApiResult<string>> TellCore(Guid gameServerId, CoD4xTargetMessageRequestDto request, CancellationToken cancellationToken = default) =>
-        PostString(gameServerId, "tell", request, cancellationToken);
+        PostMessageResponse<string>(gameServerId, "tell", request, cancellationToken);
 
     protected Task<ApiResult<string>> MapCore(Guid gameServerId, ChangeMapRequest request, CancellationToken cancellationToken = default) =>
         PostString(gameServerId, "map", request, cancellationToken);
@@ -100,8 +102,25 @@ public abstract class GameScopedRconApiBase : BaseApi<ServersApiClientOptions>
             request.AddJsonBody(body);
         }
 
-        var response = await ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await _restClientService.ExecuteAsync(Options.BaseUrl, request, cancellationToken).ConfigureAwait(false);
+        if (response is null)
+        {
+            throw new HttpRequestException("Message request returned no response; dispatch outcome is unknown.");
+        }
         return response.ToApiResult();
+    }
+
+    private async Task<ApiResult<TResponse>> PostMessageResponse<TResponse>(Guid gameServerId, string route, object body, CancellationToken cancellationToken)
+    {
+        var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/{_routePrefix}/{route}", Method.Post, cancellationToken).ConfigureAwait(false);
+        request.AddJsonBody(body);
+        var response = await _restClientService.ExecuteAsync(Options.BaseUrl, request, cancellationToken).ConfigureAwait(false);
+        if (response is null)
+        {
+            throw new HttpRequestException("Message request returned no response; dispatch outcome is unknown.");
+        }
+
+        return response.ToApiResult<TResponse>();
     }
 
     private async Task<ApiResult<string>> PostString(Guid gameServerId, string route, object? body = null, CancellationToken cancellationToken = default)

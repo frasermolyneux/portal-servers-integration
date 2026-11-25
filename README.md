@@ -24,9 +24,25 @@ The service-account-only CoD4x `plugins/portal-health` endpoint returns the raw
 `portalpluginhealth` RCON response. Unsupported or absent plugin health output
 is not evidence of installed capabilities; confirm the actual response at runtime.
 
-For CoD4x `say`, the audit and operator event record local UDP dispatch and
-unconfirmed player delivery. Failures are logged without an action audit or event.
-The existing transport may retry; dispatch does not establish exactly-once delivery.
+## RCON messages
+
+Message requests accept the existing `message` and an optional ordered `messages`
+list. When both are supplied, `message` is sent first. Each rendered item is
+validated and split before dispatch, preserving item order and colour continuation.
+All fragments are validated before the first send. A partial failure returns an
+error containing completed and total fragment counts; its final attempted fragment
+may have an unknown outcome. Successful or partially dispatched batches are audited
+and reported as local dispatch, not confirmed player delivery. Messaging commands
+are not automatically retried, and UDP cannot guarantee exactly-once or ordered
+delivery.
+
+The interim RCON policy allows 149 total display bytes, including prefix and colour
+overhead. CoD4x chat's client buffer is source-verified; other game and
+screen/console cutoffs and the 32-byte prefix allowance are not independently
+verified. CoD4x chat reads its current configured prefix, but localization can
+expand that prefix beyond its raw length. RCON accepts printable ASCII excluding
+quotes, backslashes and semicolons; CoD4x also rejects localization inserts of the
+form `&&` followed by a digit. Unsupported text fails rather than being altered.
 
 CoD4x client-kick, only-kick and ban-client requests must include `clientId`;
 slot zero is valid. Structured ban endpoints currently accept only numeric
@@ -75,7 +91,11 @@ cloud/agent responsibilities.
 
 The RCON adapter accepts only agent-observed identities, verifies the current
 fresh repository binding, then rechecks the slot and identifier immediately
-before dispatch. Plugin-owned identities must use the plugin executor. An
+before dispatch. Private rule messages may specify a separately verified recipient
+without changing the original trigger identity; moderation remains trigger-bound.
+The RCON-only `rules-action/message-budget` lookup reports channel availability,
+prefix reservation and character constraints. It does not choose between RCON and
+plugin providers. Plugin-owned identities must use the plugin executor. An
 incomplete roster cannot establish absence, and RCON cannot verify a native
 connection generation or eliminate slot-reuse races. UDP dispatch is not
 confirmation: `Dispatched` and `OutcomeUnknown` must never be blindly retried

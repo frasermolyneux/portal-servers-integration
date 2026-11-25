@@ -69,6 +69,53 @@ public class GameScopedRconApiRouteTests
     }
 
     [Fact]
+    public async Task Cod2Tell_DoesNotRetryAmbiguousTransportFailure()
+    {
+        var service = new FakeRestClientService { ThrowOnExecute = true };
+        var request = new CoD4xTargetMessageRequestDto { Target = "2", Messages = ["first", "second"] };
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateCod2Api(service).Tell(Guid.NewGuid(), request));
+
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task Cod2Say_PreservesPartialFailureDetails()
+    {
+        var service = new FakeRestClientService
+        {
+            StatusCode = HttpStatusCode.BadGateway,
+            Content = """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
+        };
+
+        var result = await CreateCod2Api(service).Say(Guid.NewGuid(), new SayRequest { Messages = ["first", "second"] });
+
+        Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
+        var error = Assert.Single(result.Result!.Errors);
+        Assert.Equal("RCON_MESSAGE_PARTIAL_FAILURE", error.Code);
+        Assert.Contains("Dispatched 1 of 2", error.Message);
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task Cod2Tell_PreservesPartialFailureDetails()
+    {
+        var service = new FakeRestClientService
+        {
+            StatusCode = HttpStatusCode.BadGateway,
+            Content = """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
+        };
+
+        var result = await CreateCod2Api(service).Tell(Guid.NewGuid(), new CoD4xTargetMessageRequestDto { Target = "2", Messages = ["first", "second"] });
+
+        Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
+        var error = Assert.Single(result.Result!.Errors);
+        Assert.Equal("RCON_MESSAGE_PARTIAL_FAILURE", error.Code);
+        Assert.Contains("Dispatched 1 of 2", error.Message);
+        Assert.Equal(1, service.ExecutionCount);
+    }
+
+    [Fact]
     public async Task Cod4DvarList_UsesCod4DvarListRoute()
     {
         var restClientService = new FakeRestClientService();
@@ -238,17 +285,30 @@ public class GameScopedRconApiRouteTests
     {
         public RestRequest? LastRequest { get; private set; }
         public string? Content { get; init; }
+        public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;
+        public bool ThrowOnExecute { get; init; }
+        public int ExecutionCount { get; private set; }
 
         public Task<RestResponse> ExecuteAsync(string baseUrl, RestRequest request, CancellationToken cancellationToken = default)
         {
+            ExecutionCount++;
+            if (ThrowOnExecute)
+            {
+                throw new HttpRequestException("Ambiguous transport failure");
+            }
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
+            return Task.FromResult(new RestResponse { StatusCode = StatusCode, Content = Content });
         }
 
         public Task<RestResponse> ExecuteWithNamedOptionsAsync(string optionsName, RestRequest request, CancellationToken cancellationToken = default)
         {
+            ExecutionCount++;
+            if (ThrowOnExecute)
+            {
+                throw new HttpRequestException("Ambiguous transport failure");
+            }
             LastRequest = request;
-            return Task.FromResult(new RestResponse { StatusCode = HttpStatusCode.OK, Content = Content });
+            return Task.FromResult(new RestResponse { StatusCode = StatusCode, Content = Content });
         }
 
         public void Dispose()

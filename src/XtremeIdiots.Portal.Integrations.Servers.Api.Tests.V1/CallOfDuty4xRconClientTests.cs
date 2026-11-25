@@ -13,6 +13,24 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         private const string TestRconPassword = "testpass";
 
         [Fact]
+        public async Task ConSay_DoesNotRetryAnAmbiguousResponseFailure()
+        {
+            using var server = new MockUdpServer();
+            var client = CreateClient(server);
+            var received = 0;
+            server.RegisterCommandHandler("consay", _ =>
+            {
+                Interlocked.Increment(ref received);
+                return [0xff, 0xff, 0xff, 0xff, (byte)'x'];
+            });
+            server.Start();
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Task.Run(() => client.ConSay("hello")));
+
+            Assert.Equal(1, Volatile.Read(ref received));
+        }
+
+        [Fact]
         public async Task PortalPluginHealth_ReturnsRconOutput()
         {
             using var server = new MockUdpServer();

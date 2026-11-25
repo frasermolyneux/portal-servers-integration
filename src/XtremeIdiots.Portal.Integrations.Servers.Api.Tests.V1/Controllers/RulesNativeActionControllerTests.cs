@@ -24,6 +24,78 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 public class RulesNativeActionControllerTests
 {
     [Theory]
+    [InlineData(RuleMessageChannels.RconPublicChat, "sv_consayname", "^2Server: ^7", 12)]
+    [InlineData(RuleMessageChannels.RconPrivateChat, "sv_contellname", "^5Server^7->^5PM: ^7", 20)]
+    public async Task MessageBudget_CoD4xReservesCurrentPrefixWithoutAuditing(string channel, string variable, string prefix, int expectedBytes)
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4x);
+        fixture.Client.Setup(x => x.GetDvar(variable, It.IsAny<CancellationToken>()))
+            .ReturnsAsync($"\"{variable}\" is: \"{prefix}^7\" default: \"default^7\"");
+
+        var result = Assert.IsType<ApiResponse<RuleMessageChannelBudgetDto>>(
+            Assert.IsType<ObjectResult>(await fixture.Controller.GetMessageChannelBudget(fixture.ServerId, channel)).Value).Data!;
+
+        Assert.Equal(RuleMessageBudgetStatus.Available, result.Status);
+        Assert.Equal(149, result.Budget!.MaxPayloadBytes);
+        Assert.Equal(expectedBytes, result.Budget.ReservedPrefixUtf8Bytes);
+        Assert.True(result.Budget.RconSafePrintableAscii);
+        Assert.True(result.Constraints!.DisallowLocalizationInserts);
+        Assert.Equal(";\"\\", result.Constraints.DisallowedCharacters);
+        Assert.Contains("localization", result.Budget.Evidence!, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(fixture.Audit.Invocations);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(GameType.CallOfDuty2)]
+    [InlineData(GameType.CallOfDuty4)]
+    [InlineData(GameType.CallOfDuty5)]
+    public async Task MessageBudget_OtherGamesExposeTheInterimPolicy(GameType gameType)
+    {
+        var fixture = new Fixture(gameType);
+
+        var result = Assert.IsType<ApiResponse<RuleMessageChannelBudgetDto>>(
+            Assert.IsType<ObjectResult>(await fixture.Controller.GetMessageChannelBudget(fixture.ServerId, RuleMessageChannels.RconPublicChat)).Value).Data!;
+
+        Assert.Equal(RuleMessageBudgetStatus.Available, result.Status);
+        Assert.Equal(149, result.Budget!.MaxPayloadBytes);
+        Assert.Equal(32, result.Budget.ReservedPrefixUtf8Bytes);
+        Assert.True(result.Budget.RconSafePrintableAscii);
+        Assert.False(result.Constraints!.DisallowLocalizationInserts);
+        Assert.Contains("not independently verified", result.Budget.Evidence!);
+    }
+
+    [Theory]
+    [InlineData("\"sv_consayname\" is: \"bad&&1^7\" default: \"default^7\"")]
+    [InlineData("\"sv_consayname\" is: \"bad\\prefix^7\" default: \"default^7\"")]
+    [InlineData("unparseable")]
+    public async Task MessageBudget_UnsafeOrUnparseablePrefixIsUnavailable(string response)
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4x);
+        fixture.Client.Setup(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>())).ReturnsAsync(response);
+
+        var result = Assert.IsType<ApiResponse<RuleMessageChannelBudgetDto>>(
+            Assert.IsType<ObjectResult>(await fixture.Controller.GetMessageChannelBudget(fixture.ServerId, RuleMessageChannels.RconPublicChat)).Value).Data!;
+
+        Assert.Equal(RuleMessageBudgetStatus.Unavailable, result.Status);
+        Assert.Null(result.Budget);
+    }
+
+    [Fact]
+    public async Task MessageBudget_UnsupportedChannelDoesNotQueryServer()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4x);
+
+        var result = Assert.IsType<ApiResponse<RuleMessageChannelBudgetDto>>(
+            Assert.IsType<ObjectResult>(await fixture.Controller.GetMessageChannelBudget(fixture.ServerId, "unknown")).Value).Data!;
+
+        Assert.Equal(RuleMessageBudgetStatus.Unsupported, result.Status);
+        Assert.Null(result.Budget);
+        fixture.Repository.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
     [InlineData("matching", "Dispatched", 1)]
     [InlineData("different", "Stale", 0)]
     [InlineData("missing", "Failed", 0)]
@@ -152,6 +224,29 @@ public class RulesNativeActionControllerTests
     }
 
     [Fact]
+    public async Task PublicMessage_CancelledAfterDispatchStillWritesOperatorEvent()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty2);
+        using var cancellation = new CancellationTokenSource();
+        fixture.Controller.HttpContext.RequestAborted = cancellation.Token;
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchPublicMessage("hello", It.IsAny<CancellationToken>()))
+            .Callback(() => cancellation.Cancel())
+            .Returns(Task.CompletedTask);
+        fixture.Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.PublicMessage, "hello"));
+
+        Assert.Equal("Dispatched", Outcome(result));
+        Assert.Single(fixture.Audit.Invocations);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.IsAny<CreateGameServerEventDto>(),
+            It.Is<CancellationToken>(token => !token.IsCancellationRequested)), Times.Once);
+    }
+
+    [Fact]
     public async Task Kick_WhenEventWriteConflicts_LogsFailureAndDoesNotRetryDispatch()
     {
         var fixture = new Fixture(GameType.CallOfDuty5);
@@ -264,6 +359,42 @@ public class RulesNativeActionControllerTests
     }
 
     [Theory]
+    [InlineData(129, "WouldExecute")]
+    [InlineData(130, "SkippedUnsupported")]
+    public async Task PrivateMessage_RechecksFrozenFragmentAgainstCurrentPrefix(int messageLength, string expected)
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4x);
+        fixture.Client.Setup(x => x.GetDvar("sv_contellname", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("\"sv_contellname\" is: \"^5Server^7->^5PM: ^7^7\" default: \"default^7\"");
+        var identity = new RuleDeliveryIdentity { ParentLogicalEffectId = new string('a', 64) };
+        var command = fixture.Command(RuleNativeEffectType.PrivateMessage, new string('x', messageLength)) with
+        {
+            Mode = RuleExecutionMode.DryRun,
+            LogicalEffectId = identity.ToLogicalEffectId(),
+            DeliveryIdentity = identity
+        };
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, command);
+
+        Assert.Equal(expected, Outcome(result));
+        fixture.Client.As<IRulesNativeRconClient>().Verify(
+            x => x.DispatchPrivateMessage(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CoD4xMessage_RejectsLocalizationInsertion()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4x);
+
+        var result = await fixture.Controller.Execute(fixture.ServerId,
+            fixture.Command(RuleNativeEffectType.PublicMessage, "hello &&1"));
+
+        Assert.Equal("SkippedUnsupported", Outcome(result));
+        fixture.Client.As<IRulesNativeRconClient>().Verify(
+            x => x.DispatchPublicMessage(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
     [InlineData(true, "Stale")]
     [InlineData(false, "WouldExecute")]
     public async Task ExpiredOrDryRun_DoesNotDispatch(bool expired, string expected)
@@ -298,6 +429,105 @@ public class RulesNativeActionControllerTests
         var result = await fixture.Controller.Execute(fixture.ServerId, fixture.Command(RuleNativeEffectType.PrivateMessage, "hello"));
         Assert.Equal("Stale", Outcome(result));
         fixture.Client.As<IRulesNativeRconClient>().Verify(x => x.DispatchPrivateMessage(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("matching", "Dispatched")]
+    [InlineData("missing-binding", "Failed")]
+    [InlineData("reconnected", "Stale")]
+    [InlineData("replaced-slot", "Stale")]
+    [InlineData("missing-roster", "Failed")]
+    public async Task PrivateMessage_ValidatesRecipientIndependentlyOfTrigger(string scenario, string expected)
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4);
+        var recipientConnectionId = Guid.NewGuid();
+        var recipientBinding = fixture.Binding with
+        {
+            SlotId = 7,
+            PlayerGuid = "recipient",
+            ConnectionId = scenario == "reconnected" ? Guid.NewGuid() : recipientConnectionId
+        };
+        fixture.Repository.Setup(x => x.RuleConnectionBindings.V1.GetCurrentBinding(
+                fixture.ServerId, 7, "recipient", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<RuleConnectionBindingDto>(HttpStatusCode.OK,
+                new ApiResponse<RuleConnectionBindingDto>(scenario == "missing-binding" ? null : recipientBinding)));
+        fixture.Client.As<IPlayerRosterRconClient>()
+            .Setup(x => x.GetPlayersWithRoster(It.IsAny<CancellationToken>()))
+            .Returns((new List<IRconPlayer>(), new RconRosterObservationDto
+            {
+                State = RconRosterState.Partial,
+                Players = scenario == "missing-roster" ? [] :
+                    [new() { Slot = 7, PlayerIdentifier = scenario == "replaced-slot" ? "other" : "recipient" }]
+            }));
+        fixture.Client.As<IRulesNativeRconClient>()
+            .Setup(x => x.DispatchPrivateMessage(7, "hello", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var delivery = new RuleDeliveryIdentity
+        {
+            ParentLogicalEffectId = new string('a', 64),
+            RecipientConnectionId = recipientConnectionId
+        };
+        var command = fixture.Command(RuleNativeEffectType.PrivateMessage, "hello") with
+        {
+            LogicalEffectId = delivery.ToLogicalEffectId(),
+            RecipientTarget = new RuleMessageRecipientTarget
+            {
+                GameServerId = fixture.ServerId,
+                Runtime = fixture.Binding.Runtime,
+                SlotId = 7,
+                PlayerGuid = "recipient",
+                ConnectionId = recipientConnectionId
+            },
+            DeliveryIdentity = delivery
+        };
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, command);
+
+        Assert.Equal(expected, Outcome(result));
+        fixture.Client.As<IRulesNativeRconClient>().Verify(
+            x => x.DispatchPrivateMessage(7, "hello", It.IsAny<CancellationToken>()),
+            scenario == "matching" ? Times.Once() : Times.Never());
+        fixture.Repository.Verify(x => x.RuleConnectionBindings.V1.GetCurrentBinding(
+            fixture.ServerId, 3, "abc", It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DropPlayer_RejectsSeparateRecipient()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4);
+        var command = fixture.Command(RuleNativeEffectType.DropPlayer) with
+        {
+            RecipientTarget = new RuleMessageRecipientTarget
+            {
+                GameServerId = fixture.ServerId,
+                SlotId = 7,
+                PlayerGuid = "recipient",
+                ConnectionId = Guid.NewGuid(),
+                Runtime = fixture.Binding.Runtime
+            }
+        };
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, command);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        fixture.Client.As<IRulesNativeRconClient>().Verify(
+            x => x.DispatchKick(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PrivateMessage_RejectsAlteredDeliveryIdentity()
+    {
+        var fixture = new Fixture(GameType.CallOfDuty4);
+        var command = fixture.Command(RuleNativeEffectType.PrivateMessage, "hello") with
+        {
+            DeliveryIdentity = new RuleDeliveryIdentity { ParentLogicalEffectId = new string('a', 64), FragmentIndex = 1 }
+        };
+
+        var result = await fixture.Controller.Execute(fixture.ServerId, command);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        fixture.Client.As<IRulesNativeRconClient>().Verify(
+            x => x.DispatchPrivateMessage(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]

@@ -34,6 +34,29 @@ public class CoD4xRconApiRouteTests
     }
 
     [Fact]
+    public async Task RulesMessageBudget_UsesChannelQueryAndSharedBudget()
+    {
+        var id = Guid.NewGuid();
+        var service = new FakeRestClientService
+        {
+            Content = """
+                {"data":{"status":"Available","budget":{"channel":"rcon.chat.private","maxPayloadBytes":149,"reservedPrefixUtf8Bytes":20}}}
+                """
+        };
+        var api = new RulesNativeActionApi(Mock.Of<ILogger<BaseApi<ServersApiClientOptions>>>(), null, service,
+            new ServersApiClientOptions { BaseUrl = "https://localhost" });
+
+        var result = await api.GetMessageChannelBudget(id, RuleMessageChannels.RconPrivateChat);
+
+        Assert.Equal($"v1/rcon/{id}/rules-action/message-budget", service.LastRequest!.Resource);
+        Assert.Equal(Method.Get, service.LastRequest.Method);
+        Assert.Contains(service.LastRequest.Parameters, p => p.Name == "channel" && Equals(p.Value, RuleMessageChannels.RconPrivateChat));
+        Assert.Equal(RuleMessageBudgetStatus.Available, result.Result!.Data!.Status);
+        Assert.Equal(149, result.Result.Data.Budget!.MaxPayloadBytes);
+        Assert.Equal(20, result.Result.Data.Budget.ReservedPrefixUtf8Bytes);
+    }
+
+    [Fact]
     public async Task RulesAction_DoesNotRetryAnAmbiguousTransportFailure()
     {
         var service = new FakeRestClientService { ThrowOnExecute = true };
@@ -102,6 +125,17 @@ public class CoD4xRconApiRouteTests
         Assert.Equal($"v1/rcon/{gameServerId}/cod4x/say", restClientService.LastRequest!.Resource);
         Assert.Equal(Method.Post, restClientService.LastRequest.Method);
         Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+    }
+
+    [Fact]
+    public async Task Say_DoesNotRetryAmbiguousTransportFailure()
+    {
+        var service = new FakeRestClientService { ThrowOnExecute = true };
+        var request = new CoD4xMessageRequestDto { Messages = ["first", "second"] };
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateApi(service).Say(Guid.NewGuid(), request));
+
+        Assert.Equal(1, service.ExecutionCount);
     }
 
     [Fact]

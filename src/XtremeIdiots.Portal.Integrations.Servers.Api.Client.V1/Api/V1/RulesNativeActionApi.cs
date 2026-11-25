@@ -7,6 +7,7 @@ using MX.Api.Client.Configuration;
 using MX.Api.Client.Extensions;
 using RestSharp;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.RulesEngine;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1;
@@ -40,5 +41,13 @@ public class RulesNativeActionApi : BaseApi<ServersApiClientOptions>, IRulesNati
             throw new HttpRequestException("Rules action request failed; dispatch outcome is unknown.", response.ErrorException, response.StatusCode);
         }
         return response.ToApiResult<RuleActionResult>();
+    }
+
+    public async Task<ApiResult<RuleMessageChannelBudgetDto>> GetMessageChannelBudget(Guid gameServerId, string channel, CancellationToken cancellationToken = default)
+    {
+        var request = await CreateRequestAsync($"v1/rcon/{gameServerId}/rules-action/message-budget", Method.Get, cancellationToken).ConfigureAwait(false);
+        request.AddQueryParameter("channel", channel);
+        var response = await ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
+        return response.ToApiResult<RuleMessageChannelBudgetDto>();
     }
 }

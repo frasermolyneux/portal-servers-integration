@@ -149,14 +149,15 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     }
 
     public Task Say(string message)
+        => Say(message, CancellationToken.None);
+
+    public Task Say(string message, CancellationToken cancellationToken)
     {
         _logger.LogDebug("[{GameServerId}] Attempting to send '{message}' to the server", ServerId, message);
 
         // Many game servers do not emit a response payload for `say`, so treat this command
         // as best-effort fire-and-forget to avoid false failures from receive timeouts.
-        Policy.Handle<Exception>()
-            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", ServerId, retryCount); })
-            .Execute(() => GetCommandPackets($"say \"{message}\"", skipReceive: true));
+        GetCommandPackets($"say \"{FrameChatMessage(message)}\"", skipReceive: true, cancellationToken: cancellationToken);
 
         return Task.CompletedTask;
     }
@@ -346,13 +347,16 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
         var sanitizedMessage = SanitizeTellMessage(message);
 
         // Some servers do not emit a payload for `tell`; treat this as best-effort fire-and-forget.
-        Policy.Handle<Exception>()
-            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
-            {
-                _logger.LogWarning("[{ServerName}] Failed to execute tell command - retry count: {Count}", ServerId, retryCount);
-            })
-            .Execute(() => GetCommandPackets($"tell {clientId} \"{sanitizedMessage}\"", skipReceive: true));
+        GetCommandPackets($"tell {clientId} \"{sanitizedMessage}\"", skipReceive: true);
 
+        return Task.FromResult("Tell command sent to player");
+    }
+
+    public Task<string> TellPlayer(int clientId, string message, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(clientId);
+        ValidateRulesMessage(message);
+        GetCommandPackets($"tell {clientId} \"{FrameChatMessage(message)}\"", skipReceive: true, cancellationToken: cancellationToken);
         return Task.FromResult("Tell command sent to player");
     }
 
@@ -366,7 +370,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     public Task DispatchPublicMessage(string message, CancellationToken cancellationToken)
     {
         ValidateRulesMessage(message);
-        GetCommandPackets($"say \"{message}\"", skipReceive: true, cancellationToken: cancellationToken);
+        GetCommandPackets($"say \"{FrameChatMessage(message)}\"", skipReceive: true, cancellationToken: cancellationToken);
         return Task.CompletedTask;
     }
 
@@ -374,18 +378,22 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     {
         ArgumentOutOfRangeException.ThrowIfNegative(clientId);
         ValidateRulesMessage(message);
-        GetCommandPackets($"tell {clientId} \"{message}\"", skipReceive: true, cancellationToken: cancellationToken);
+        GetCommandPackets($"tell {clientId} \"{FrameChatMessage(message)}\"", skipReceive: true, cancellationToken: cancellationToken);
         return Task.CompletedTask;
     }
 
     private static void ValidateRulesMessage(string message)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentException.ThrowIfNullOrEmpty(message);
         if (message.Length > 256 || message.Any(c => c < 32 || c > 126 || c is ';' or '"' or '\\'))
         {
             throw new ArgumentException("Message cannot be safely represented in a Quake RCON command.", nameof(message));
         }
+
     }
+
+    protected string FrameChatMessage(string message) =>
+        GameType == GameType.CallOfDuty4x ? "\u0015" + message : message;
 
     private static string SanitizeTellMessage(string message)
     {
@@ -485,6 +493,9 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     }
 
     public Task<string> GetDvar(string dvarName)
+        => GetDvar(dvarName, CancellationToken.None);
+
+    public Task<string> GetDvar(string dvarName, CancellationToken cancellationToken)
     {
         _logger.LogDebug("[{GameServerId}] Attempting to get dvar {DvarName}", ServerId, dvarName);
 
@@ -493,7 +504,7 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
             {
                 _logger.LogWarning("[{GameServerId}] Failed to get dvar {DvarName} - retry count: {Count}", ServerId, dvarName, retryCount);
             })
-            .Execute(() => GetCommandPackets(dvarName));
+            .Execute(token => GetCommandPackets(dvarName, cancellationToken: token), cancellationToken);
 
         return Task.FromResult(GetStringFromPackets(packets));
     }
@@ -706,6 +717,11 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
             .Execute(() => GetCommandPackets(command));
 
         return Task.FromResult(GetStringFromPackets(packets));
+    }
+
+    protected Task<string> SendMessageCommand(string command, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetStringFromPackets(GetCommandPackets(command, cancellationToken: cancellationToken)));
     }
 
     protected Task<string> SendCommandWithRetry(

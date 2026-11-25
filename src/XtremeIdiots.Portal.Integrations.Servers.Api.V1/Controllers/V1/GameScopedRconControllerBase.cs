@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Mvc;
@@ -73,70 +74,32 @@ public abstract class GameScopedRconControllerBase(
     {
         if (request == null)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+            return MessageError(false, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, "Request body cannot be null.");
         }
 
-        var messages = ExtractMessages(request);
-        if (messages.Count == 0)
-        {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "At least one message is required.")).ToBadRequestResult().ToHttpResult();
-        }
-
-        return await ExecuteVoidOperation(
-                gameServerId,
-                operationName,
-                AuditAction.Execute,
-                async (client, ct) =>
-                {
-                    foreach (var message in messages)
-                    {
-                        await client.Say(message).ConfigureAwait(false);
-                    }
-                },
-                BuildOperatorData(
-                    ("MessageCount", messages.Count),
-                    ("Message", messages.Count == 1 ? messages[0] : null),
-                    ("Messages", messages.Count > 1 ? messages : null)),
-                cancellationToken)
-            .ConfigureAwait(false);
+        return await ExecuteMessageBatch(gameServerId, operationName, AuditAction.Execute,
+            RuleMessageChannels.RconPublicChat, request.Message, request.Messages, null, cancellationToken).ConfigureAwait(false);
     }
 
     protected async Task<IActionResult> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto? request, string operationName, CancellationToken cancellationToken)
     {
         if (request == null)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
+            return MessageError(true, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, "Request body cannot be null.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Target))
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Target is required.")).ToBadRequestResult().ToHttpResult();
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Message))
-        {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message is required.")).ToBadRequestResult().ToHttpResult();
-        }
-
-        if (request.Message.IndexOfAny([';', '\r', '\n']) >= 0)
-        {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Message contains unsupported characters.")).ToBadRequestResult().ToHttpResult();
+            return MessageError(true, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, "Target is required.");
         }
 
         if (!int.TryParse(request.Target.Trim(), out var clientId) || clientId < 0)
         {
-            return new ApiResponse(new ApiError(ErrorCodes.INVALID_REQUEST, "Target must be a non-negative client ID.")).ToBadRequestResult().ToHttpResult();
+            return MessageError(true, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, "Target must be a non-negative client ID.");
         }
 
-        var message = request.Message.Trim();
-        return await ExecuteStringOperation(
-                gameServerId,
-                operationName,
-                AuditAction.Moderate,
-                (client, ct) => client.TellPlayer(clientId, message),
-                cancellationToken,
-                BuildOperatorData(("ClientId", clientId), ("Message", message)))
-            .ConfigureAwait(false);
+        return await ExecuteMessageBatch(gameServerId, operationName, AuditAction.Moderate,
+            RuleMessageChannels.RconPrivateChat, request.Message, request.Messages, clientId, cancellationToken).ConfigureAwait(false);
     }
 
     protected Task<IActionResult> Restart(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
@@ -376,12 +339,14 @@ public abstract class GameScopedRconControllerBase(
         return response.ToHttpResult();
     }
 
-    private async Task<IActionResult> ExecuteVoidOperation(
+    private async Task<IActionResult> ExecuteMessageBatch(
         Guid gameServerId,
         string operationName,
         AuditAction auditAction,
-        Func<IRconClient, CancellationToken, Task> execute,
-        IReadOnlyDictionary<string, object?>? operatorData,
+        string channel,
+        string? message,
+        IEnumerable<string>? messages,
+        int? clientId,
         CancellationToken cancellationToken)
     {
         var contextResult = await TryGetContext(gameServerId, cancellationToken).ConfigureAwait(false);
@@ -397,39 +362,106 @@ public abstract class GameScopedRconControllerBase(
 
         try
         {
-            await execute(context.Client, cancellationToken).ConfigureAwait(false);
+            var budget = await MessageChannelBudgetResolver.ResolveAsync(supportedGameType, channel, context.Client, logger, cancellationToken).ConfigureAwait(false);
+            if (budget.Status != RuleMessageBudgetStatus.Available || budget.Budget is null)
+            {
+                var code = budget.Status == RuleMessageBudgetStatus.Unsupported ? ErrorCodes.OPERATION_NOT_IMPLEMENTED : ErrorCodes.RCON_OPERATION_FAILED;
+                return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
+            }
 
-            await WriteSuccessAuditAndEvent(context, operationName, auditAction, operatorData, cancellationToken).ConfigureAwait(false);
-            return new ApiResponse().ToApiResult().ToHttpResult();
-        }
-        catch (NotImplementedException ex)
-        {
-            operation.Telemetry.Success = false;
-            operation.Telemetry.ResultCode = ex.Message;
-            telemetryClient.TrackException(ex);
+            var (prepared, error) = RconMessageBatch.Prepare(supportedGameType, message, messages, budget.Budget);
+            if (prepared is null)
+            {
+                return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);
+            }
 
-            logger.LogWarning(ex, "{OperationName} is not implemented for game server {GameServerId}", operationName, gameServerId);
-            return new ApiResponse(new ApiError(ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested operation is not implemented for this game server type.")).ToBadRequestResult().ToHttpResult();
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            operation.Telemetry.Success = false;
-            operation.Telemetry.ResultCode = "Cancelled";
-            throw;
-        }
-        catch (Exception ex)
-        {
-            operation.Telemetry.Success = false;
-            operation.Telemetry.ResultCode = ex.Message;
-            telemetryClient.TrackException(ex);
+            var result = await RconMessageBatch.DispatchAsync(gameServerId, supportedGameType, channel, context.Client, prepared,
+                async (fragment, ct) =>
+                {
+                    if (clientId is { } id)
+                    {
+                        return await context.Client.TellPlayer(id, fragment, ct).ConfigureAwait(false);
+                    }
 
-            logger.LogError(ex, "Failed to execute {OperationName} on game server {GameServerId}", operationName, gameServerId);
-            return new ApiResponse(new ApiError(ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute RCON command.")).ToApiResult().ToHttpResult();
+                    await context.Client.Say(fragment, ct).ConfigureAwait(false);
+                    return null;
+                }, logger, cancellationToken).ConfigureAwait(false);
+
+            var auditSucceeded = true;
+            if (result.CompletedFragments > 0)
+            {
+                var eventName = result.IsSuccess ? operationName : $"{operationName}.PartialDispatch";
+                var operatorData = BuildOperatorData(
+                    ("ClientId", clientId),
+                    ("MessageCount", prepared.Items.Count),
+                    ("Message", prepared.Items.Count == 1 ? prepared.Items[0] : null),
+                    ("Messages", prepared.Items.Count > 1 ? prepared.Items : null),
+                    ("CompletedFragments", result.CompletedFragments),
+                    ("TotalFragments", result.TotalFragments),
+                    ("OutcomeUnknown", result.OutcomeUnknown));
+                auditSucceeded = await WriteMessageAuditAndEvent(context, eventName, auditAction, clientId, operatorData).ConfigureAwait(false);
+                if (!auditSucceeded && result.IsSuccess)
+                {
+                    operation.Telemetry.Success = false;
+                    return MessageError(clientId.HasValue, HttpStatusCode.BadGateway, ErrorCodes.RCON_MESSAGE_PARTIAL_FAILURE,
+                        $"All {result.TotalFragments} fragments were dispatched, but audit or event persistence failed. Do not retry the batch.");
+                }
+            }
+
+            if (!result.IsSuccess)
+            {
+                operation.Telemetry.Success = false;
+                operation.Telemetry.ResultCode = result.Detail;
+                var code = result.CompletedFragments > 0 ? ErrorCodes.RCON_MESSAGE_PARTIAL_FAILURE :
+                    result.NotImplemented ? ErrorCodes.OPERATION_NOT_IMPLEMENTED : ErrorCodes.RCON_OPERATION_FAILED;
+                var detail = result.DescribeFailure() + (auditSucceeded ? string.Empty : " Audit or event persistence also failed.");
+                return MessageError(clientId.HasValue, HttpStatusCode.BadGateway, code, detail);
+            }
+
+            return clientId.HasValue
+                ? new ApiResponse<string>(result.LastResponse ?? "Tell command sent to player").ToApiResult().ToHttpResult()
+                : new ApiResponse().ToApiResult().ToHttpResult();
         }
         finally
         {
             telemetryClient.StopOperation(operation);
         }
+    }
+
+    private static IActionResult MessageError(bool hasResponse, HttpStatusCode status, string code, string detail)
+    {
+        var error = new ApiError(code, detail);
+        return hasResponse
+            ? new ApiResult<string>(status, new ApiResponse<string>(error)).ToHttpResult()
+            : new ObjectResult(new ApiResponse(error)) { StatusCode = (int)status };
+    }
+
+    private async Task<bool> WriteMessageAuditAndEvent(
+        RconContext context, string eventName, AuditAction action, int? clientId, IReadOnlyDictionary<string, object?> operatorData)
+    {
+        var audit = AuditEvent.ServerAction(eventName, action)
+            .WithGameContext(context.GameType, context.GameServerId)
+            .WithSource(sourceName)
+            .WithProperty("CompletedFragments", operatorData["CompletedFragments"]!.ToString()!)
+            .WithProperty("TotalFragments", operatorData["TotalFragments"]!.ToString()!);
+        if (clientId is { } id)
+        {
+            audit = audit.WithTarget(id.ToString(System.Globalization.CultureInfo.InvariantCulture), "ClientId");
+        }
+
+        var auditSucceeded = true;
+        try
+        {
+            auditLogger.LogAudit(audit.Build());
+        }
+        catch (Exception ex)
+        {
+            auditSucceeded = false;
+            logger.LogError(ex, "Failed to write message audit for server {GameServerId}", context.GameServerId);
+        }
+
+        var eventSucceeded = await TryWriteOperatorEventAsync(context.GameServerId, eventName, operatorData, CancellationToken.None).ConfigureAwait(false);
+        return auditSucceeded && eventSucceeded;
     }
 
     private async Task<ApiResult<TData>> ExecuteInternal<TData>(
@@ -559,18 +591,22 @@ public abstract class GameScopedRconControllerBase(
             rconClient));
     }
 
-    private async Task TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken cancellationToken = default)
+    private async Task<bool> TryWriteOperatorEventAsync(Guid gameServerId, string eventType, object data, CancellationToken? cancellationToken = null)
     {
         var eventData = JsonSerializer.Serialize(data);
-        var effectiveCancellationToken = cancellationToken == default
-            ? HttpContext.RequestAborted
-            : cancellationToken;
+        var effectiveCancellationToken = cancellationToken ?? HttpContext.RequestAborted;
 
         try
         {
-            await repositoryApiClient.GameServersEvents.V1
+            var result = await repositoryApiClient.GameServersEvents.V1
                 .CreateGameServerEvent(new CreateGameServerEventDto(gameServerId, eventType, eventData), effectiveCancellationToken)
                 .ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                logger.LogWarning("Repository returned {StatusCode} while writing {EventType} for game server {GameServerId}",
+                    result.StatusCode, eventType, gameServerId);
+            }
+            return result.IsSuccess;
         }
         catch (Exception ex)
         {
@@ -578,30 +614,8 @@ public abstract class GameScopedRconControllerBase(
                 "Failed to write {EventType} operator event for game server {GameServerId}",
                 eventType,
                 gameServerId);
+            return false;
         }
-    }
-
-    private static IReadOnlyList<string> ExtractMessages(SayRequest request)
-    {
-        var messages = new List<string>();
-
-        if (!string.IsNullOrWhiteSpace(request.Message))
-        {
-            messages.Add(request.Message.Trim());
-        }
-
-        if (request.Messages != null)
-        {
-            foreach (var message in request.Messages)
-            {
-                if (!string.IsNullOrWhiteSpace(message))
-                {
-                    messages.Add(message.Trim());
-                }
-            }
-        }
-
-        return messages;
     }
 
     private static IReadOnlyDictionary<string, object?> BuildOperatorData(params (string Key, object? Value)[] values)

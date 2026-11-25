@@ -16,6 +16,29 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
             IVersionedApiInfoApi apiInfo,
             IVersionedConfigApi config,
             IVersionedFileBrowseApi fileBrowse,
+            IVersionedFilesApi files,
+            IVersionedRulesNativeActionApi rulesNativeAction)
+            : this(queryApiClient, coD4xRconApiClient, cod2RconApiClient, cod4RconApiClient, cod5RconApiClient,
+                  insurgencyRconApiClient, rustRconApiClient, l4d2RconApiClient, mapsApiClient, apiHealth,
+                  apiInfo, config, fileBrowse, files)
+        {
+            _rulesNativeAction = rulesNativeAction;
+        }
+
+        public ServersApiClient(
+            IVersionedQueryApi queryApiClient,
+            IVersionedCoD4xRconApi coD4xRconApiClient,
+            IVersionedCod2RconApi cod2RconApiClient,
+            IVersionedCod4RconApi cod4RconApiClient,
+            IVersionedCod5RconApi cod5RconApiClient,
+            IVersionedInsurgencyRconApi insurgencyRconApiClient,
+            IVersionedRustRconApi rustRconApiClient,
+            IVersionedL4d2RconApi l4d2RconApiClient,
+            IVersionedMapsApi mapsApiClient,
+            IVersionedApiHealthApi apiHealth,
+            IVersionedApiInfoApi apiInfo,
+            IVersionedConfigApi config,
+            IVersionedFileBrowseApi fileBrowse,
             IVersionedFilesApi files)
         {
             Query = queryApiClient;
@@ -35,6 +58,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         }
 
         public IVersionedQueryApi Query { get; }
+        private readonly IVersionedRulesNativeActionApi? _rulesNativeAction;
+        public IVersionedRulesNativeActionApi RulesNativeAction => _rulesNativeAction ?? throw new NotSupportedException("Rules native actions were not configured for this client.");
         public IVersionedCoD4xRconApi CoD4xRcon { get; }
         public IVersionedCod2RconApi Cod2Rcon { get; }
         public IVersionedCod4RconApi Cod4Rcon { get; }

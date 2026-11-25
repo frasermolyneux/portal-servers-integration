@@ -22,6 +22,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1
         public IQueryApi V1 { get; }
     }
 
+    public class VersionedRulesNativeActionApi(IRulesNativeActionApi v1Api) : IVersionedRulesNativeActionApi
+    {
+        public IRulesNativeActionApi V1 { get; } = v1Api;
+    }
+
     public class VersionedCoD4xRconApi : IVersionedCoD4xRconApi
     {
         public VersionedCoD4xRconApi(ICoD4xRconApi v1Api)

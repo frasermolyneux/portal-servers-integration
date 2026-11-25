@@ -28,7 +28,8 @@ is not evidence of installed capabilities; confirm the actual response at runtim
 
 Message requests accept the existing `message` and an optional ordered `messages`
 list. When both are supplied, `message` is sent first. Each rendered item is
-validated and split before dispatch, preserving item order and colour continuation.
+validated and split before dispatch, preserving item order and CoD colour continuation.
+Source game messages treat colour-like sequences as literal text.
 All fragments are validated before the first send. A partial failure returns an
 error containing completed and total fragment counts; its final attempted fragment
 may have an unknown outcome. Successful or partially dispatched batches are audited

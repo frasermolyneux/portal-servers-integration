@@ -74,7 +74,10 @@ internal static class MessageChannelBudgetResolver
         {
             Status = RuleMessageBudgetStatus.Available,
             Budget = new MessageChannelBudget(channel, InterimDisplayBytes, "rcon", evidence, reserved, gameType.ToString(),
-                RconSafePrintableAscii: true),
+                RconSafePrintableAscii: true)
+            {
+                UseCodColorCodes = quake
+            },
             Constraints = new RconMessageCharacterConstraintsDto
             {
                 AsciiOnly = true,

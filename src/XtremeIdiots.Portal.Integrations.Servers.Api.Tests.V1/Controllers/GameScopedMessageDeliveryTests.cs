@@ -6,6 +6,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using MX.Api.Abstractions;
 using MX.Observability.ApplicationInsights.Auditing;
@@ -14,6 +15,7 @@ using Newtonsoft.Json;
 using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.Configurations;
 using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
@@ -40,6 +42,40 @@ public class GameScopedMessageDeliveryTests
         Assert.Equal(200, response.StatusCode);
         Assert.Equal(new[] { "^1" + new string('a', 115), "^1a", " second " }, sent);
         fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit => audit.EventName == "RconCod2Say")), Times.Once);
+    }
+
+    [Fact]
+    public async Task SourceSay_SplitsWithoutAddingQuakeColourCodes()
+    {
+        var fixture = new Fixture(GameType.Left4Dead2);
+        var sent = new List<string>();
+        fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((message, _) => sent.Add(message))
+            .Returns(Task.CompletedTask);
+        var message = "^1" + new string('a', 116);
+
+        var response = Assert.IsType<StatusCodeResult>(await fixture.SourceController.Say(fixture.ServerId,
+            new SayRequest { Message = message }));
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal(new[] { "^1" + new string('a', 115), "a" }, sent);
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit => audit.EventName == "RconL4d2Say")), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(GameType.Insurgency)]
+    [InlineData(GameType.Left4Dead2)]
+    [InlineData(GameType.Rust)]
+    public async Task SourceBudgets_TreatColourLikeTextAtFragmentBoundaries(GameType gameType)
+    {
+        var fixture = new Fixture(gameType);
+        var budget = await MessageChannelBudgetResolver.ResolveAsync(gameType, RuleMessageChannels.RconPublicChat,
+            fixture.Client.Object, NullLogger.Instance, CancellationToken.None);
+
+        var (prepared, error) = RconMessageBatch.Prepare(gameType, new string('a', 116) + "^1", null, budget.Budget!);
+
+        Assert.Null(error);
+        Assert.Equal(new[] { new string('a', 116) + "^", "1" }, prepared!.Fragments.Select(fragment => fragment.Text));
     }
 
     [Fact]
@@ -125,13 +161,14 @@ public class GameScopedMessageDeliveryTests
         public Mock<IRconClient> Client { get; } = new();
         public Mock<IAuditLogger> Audit { get; } = new();
         public Cod2RconController Controller { get; }
+        public L4d2RconController SourceController { get; }
 
-        public Fixture()
+        public Fixture(GameType gameType = GameType.CallOfDuty2)
         {
             var server = JsonConvert.DeserializeObject<GameServerDto>(JsonConvert.SerializeObject(new
             {
                 GameServerId = ServerId,
-                GameType = (int)GameType.CallOfDuty2,
+                GameType = (int)gameType,
                 Hostname = "127.0.0.1",
                 QueryPort = 28960
             }))!;
@@ -147,9 +184,13 @@ public class GameScopedMessageDeliveryTests
             Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
             var factory = new Mock<IRconClientFactory>();
-            factory.Setup(x => x.CreateInstance(GameType.CallOfDuty2, ServerId, "127.0.0.1", 28960, "test")).Returns(Client.Object);
+            factory.Setup(x => x.CreateInstance(gameType, ServerId, "127.0.0.1", 28960, "test")).Returns(Client.Object);
             var telemetry = new TelemetryClient(new TelemetryConfiguration { TelemetryChannel = new Mock<ITelemetryChannel>().Object });
             Controller = new Cod2RconController(Mock.Of<ILogger<Cod2RconController>>(), Repository.Object, factory.Object, telemetry, Audit.Object)
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            };
+            SourceController = new L4d2RconController(Mock.Of<ILogger<L4d2RconController>>(), Repository.Object, factory.Object, telemetry, Audit.Object)
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
             };

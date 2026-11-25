@@ -62,6 +62,11 @@ public static class ErrorCodes
     public const string RCON_OPERATION_FAILED = "RCON_OPERATION_FAILED";
 
     /// <summary>
+    /// A message batch stopped before every fragment was dispatched.
+    /// </summary>
+    public const string RCON_MESSAGE_PARTIAL_FAILURE = "RCON_MESSAGE_PARTIAL_FAILURE";
+
+    /// <summary>
     /// Failed to establish query connection to the game server.
     /// </summary>
     public const string QUERY_CONNECTION_FAILED = "QUERY_CONNECTION_FAILED";

@@ -5,4 +5,6 @@ public record CoD4xTargetMessageRequestDto
     public string? Target { get; init; }
 
     public string? Message { get; init; }
+
+    public IReadOnlyCollection<string>? Messages { get; init; }
 }

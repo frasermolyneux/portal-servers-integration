@@ -11,6 +11,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
         List<IRconPlayer> GetPlayers();
         Task<string> GetCurrentMap();
         Task Say(string message);
+        Task Say(string message, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Say(message);
+        }
         Task<List<Quake3QueryMap>> GetMaps();
         Task<string> Restart();
         Task<string> RestartMap();
@@ -80,6 +85,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
         /// <returns>Response message from the server</returns>
         Task<string> TellPlayer(int clientId, string message);
 
+        Task<string> TellPlayer(int clientId, string message, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return TellPlayer(clientId, message);
+        }
+
         /// <summary>
         /// Loads a specific map
         /// </summary>
@@ -123,6 +134,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1
         /// <param name="dvarName">The name of the dvar to retrieve</param>
         /// <returns>The raw response from the server</returns>
         Task<string> GetDvar(string dvarName);
+
+        Task<string> GetDvar(string dvarName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return GetDvar(dvarName);
+        }
 
         /// <summary>
         /// Sets the value of a server dvar (dynamic variable)

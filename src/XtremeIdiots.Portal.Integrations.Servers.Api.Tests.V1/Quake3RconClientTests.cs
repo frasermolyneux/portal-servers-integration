@@ -62,6 +62,32 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             Assert.Equal(expectedCommand, await received.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         }
 
+        [Theory]
+        [InlineData(false, "say \"\u0015hello\"")]
+        [InlineData(true, "tell 3 \"\u0015hello\"")]
+        public async Task CoD4xRulesMessages_FrameTheMessagePortionAsLiteral(bool privateMessage, string expectedCommand)
+        {
+            _rconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            var received = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _mockServer.RegisterCommandHandler(expectedCommand, command =>
+            {
+                received.TrySetResult(command);
+                return MockUdpServer.CreateQuake3Response("ok");
+            });
+            _mockServer.Start();
+
+            if (privateMessage)
+            {
+                await _rconClient.DispatchPrivateMessage(3, "hello", CancellationToken.None);
+            }
+            else
+            {
+                await _rconClient.DispatchPublicMessage("hello", CancellationToken.None);
+            }
+
+            Assert.Equal(expectedCommand, await received.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
         [Fact]
         public async Task KickPlayerByName_SendsCorrectCommand()
         {

@@ -1,5 +1,6 @@
 using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
 using XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
+using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
@@ -91,30 +92,30 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         return ExecuteCommand("systeminfo", "Attempting CoD4x systeminfo command", "Failed to execute CoD4x systeminfo command");
     }
 
-    public Task<string> ScreenSay(string message)
-    {
-        return ExecuteCommand($"screensay {Quote(message)}", "Attempting CoD4x screensay", "Failed to execute CoD4x screensay command");
-    }
+    public Task<string> ScreenSay(string message) => ScreenSay(message, CancellationToken.None);
 
-    public Task<string> ConSay(string message)
-    {
-        return ExecuteCommand($"consay {Quote(message)}", "Attempting CoD4x consay", "Failed to execute CoD4x consay command");
-    }
+    public Task<string> ScreenSay(string message, CancellationToken cancellationToken) =>
+        SendMessageCommand($"screensay {QuoteMessage(message)}", cancellationToken);
 
-    public Task<string> Tell(string client, string message)
-    {
-        return ExecuteCommand($"tell {FormatCommandTarget(client)} {Quote(message)}", "Attempting CoD4x tell for target {Target}", "Failed to execute CoD4x tell command", client);
-    }
+    public Task<string> ConSay(string message) => ConSay(message, CancellationToken.None);
 
-    public Task<string> ScreenTell(string client, string message)
-    {
-        return ExecuteCommand($"screentell {FormatCommandTarget(client)} {Quote(message)}", "Attempting CoD4x screentell for target {Target}", "Failed to execute CoD4x screentell command", client);
-    }
+    public Task<string> ConSay(string message, CancellationToken cancellationToken) =>
+        SendMessageCommand($"consay {QuoteMessage(message)}", cancellationToken);
 
-    public Task<string> ConTell(string client, string message)
-    {
-        return ExecuteCommand($"contell {FormatCommandTarget(client)} {Quote(message)}", "Attempting CoD4x contell for target {Target}", "Failed to execute CoD4x contell command", client);
-    }
+    public Task<string> Tell(string client, string message) => Tell(client, message, CancellationToken.None);
+
+    public Task<string> Tell(string client, string message, CancellationToken cancellationToken) =>
+        SendMessageCommand($"tell {FormatCommandTarget(client)} {QuoteMessage(message, literalChat: true)}", cancellationToken);
+
+    public Task<string> ScreenTell(string client, string message) => ScreenTell(client, message, CancellationToken.None);
+
+    public Task<string> ScreenTell(string client, string message, CancellationToken cancellationToken) =>
+        SendMessageCommand($"screentell {FormatCommandTarget(client)} {QuoteMessage(message)}", cancellationToken);
+
+    public Task<string> ConTell(string client, string message) => ConTell(client, message, CancellationToken.None);
+
+    public Task<string> ConTell(string client, string message, CancellationToken cancellationToken) =>
+        SendMessageCommand($"contell {FormatCommandTarget(client)} {QuoteMessage(message)}", cancellationToken);
 
     public Task<string> Map(string mapName)
     {
@@ -333,6 +334,17 @@ public class CallOfDuty4xRconClient(ILogger logger) : Quake3RconClient(logger), 
         return string.IsNullOrWhiteSpace(reason)
             ? command
             : $"{command} {Quote(reason)}";
+    }
+
+    private string QuoteMessage(string message, bool literalChat = false)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        if (!MessageChannelBudgetResolver.IsRepresentable(GameType.CallOfDuty4x, message))
+        {
+            throw new ArgumentException("Message contains unsupported characters.", nameof(message));
+        }
+
+        return $"\"{(literalChat ? FrameChatMessage(message) : message)}\"";
     }
 
     private static string Quote(string value, bool allowEmpty = false, bool allowMapList = false)

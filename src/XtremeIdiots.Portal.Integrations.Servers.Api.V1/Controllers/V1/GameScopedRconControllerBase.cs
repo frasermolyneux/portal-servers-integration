@@ -349,6 +349,12 @@ public abstract class GameScopedRconControllerBase(
         int? clientId,
         CancellationToken cancellationToken)
     {
+        var (items, validationError) = RconMessageBatch.Normalize(supportedGameType, message, messages);
+        if (items is null)
+        {
+            return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, validationError!);
+        }
+
         var contextResult = await TryGetContext(gameServerId, cancellationToken).ConfigureAwait(false);
         if (contextResult.Error != null)
         {
@@ -369,7 +375,7 @@ public abstract class GameScopedRconControllerBase(
                 return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
             }
 
-            var (prepared, error) = RconMessageBatch.Prepare(supportedGameType, message, messages, budget.Budget);
+            var (prepared, error) = RconMessageBatch.Prepare(supportedGameType, items, budget.Budget);
             if (prepared is null)
             {
                 return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);

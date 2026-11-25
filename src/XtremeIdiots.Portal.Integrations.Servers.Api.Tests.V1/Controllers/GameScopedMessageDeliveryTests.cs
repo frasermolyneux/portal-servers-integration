@@ -72,7 +72,9 @@ public class GameScopedMessageDeliveryTests
         var budget = await MessageChannelBudgetResolver.ResolveAsync(gameType, RuleMessageChannels.RconPublicChat,
             fixture.Client.Object, NullLogger.Instance, CancellationToken.None);
 
-        var (prepared, error) = RconMessageBatch.Prepare(gameType, new string('a', 116) + "^1", null, budget.Budget!);
+        var (items, validationError) = RconMessageBatch.Normalize(gameType, new string('a', 116) + "^1", null);
+        Assert.Null(validationError);
+        var (prepared, error) = RconMessageBatch.Prepare(gameType, items!, budget.Budget!);
 
         Assert.Null(error);
         Assert.Equal(new[] { new string('a', 116) + "^", "1" }, prepared!.Fragments.Select(fragment => fragment.Text));
@@ -105,6 +107,7 @@ public class GameScopedMessageDeliveryTests
 
         Assert.Equal(400, response.StatusCode);
         Assert.Contains("INVALID_REQUEST", System.Text.Json.JsonSerializer.Serialize(response.Value));
+        fixture.Repository.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         fixture.Audit.Verify(x => x.LogAudit(It.IsAny<AuditEvent>()), Times.Never);
     }

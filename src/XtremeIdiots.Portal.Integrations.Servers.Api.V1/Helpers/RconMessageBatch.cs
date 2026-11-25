@@ -26,22 +26,38 @@ internal static class RconMessageBatch
 {
     private static readonly TimeSpan FragmentInterval = TimeSpan.FromMilliseconds(100);
 
-    public static (MessagePreparationResult? Prepared, string? Error) Prepare(
-        GameType gameType, string? message, IEnumerable<string>? messages, MessageChannelBudget budget)
+    public static (IReadOnlyList<string>? Items, string? Error) Normalize(
+        GameType gameType, string? message, IEnumerable<string>? messages)
     {
-        var prepared = MessagePreparation.Prepare(message, messages, budget);
+        var normalized = MessagePreparation.Normalize(message, messages);
+        if (!normalized.IsValid)
+        {
+            return (null, string.Join(" ", normalized.Errors.Select(error => error.Message)));
+        }
+
+        if (normalized.Items.Any(string.IsNullOrWhiteSpace))
+        {
+            return (null, "Message items cannot be empty or whitespace.");
+        }
+
+        if (normalized.Items.Any(item => !MessageChannelBudgetResolver.IsRepresentable(gameType, item)))
+        {
+            return (null, "A message contains characters that cannot be safely represented by this RCON transport.");
+        }
+
+        return (normalized.Items, null);
+    }
+
+    public static (MessagePreparationResult? Prepared, string? Error) Prepare(
+        GameType gameType, IReadOnlyList<string> items, MessageChannelBudget budget)
+    {
+        var prepared = MessagePreparation.Prepare(null, items, budget);
         if (!prepared.IsValid)
         {
             return (null, string.Join(" ", prepared.Errors.Select(error => error.Message)));
         }
 
-        if (prepared.Items.Any(string.IsNullOrWhiteSpace))
-        {
-            return (null, "Message items cannot be empty or whitespace.");
-        }
-
-        if (prepared.Items.Any(item => !MessageChannelBudgetResolver.IsRepresentable(gameType, item)) ||
-            prepared.Fragments.Any(fragment => !MessageChannelBudgetResolver.IsRepresentable(gameType, fragment.Text)))
+        if (prepared.Fragments.Any(fragment => !MessageChannelBudgetResolver.IsRepresentable(gameType, fragment.Text)))
         {
             return (null, "A message contains characters that cannot be safely represented by this RCON transport.");
         }

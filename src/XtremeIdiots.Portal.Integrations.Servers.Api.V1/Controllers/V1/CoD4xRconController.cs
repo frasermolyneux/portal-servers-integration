@@ -389,6 +389,12 @@ public class CoD4xRconController(
             return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
         }
 
+        var (items, validationError) = RconMessageBatch.Normalize(GameType.CallOfDuty4x, message, messages);
+        if (items is null)
+        {
+            return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, validationError!);
+        }
+
         var contextResult = await TryGetCoD4xContext(gameServerId, cancellationToken).ConfigureAwait(false);
         if (contextResult.Error is not null)
         {
@@ -414,7 +420,7 @@ public class CoD4xRconController(
                 return MessageError(HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
             }
 
-            var (prepared, error) = RconMessageBatch.Prepare(GameType.CallOfDuty4x, message, messages, budget.Budget);
+            var (prepared, error) = RconMessageBatch.Prepare(GameType.CallOfDuty4x, items, budget.Budget);
             if (prepared is null)
             {
                 return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);

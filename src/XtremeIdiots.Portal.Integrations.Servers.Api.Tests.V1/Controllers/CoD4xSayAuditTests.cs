@@ -108,6 +108,7 @@ public class CoD4xSayAuditTests
             new CoD4xMessageRequestDto { Messages = ["first", "bad;command"] }));
 
         Assert.Equal(400, response.StatusCode);
+        fixture.Repository.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         fixture.AssertNoAuditOrEvent();
     }

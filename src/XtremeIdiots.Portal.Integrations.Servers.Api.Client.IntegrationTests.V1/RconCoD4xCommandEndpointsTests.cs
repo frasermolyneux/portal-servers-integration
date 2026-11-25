@@ -177,12 +177,23 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Setup(x => x.Say("welcome to the server"))
+            .Setup(x => x.Say("welcome to the server", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        mockRconClient
+            .Setup(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("\"sv_consayname\" is: \"^2Server: ^7^7\" default: \"default^7\"");
 
         _factory.MockRconClientFactory
             .Setup(x => x.CreateInstance(GameType.CallOfDuty4x, gameServerId, "127.0.0.1", 28960, "secret"))
             .Returns(mockRconClient.Object);
+
+        var gameServerEventsApi = new Mock<IGameServersEventsApi>();
+        gameServerEventsApi
+            .Setup(x => x.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult(HttpStatusCode.OK, new ApiResponse()));
+        var versionedGameServerEventsApi = new Mock<IVersionedGameServersEventsApi>();
+        versionedGameServerEventsApi.SetupGet(x => x.V1).Returns(gameServerEventsApi.Object);
+        _factory.MockRepositoryApiClient.SetupGet(x => x.GameServersEvents).Returns(versionedGameServerEventsApi.Object);
 
         var response = await _client.PostAsJsonAsync($"/v1.0/rcon/{gameServerId}/cod4x/say", new CoD4xMessageRequestDto
         {
@@ -191,7 +202,7 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Verify(x => x.Say("welcome to the server"), Times.Once);
+            .Verify(x => x.Say("welcome to the server", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -203,7 +214,7 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Setup(x => x.ConSay("server maintenance in 5 minutes"))
+            .Setup(x => x.ConSay("server maintenance in 5 minutes", It.IsAny<CancellationToken>()))
             .ReturnsAsync("ok");
 
         _factory.MockRconClientFactory
@@ -232,6 +243,8 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.ConSay("server maintenance in 5 minutes", It.IsAny<CancellationToken>()), Times.Once);
         Assert.NotNull(capturedEvent);
         Assert.Equal("RconCoD4xConSay", capturedEvent!.EventType);
         Assert.Contains("server maintenance in 5 minutes", capturedEvent.EventData, StringComparison.Ordinal);
@@ -247,7 +260,7 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
 
         var mockRconClient = new Mock<IRconClient>();
         mockRconClient.As<ICallOfDuty4xRconClient>()
-            .Setup(x => x.ScreenTell("3", "stop camping"))
+            .Setup(x => x.ScreenTell("3", "stop camping", It.IsAny<CancellationToken>()))
             .ReturnsAsync("ok");
 
         _factory.MockRconClientFactory
@@ -277,6 +290,8 @@ public class RconCoD4xCommandEndpointsTests : IClassFixture<CustomWebApplication
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        mockRconClient.As<ICallOfDuty4xRconClient>()
+            .Verify(x => x.ScreenTell("3", "stop camping", It.IsAny<CancellationToken>()), Times.Once);
         Assert.NotNull(capturedEvent);
         Assert.Equal("RconCoD4xScreenTell", capturedEvent!.EventType);
         Assert.Contains("stop camping", capturedEvent.EventData, StringComparison.Ordinal);

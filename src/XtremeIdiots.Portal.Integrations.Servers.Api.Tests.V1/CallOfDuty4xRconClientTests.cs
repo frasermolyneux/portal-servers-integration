@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Moq;
 using XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers;
@@ -12,22 +15,34 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         private static readonly Guid TestServerId = Guid.NewGuid();
         private const string TestRconPassword = "testpass";
 
-        [Fact]
-        public async Task ConSay_DoesNotRetryAnAmbiguousResponseFailure()
+        [Theory]
+        [InlineData("screensay")]
+        [InlineData("consay")]
+        [InlineData("tell")]
+        [InlineData("screentell")]
+        [InlineData("contell")]
+        public async Task MessageCommand_DispatchesOnceWithoutRequiringAResponse(string command)
         {
-            using var server = new MockUdpServer();
-            var client = CreateClient(server);
-            var received = 0;
-            server.RegisterCommandHandler("consay", _ =>
+            using var server = new UdpClient(0);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var client = new CallOfDuty4xRconClient(Mock.Of<ILogger>());
+            client.Configure(GameType.CallOfDuty4x, TestServerId, "127.0.0.1",
+                ((IPEndPoint)server.Client.LocalEndPoint!).Port, TestRconPassword);
+
+            var dispatch = Task.Run(() => command switch
             {
-                Interlocked.Increment(ref received);
-                return [0xff, 0xff, 0xff, 0xff, (byte)'x'];
+                "screensay" => client.ScreenSay("hello"),
+                "consay" => client.ConSay("hello"),
+                "tell" => client.Tell("5", "hello"),
+                "screentell" => client.ScreenTell("5", "hello"),
+                _ => client.ConTell("5", "hello")
             });
-            server.Start();
+            var packet = await server.ReceiveAsync(timeout.Token);
+            var result = await dispatch.WaitAsync(timeout.Token);
 
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Task.Run(() => client.ConSay("hello")));
-
-            Assert.Equal(1, Volatile.Read(ref received));
+            Assert.Contains(command, Encoding.ASCII.GetString(packet.Buffer));
+            Assert.Contains("delivery unconfirmed", result);
+            Assert.Equal(0, server.Available);
         }
 
         [Fact]

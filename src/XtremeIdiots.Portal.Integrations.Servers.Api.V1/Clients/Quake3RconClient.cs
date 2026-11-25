@@ -721,7 +721,8 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
 
     protected Task<string> SendMessageCommand(string command, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(GetStringFromPackets(GetCommandPackets(command, cancellationToken: cancellationToken)));
+        GetCommandPackets(command, skipReceive: true, cancellationToken: cancellationToken);
+        return Task.FromResult("Message command dispatched; player delivery unconfirmed.");
     }
 
     protected Task<string> SendCommandWithRetry(

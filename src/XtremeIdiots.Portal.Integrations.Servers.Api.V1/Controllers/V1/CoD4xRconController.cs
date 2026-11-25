@@ -354,17 +354,17 @@ public class CoD4xRconController(
     {
         if (request is null)
         {
-            return Task.FromResult<IActionResult>(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult());
+            return Task.FromResult(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult());
         }
 
         var target = TrimOrNull(request.Target);
         if (target is null)
         {
-            return Task.FromResult<IActionResult>(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Target cannot be null or empty.")).ToBadRequestResult().ToHttpResult());
+            return Task.FromResult(new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Target cannot be null or empty.")).ToBadRequestResult().ToHttpResult());
         }
         if (!IsValidCommandTarget(target) || target.Any(c => c < 32 || c > 126 || c == '\\'))
         {
-            return Task.FromResult<IActionResult>(InvalidTargetResult().ToHttpResult());
+            return Task.FromResult(InvalidTargetResult().ToHttpResult());
         }
 
         return ExecuteMessageBatch(gameServerId, operationName, AuditAction.Moderate, channel,

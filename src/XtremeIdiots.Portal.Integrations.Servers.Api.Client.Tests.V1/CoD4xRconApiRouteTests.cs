@@ -39,7 +39,7 @@ public class CoD4xRconApiRouteTests
         var id = Guid.NewGuid();
         var service = new FakeRestClientService
         {
-            Content = """
+            Content = /*lang=json,strict*/ """
                 {"data":{"status":"Available","budget":{"channel":"rcon.chat.private","maxPayloadBytes":149,"reservedPrefixUtf8Bytes":20}}}
                 """
         };

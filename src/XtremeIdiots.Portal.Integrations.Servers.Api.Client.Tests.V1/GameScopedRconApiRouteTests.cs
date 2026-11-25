@@ -85,7 +85,7 @@ public class GameScopedRconApiRouteTests
         var service = new FakeRestClientService
         {
             StatusCode = HttpStatusCode.BadGateway,
-            Content = """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
+            Content = /*lang=json,strict*/ """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
         };
 
         var result = await CreateCod2Api(service).Say(Guid.NewGuid(), new SayRequest { Messages = ["first", "second"] });
@@ -103,7 +103,7 @@ public class GameScopedRconApiRouteTests
         var service = new FakeRestClientService
         {
             StatusCode = HttpStatusCode.BadGateway,
-            Content = """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
+            Content = /*lang=json,strict*/ """{"errors":[{"code":"RCON_MESSAGE_PARTIAL_FAILURE","message":"Dispatched 1 of 2; outcome is unknown."}]}"""
         };
 
         var result = await CreateCod2Api(service).Tell(Guid.NewGuid(), new CoD4xTargetMessageRequestDto { Target = "2", Messages = ["first", "second"] });

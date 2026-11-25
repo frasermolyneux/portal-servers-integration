@@ -80,6 +80,70 @@ public class CoD4xSayAuditTests
         Assert.Contains(fixture.Logger.Invocations, invocation => invocation.Method.Name == nameof(ILogger.Log));
     }
 
+    [Theory]
+    [InlineData("client-kick", 0)]
+    [InlineData("only-kick", 0)]
+    [InlineData("ban-client", 0)]
+    [InlineData("client-kick", 1)]
+    [InlineData("only-kick", 1)]
+    [InlineData("ban-client", 1)]
+    public async Task ClientActions_ExplicitNonNegativeSlotDispatches(string action, int clientId)
+    {
+        var fixture = new Fixture();
+        fixture.Client.Setup(x => x.ClientKick(clientId, "reason")).ReturnsAsync("ok");
+        fixture.Client.Setup(x => x.OnlyKick(clientId, "reason")).ReturnsAsync("ok");
+        fixture.Client.Setup(x => x.BanClient(clientId, "reason")).ReturnsAsync("ok");
+        var request = System.Text.Json.JsonSerializer.Deserialize<CoD4xClientReasonRequestDto>(
+            $$"""{"clientId":{{clientId}},"reason":"reason"}""",
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+
+        var response = Assert.IsType<ObjectResult>(await ExecuteClientAction(fixture, action, request));
+
+        Assert.Equal(200, response.StatusCode);
+        fixture.Client.Verify(x => x.ClientKick(clientId, "reason"), action == "client-kick" ? Times.Once() : Times.Never());
+        fixture.Client.Verify(x => x.OnlyKick(clientId, "reason"), action == "only-kick" ? Times.Once() : Times.Never());
+        fixture.Client.Verify(x => x.BanClient(clientId, "reason"), action == "ban-client" ? Times.Once() : Times.Never());
+        fixture.Audit.Verify(x => x.LogAudit(It.IsAny<AuditEvent>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("client-kick", true)]
+    [InlineData("only-kick", true)]
+    [InlineData("ban-client", true)]
+    [InlineData("client-kick", false)]
+    [InlineData("only-kick", false)]
+    [InlineData("ban-client", false)]
+    public async Task ClientActions_MissingOrNegativeSlotDoesNotDispatch(string action, bool missing)
+    {
+        var fixture = new Fixture();
+        var payload = new Dictionary<string, object> { ["reason"] = "reason" };
+        if (!missing)
+        {
+            payload["clientId"] = -1;
+        }
+
+        var request = System.Text.Json.JsonSerializer.Deserialize<CoD4xClientReasonRequestDto>(
+            System.Text.Json.JsonSerializer.Serialize(payload),
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+
+        var response = Assert.IsType<ObjectResult>(await ExecuteClientAction(fixture, action, request));
+
+        Assert.Equal(400, response.StatusCode);
+        fixture.Client.Verify(x => x.ClientKick(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        fixture.Client.Verify(x => x.OnlyKick(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        fixture.Client.Verify(x => x.BanClient(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        fixture.AssertNoAuditOrEvent();
+    }
+
+    private static Task<IActionResult> ExecuteClientAction(Fixture fixture, string action, CoD4xClientReasonRequestDto request) =>
+        action switch
+        {
+            "client-kick" => fixture.Controller.ClientKick(fixture.ServerId, request),
+            "only-kick" => fixture.Controller.OnlyKick(fixture.ServerId, request),
+            "ban-client" => fixture.Controller.BanClient(fixture.ServerId, request),
+            _ => throw new ArgumentOutOfRangeException(nameof(action))
+        };
+
     private sealed class Fixture
     {
         public Guid ServerId { get; } = Guid.NewGuid();

@@ -28,6 +28,12 @@ For CoD4x `say`, the audit and operator event record local UDP dispatch and
 unconfirmed player delivery. Failures are logged without an action audit or event.
 The existing transport may retry; dispatch does not establish exactly-once delivery.
 
+CoD4x client-kick, only-kick and ban-client requests must include `clientId`;
+slot zero is valid. Structured ban endpoints currently accept only numeric
+player identifiers of 17–21 digits, not every identifier format returned by status.
+Temporary bans send the requested duration in minutes to the game server; server
+versions may impose their own duration limits.
+
 ## Redirect-backed map transfers
 
 The managed identity requires `Maps.Read`, with `RedirectApi:BaseUrl` and

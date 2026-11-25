@@ -1334,9 +1334,9 @@ public class CoD4xRconController(
     private static ApiResult<string>? RequireClientAndReason(CoD4xClientReasonRequestDto request)
     {
         var reason = TrimOrNull(request.Reason);
-        if (request.ClientId <= 0)
+        if (request.ClientId < 0)
         {
-            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "ClientId must be greater than zero.")).ToBadRequestResult();
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "ClientId must be zero or greater.")).ToBadRequestResult();
         }
 
         if (reason == null)

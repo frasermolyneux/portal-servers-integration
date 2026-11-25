@@ -348,7 +348,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             var expectedResponse = "tempban queued";
             var commandReceived = false;
 
-            _mockServer.RegisterCommandHandler($"tempban {playerIdentifier} {durationMinutes} \"{reason}\"", cmd =>
+            _mockServer.RegisterCommandHandler($"tempban {playerIdentifier} {durationMinutes}m \"{reason}\"", cmd =>
             {
                 commandReceived = true;
                 return MockUdpServer.CreateQuake3Response(expectedResponse);

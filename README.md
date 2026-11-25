@@ -24,6 +24,18 @@ The service-account-only CoD4x `plugins/portal-health` endpoint returns the raw
 `portalpluginhealth` RCON response. Unsupported or absent plugin health output
 is not evidence of installed capabilities; confirm the actual response at runtime.
 
+For CoD4x `say`, the audit and operator event record local UDP dispatch and
+unconfirmed player delivery. Failures are logged without an action audit or event.
+The existing transport may retry; dispatch does not establish exactly-once delivery.
+
+CoD4x client-kick, only-kick and ban-client requests must include `clientId`;
+slot zero is valid. Structured ban endpoints currently accept only numeric
+player identifiers of 17–21 digits, not every identifier format returned by status.
+Temporary bans send the requested duration in minutes to the game server; server
+versions may impose their own duration limits. Structured ban actions emit an
+audit and operator event only for a confirmed native success response. Check
+the response outcome; an HTTP 200 alone does not establish a successful action.
+
 ## Redirect-backed map transfers
 
 The managed identity requires `Maps.Read`, with `RedirectApi:BaseUrl` and

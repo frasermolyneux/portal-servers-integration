@@ -194,7 +194,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             using var mockServer = new MockUdpServer();
             var client = CreateClient(mockServer);
 
-            const string expectedCommand = "tempban 2310346615957836592 15 \"toxicity\"";
+            const string expectedCommand = "tempban 2310346615957836592 15m \"toxicity\"";
             var exactMatch = RegisterExactCommandHandler(mockServer, expectedCommand);
 
             mockServer.Start();
@@ -230,7 +230,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
             using var mockServer = new MockUdpServer();
             var client = CreateClient(mockServer);
 
-            const string expectedCommand = "tempban 2310346615957836592 30 \"sync-ban\"";
+            const string expectedCommand = "tempban 2310346615957836592 30m \"sync-ban\"";
             var exactMatch = RegisterExactCommandHandler(mockServer, expectedCommand);
 
             mockServer.Start();

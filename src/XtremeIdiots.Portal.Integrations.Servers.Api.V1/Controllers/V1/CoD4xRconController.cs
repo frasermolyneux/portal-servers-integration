@@ -39,7 +39,7 @@ public class CoD4xRconController(
     private static readonly Regex CoD4xStatusPlayerRegex = new(@"^\s*(?<num>\d+)\s+(?<score>-?\d+)\s+(?<ping>CNCT|ZMBI|PRIM|\d+)\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<steamid>\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s+(?<name>.+?)\s+(?<lastmsg>\d+)\s+(?<address>\[?[0-9a-fA-F:.]+\]?:\d+)\s+(?<qport>-?\d+)\s+(?<rate>\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xDumpBanListEntryRegex = new(@"^(?<index>\d+) playerid: (?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); nick: (?<nick>.*?); adminsteamid: (?<admin>System/Rcon|\d{1,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+); expire: (?<expire>Never|.+?); reason: (?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xDumpBanListCountRegex = new(@"^(?<count>\d+) Active bans$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-    private static readonly Regex CoD4xBanAddedOnlineRegex = new(@"^(?:attempting to add Banrecord for player:|Banrecord added for player:)\s*(?<name>.+)\s+id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex CoD4xBanAddedOnlineRegex = new(@"^Banrecord added for player:\s*(?<name>.+)\s+id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xBanAddedOfflineRegex = new(@"^Banrecord added for id:\s+(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+)\s*$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xUnbanRemovedRegex = new(@"^Removing ban for Nick:\s*(?<nick>.*),\s*PlayerID:\s*(?<playerid>\d{6,20}|\[U:\d+:\d+\]|STEAM_\d:\d:\d+),\s*Banreason:\s*(?<reason>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex CoD4xErrorRegex = new(@"^Error:\s*(?<error>.+)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -366,14 +366,14 @@ public class CoD4xRconController(
         return response.ToHttpResult();
     }
 
-    private async Task<IActionResult> ExecuteStructuredAction<TRequest, TResponse>(
+    private async Task<IActionResult> ExecuteStructuredAction<TRequest>(
         Guid gameServerId,
         string operationName,
         AuditAction? auditAction,
         TRequest? request,
         Func<TRequest, ApiResult<string>?> validate,
         Func<ICallOfDuty4xRconClient, TRequest, CancellationToken, Task<string>> execute,
-        Func<string, TResponse> parse,
+        Func<string, CoD4xBanCommandResponseDto> parse,
         CancellationToken cancellationToken)
         where TRequest : class
     {
@@ -389,15 +389,15 @@ public class CoD4xRconController(
             cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<IActionResult> ExecuteStructuredAction<TRequest, TResponse>(
+    private async Task<IActionResult> ExecuteStructuredAction<TRequest>(
         Guid gameServerId,
         string operationName,
         AuditAction? auditAction,
         TRequest? request,
         Func<TRequest, ApiResult<string>?> validate,
         Func<ICallOfDuty4xRconClient, TRequest, CancellationToken, Task<string>> execute,
-        Func<string, TResponse> parse,
-        Func<TResponse, CancellationToken, Task>? onSuccess,
+        Func<string, CoD4xBanCommandResponseDto> parse,
+        Func<CoD4xBanCommandResponseDto, CancellationToken, Task>? onSuccess,
         CancellationToken cancellationToken)
         where TRequest : class
     {
@@ -414,14 +414,18 @@ public class CoD4xRconController(
 
         var normalizedRequest = NormalizeRequest(request);
         var operationContext = BuildOperationContext(normalizedRequest);
-        var rawResult = await ExecuteAction(gameServerId, operationName, auditAction, (client, ct) => execute(client, normalizedRequest, ct), operationContext, cancellationToken).ConfigureAwait(false);
-        var structuredResult = MapStructuredResult(rawResult, parse);
+        CoD4xBanCommandResponseDto? parsedResponse = null;
+        var rawResult = await ExecuteAction(
+            gameServerId, operationName, auditAction,
+            (client, ct) => execute(client, normalizedRequest, ct), operationContext, cancellationToken,
+            result => (parsedResponse = parse(result)).IsSuccess).ConfigureAwait(false);
+        var structuredResult = MapStructuredResult(rawResult, result => parsedResponse ?? parse(result));
 
         if (onSuccess is not null &&
             structuredResult.IsSuccess &&
-            structuredResult.Result is not null)
+            structuredResult.Result?.Data is { IsSuccess: true } response)
         {
-            await onSuccess(structuredResult.Result.Data, cancellationToken).ConfigureAwait(false);
+            await onSuccess(response, cancellationToken).ConfigureAwait(false);
         }
 
         return structuredResult.ToHttpResult();
@@ -502,7 +506,7 @@ public class CoD4xRconController(
 
     private static ApiResult<TResponse> MapStructuredResult<TResponse>(ApiResult<string> rawResult, Func<string, TResponse> parse)
     {
-        if (!rawResult.IsSuccess)
+        if (!rawResult.IsSuccess || rawResult.Result?.Errors?.Any() == true)
         {
             var error = rawResult.Result?.Errors?.FirstOrDefault();
             if (error != null)
@@ -550,7 +554,7 @@ public class CoD4xRconController(
         foreach (var line in lines)
         {
             var addedOnlineMatch = CoD4xBanAddedOnlineRegex.Match(line);
-            if (addedOnlineMatch.Success)
+            if (!string.Equals(operation, "Unban", StringComparison.OrdinalIgnoreCase) && addedOnlineMatch.Success)
             {
                 return new CoD4xBanCommandResponseDto
                 {
@@ -563,7 +567,7 @@ public class CoD4xRconController(
             }
 
             var addedOfflineMatch = CoD4xBanAddedOfflineRegex.Match(line);
-            if (addedOfflineMatch.Success)
+            if (!string.Equals(operation, "Unban", StringComparison.OrdinalIgnoreCase) && addedOfflineMatch.Success)
             {
                 return new CoD4xBanCommandResponseDto
                 {
@@ -575,7 +579,7 @@ public class CoD4xRconController(
             }
 
             var removedMatch = CoD4xUnbanRemovedRegex.Match(line);
-            if (removedMatch.Success)
+            if (string.Equals(operation, "Unban", StringComparison.OrdinalIgnoreCase) && removedMatch.Success)
             {
                 return new CoD4xBanCommandResponseDto
                 {
@@ -781,12 +785,19 @@ public class CoD4xRconController(
         AuditAction? auditAction,
         Func<ICallOfDuty4xRconClient, CancellationToken, Task<string>> execute,
         OperationContext? operationContext,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, bool>? isConfirmedSuccess = null)
     {
         var contextResult = await TryGetCoD4xContext(gameServerId, cancellationToken).ConfigureAwait(false);
         if (contextResult.Error != null)
         {
-            if (auditAction is not null)
+            if (operationName == "RconCoD4xSay" || isConfirmedSuccess is not null)
+            {
+                var contextError = contextResult.Error.Result?.Errors?.FirstOrDefault();
+                logger.LogWarning("Failed to resolve {OperationName} context for game server {GameServerId}: {ErrorCode}",
+                    operationName, gameServerId, contextError?.Code ?? ErrorCodes.RCON_OPERATION_FAILED);
+            }
+            else if (auditAction is not null)
             {
                 var contextError = contextResult.Error.Result?.Errors?.FirstOrDefault();
                 LogFailureAudit(
@@ -811,7 +822,13 @@ public class CoD4xRconController(
         {
             var commandResult = await execute(context.Client, cancellationToken).ConfigureAwait(false);
 
-            if (auditAction is not null)
+            var confirmed = isConfirmedSuccess?.Invoke(commandResult) ?? true;
+            if (!confirmed)
+            {
+                logger.LogWarning("{OperationName} did not return a confirmed successful result for game server {GameServerId}", operationName, gameServerId);
+            }
+
+            if (auditAction is not null && confirmed)
             {
                 var auditEvent = AuditEvent.ServerAction(operationName, auditAction.Value)
                     .WithGameContext(context.GameType, context.GameServerId)
@@ -830,6 +847,13 @@ public class CoD4xRconController(
                     }
                 }
 
+                if (operationName == "RconCoD4xSay")
+                {
+                    auditEvent = auditEvent
+                        .WithProperty("Dispatch", "LocalUdpSend")
+                        .WithProperty("PlayerDelivery", "Unconfirmed");
+                }
+
                 auditLogger.LogAudit(auditEvent
                     .WithProperty("Result", commandResult)
                     .Build());
@@ -838,6 +862,11 @@ public class CoD4xRconController(
                     ? new Dictionary<string, object?>()
                     : new Dictionary<string, object?>(operationContext.OperatorData);
                 operatorData["Result"] = commandResult;
+                if (operationName == "RconCoD4xSay")
+                {
+                    operatorData["Dispatch"] = "LocalUdpSend";
+                    operatorData["PlayerDelivery"] = "Unconfirmed";
+                }
 
                 await TryWriteOperatorEventAsync(context.GameServerId, operationName, operatorData, cancellationToken).ConfigureAwait(false);
             }
@@ -850,7 +879,7 @@ public class CoD4xRconController(
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
-            if (auditAction is not null)
+            if (auditAction is not null && operationName != "RconCoD4xSay" && isConfirmedSuccess is null)
             {
                 LogFailureAudit(context.GameServerId, context.GameType, operationName, auditAction.Value, operationContext, ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested CoD4x operation is not implemented for this game server type.");
             }
@@ -870,7 +899,7 @@ public class CoD4xRconController(
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
-            if (auditAction is not null)
+            if (auditAction is not null && operationName != "RconCoD4xSay" && isConfirmedSuccess is null)
             {
                 LogFailureAudit(context.GameServerId, context.GameType, operationName, auditAction.Value, operationContext, ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute CoD4x command via RCON.");
             }
@@ -1316,9 +1345,9 @@ public class CoD4xRconController(
     private static ApiResult<string>? RequireClientAndReason(CoD4xClientReasonRequestDto request)
     {
         var reason = TrimOrNull(request.Reason);
-        if (request.ClientId <= 0)
+        if (request.ClientId < 0)
         {
-            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "ClientId must be greater than zero.")).ToBadRequestResult();
+            return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "ClientId must be zero or greater.")).ToBadRequestResult();
         }
 
         if (reason == null)

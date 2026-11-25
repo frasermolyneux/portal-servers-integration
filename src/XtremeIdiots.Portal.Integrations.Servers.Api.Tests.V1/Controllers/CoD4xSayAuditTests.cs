@@ -1,0 +1,132 @@
+using System.Net;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
+using MX.Api.Abstractions;
+using MX.Observability.ApplicationInsights.Auditing;
+using MX.Observability.ApplicationInsights.Auditing.Models;
+using Newtonsoft.Json;
+using XtremeIdiots.Portal.Integrations.Servers.Abstractions.Models.V1.Rcon;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Controllers.V1;
+using XtremeIdiots.Portal.Integrations.Servers.Api.Interfaces.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
+using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.Configurations;
+using XtremeIdiots.Portal.Repository.Abstractions.Models.V1.GameServers;
+using XtremeIdiots.Portal.Repository.Api.Client.V1;
+
+namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
+
+[Trait("Category", "Unit")]
+public class CoD4xSayAuditTests
+{
+    [Fact]
+    public async Task Say_SuccessAuditsLocalDispatchWithoutClaimingDelivery()
+    {
+        var fixture = new Fixture();
+        fixture.Client.Setup(x => x.Say("hello")).Returns(Task.CompletedTask);
+        AuditEvent? audit = null;
+        fixture.Audit.Setup(x => x.LogAudit(It.IsAny<AuditEvent>())).Callback<AuditEvent>(value =>
+        {
+            fixture.Client.Verify(x => x.Say("hello"), Times.Once);
+            audit = value;
+        });
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" }));
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.NotNull(audit);
+        Assert.Equal("RconCoD4xSay", audit.EventName);
+        Assert.Equal(AuditOutcome.Success, audit.Outcome);
+        Assert.Equal("LocalUdpSend", audit.Properties["Dispatch"]);
+        Assert.Equal("Unconfirmed", audit.Properties["PlayerDelivery"]);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto => dto.EventType == "RconCoD4xSay" &&
+                dto.EventData.Contains("\"Dispatch\":\"LocalUdpSend\"") &&
+                dto.EventData.Contains("\"PlayerDelivery\":\"Unconfirmed\"")), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Say_FailedExecutionLogsWithoutAuditOrOperatorEvent(bool notImplemented)
+    {
+        var fixture = new Fixture();
+        fixture.Client.Setup(x => x.Say("hello"))
+            .Throws(notImplemented ? new NotImplementedException() : new IOException("send failed"));
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" }));
+
+        Assert.Contains(notImplemented ? "OPERATION_NOT_IMPLEMENTED" : "RCON_OPERATION_FAILED",
+            System.Text.Json.JsonSerializer.Serialize(response.Value));
+        fixture.AssertNoAuditOrEvent();
+        Assert.Contains(fixture.Logger.Invocations, invocation => invocation.Method.Name == nameof(ILogger.Log));
+    }
+
+    [Fact]
+    public async Task Say_MissingServerLogsWithoutAuditOrOperatorEvent()
+    {
+        var fixture = new Fixture();
+        fixture.Repository.Setup(x => x.GameServers.V1.GetGameServer(fixture.ServerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.NotFound, new ApiResponse<GameServerDto>()));
+
+        await fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" });
+
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>()), Times.Never);
+        fixture.AssertNoAuditOrEvent();
+        Assert.Contains(fixture.Logger.Invocations, invocation => invocation.Method.Name == nameof(ILogger.Log));
+    }
+
+    private sealed class Fixture
+    {
+        public Guid ServerId { get; } = Guid.NewGuid();
+        public Mock<IRepositoryApiClient> Repository { get; } = new() { DefaultValue = DefaultValue.Mock };
+        public Mock<ICallOfDuty4xRconClient> Client { get; }
+        public Mock<IAuditLogger> Audit { get; } = new();
+        public Mock<ILogger<CoD4xRconController>> Logger { get; } = new();
+        public CoD4xRconController Controller { get; }
+
+        public Fixture()
+        {
+            var server = JsonConvert.DeserializeObject<GameServerDto>(JsonConvert.SerializeObject(new
+            {
+                GameServerId = ServerId,
+                GameType = (int)GameType.CallOfDuty4x,
+                Hostname = "127.0.0.1",
+                QueryPort = 28960
+            }))!;
+            var config = JsonConvert.DeserializeObject<ConfigurationDto>(JsonConvert.SerializeObject(new
+            {
+                Namespace = "rcon",
+                Configuration = JsonConvert.SerializeObject(new { password = "test" })
+            }))!;
+            Repository.Setup(x => x.GameServers.V1.GetGameServer(ServerId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ApiResult<GameServerDto>(HttpStatusCode.OK, new ApiResponse<GameServerDto>(server)));
+            Repository.Setup(x => x.GameServerConfigurations.V1.GetConfiguration(ServerId, "rcon", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ApiResult<ConfigurationDto>(HttpStatusCode.OK, new ApiResponse<ConfigurationDto>(config)));
+            Repository.Setup(x => x.GameServersEvents.V1.CreateGameServerEvent(It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ApiResult(HttpStatusCode.Created, new ApiResponse()));
+            var client = new Mock<IRconClient>();
+            Client = client.As<ICallOfDuty4xRconClient>();
+            var factory = new Mock<IRconClientFactory>();
+            factory.Setup(x => x.CreateInstance(GameType.CallOfDuty4x, ServerId, "127.0.0.1", 28960, "test"))
+                .Returns(client.Object);
+            var telemetry = new TelemetryClient(new TelemetryConfiguration { TelemetryChannel = new Mock<ITelemetryChannel>().Object });
+            Controller = new CoD4xRconController(Logger.Object, Repository.Object, factory.Object, telemetry, Audit.Object,
+                Mock.Of<IBanLifecycleEventPublisher>())
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            };
+        }
+
+        public void AssertNoAuditOrEvent()
+        {
+            Audit.Verify(x => x.LogAudit(It.IsAny<AuditEvent>()), Times.Never);
+            Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+                It.IsAny<CreateGameServerEventDto>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+    }
+}

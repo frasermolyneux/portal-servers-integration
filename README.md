@@ -24,6 +24,10 @@ The service-account-only CoD4x `plugins/portal-health` endpoint returns the raw
 `portalpluginhealth` RCON response. Unsupported or absent plugin health output
 is not evidence of installed capabilities; confirm the actual response at runtime.
 
+For CoD4x `say`, the audit and operator event record local UDP dispatch and
+unconfirmed player delivery. Failures are logged without an action audit or event.
+The existing transport may retry; dispatch does not establish exactly-once delivery.
+
 ## Redirect-backed map transfers
 
 The managed identity requires `Maps.Read`, with `RedirectApi:BaseUrl` and

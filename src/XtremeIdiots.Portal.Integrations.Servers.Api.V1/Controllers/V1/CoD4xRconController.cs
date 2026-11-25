@@ -786,7 +786,13 @@ public class CoD4xRconController(
         var contextResult = await TryGetCoD4xContext(gameServerId, cancellationToken).ConfigureAwait(false);
         if (contextResult.Error != null)
         {
-            if (auditAction is not null)
+            if (operationName == "RconCoD4xSay")
+            {
+                var contextError = contextResult.Error.Result?.Errors?.FirstOrDefault();
+                logger.LogWarning("Failed to resolve {OperationName} context for game server {GameServerId}: {ErrorCode}",
+                    operationName, gameServerId, contextError?.Code ?? ErrorCodes.RCON_OPERATION_FAILED);
+            }
+            else if (auditAction is not null)
             {
                 var contextError = contextResult.Error.Result?.Errors?.FirstOrDefault();
                 LogFailureAudit(
@@ -830,6 +836,13 @@ public class CoD4xRconController(
                     }
                 }
 
+                if (operationName == "RconCoD4xSay")
+                {
+                    auditEvent = auditEvent
+                        .WithProperty("Dispatch", "LocalUdpSend")
+                        .WithProperty("PlayerDelivery", "Unconfirmed");
+                }
+
                 auditLogger.LogAudit(auditEvent
                     .WithProperty("Result", commandResult)
                     .Build());
@@ -838,6 +851,11 @@ public class CoD4xRconController(
                     ? new Dictionary<string, object?>()
                     : new Dictionary<string, object?>(operationContext.OperatorData);
                 operatorData["Result"] = commandResult;
+                if (operationName == "RconCoD4xSay")
+                {
+                    operatorData["Dispatch"] = "LocalUdpSend";
+                    operatorData["PlayerDelivery"] = "Unconfirmed";
+                }
 
                 await TryWriteOperatorEventAsync(context.GameServerId, operationName, operatorData, cancellationToken).ConfigureAwait(false);
             }
@@ -850,7 +868,7 @@ public class CoD4xRconController(
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
-            if (auditAction is not null)
+            if (auditAction is not null && operationName != "RconCoD4xSay")
             {
                 LogFailureAudit(context.GameServerId, context.GameType, operationName, auditAction.Value, operationContext, ErrorCodes.OPERATION_NOT_IMPLEMENTED, "The requested CoD4x operation is not implemented for this game server type.");
             }
@@ -870,7 +888,7 @@ public class CoD4xRconController(
             operation.Telemetry.ResultCode = ex.Message;
             telemetryClient.TrackException(ex);
 
-            if (auditAction is not null)
+            if (auditAction is not null && operationName != "RconCoD4xSay")
             {
                 LogFailureAudit(context.GameServerId, context.GameType, operationName, auditAction.Value, operationContext, ErrorCodes.RCON_OPERATION_FAILED, "Failed to execute CoD4x command via RCON.");
             }

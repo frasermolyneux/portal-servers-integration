@@ -23,6 +23,63 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 [Trait("Category", "Unit")]
 public class CoD4xSayAuditTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Chat_EmptyDvarReservesNoBytesAndHeaderIsAppliedOncePerItem(bool privateMessage)
+    {
+        var fixture = new Fixture();
+        var variable = privateMessage ? "sv_contellname" : "sv_consayname";
+        fixture.RawClient.Setup(x => x.GetDvar(variable, It.IsAny<CancellationToken>()))
+            .ReturnsAsync($"\"{variable}\" is: \"^7\" default: \"default^7\"");
+        var sent = new List<string>();
+        fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((text, _) => sent.Add(text))
+            .Returns(Task.CompletedTask);
+        fixture.Client.Setup(x => x.Tell("3", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, CancellationToken>((_, text, _) => sent.Add(text))
+            .ReturnsAsync("sent");
+        var header = privateMessage ? "^5(PM)^7 [BOT] " : "[BOT] ";
+        var body = "^1" + new string('a', 150);
+
+        var result = privateMessage
+            ? await fixture.Controller.Tell(fixture.ServerId,
+                new CoD4xTargetMessageRequestDto { Target = "3", Message = body, Messages = ["second"], FirstFragmentHeader = header })
+            : await fixture.Controller.Say(fixture.ServerId,
+                new CoD4xMessageRequestDto { Message = body, Messages = ["second"], FirstFragmentHeader = header });
+
+        Assert.Equal(200, Assert.IsType<ObjectResult>(result).StatusCode);
+        var firstBodyLength = 149 - header.Length - 2;
+        Assert.Equal(new[]
+        {
+            header + "^1" + new string('a', firstBodyLength),
+            "^1" + new string('a', 150 - firstBodyLength),
+            header + "second"
+        }, sent);
+        Assert.All(sent, text => Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 149));
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.Properties["FirstFragmentHeader"] == header && audit.Properties["CompletedFragments"] == "3")), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Chat_LocalizationInsertInHeaderDoesNotDispatch(bool privateMessage)
+    {
+        var fixture = new Fixture();
+        var result = privateMessage
+            ? await fixture.Controller.Tell(fixture.ServerId,
+                new CoD4xTargetMessageRequestDto { Target = "3", Message = "body", FirstFragmentHeader = "bad&&1" })
+            : await fixture.Controller.Say(fixture.ServerId,
+                new CoD4xMessageRequestDto { Message = "body", FirstFragmentHeader = "bad&&1" });
+
+        Assert.Equal(400, Assert.IsType<ObjectResult>(result).StatusCode);
+        fixture.Repository.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Client.Verify(x => x.Tell(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.AssertNoAuditOrEvent();
+    }
+
     [Fact]
     public async Task Say_SuccessAuditsLocalDispatchWithoutClaimingDelivery()
     {

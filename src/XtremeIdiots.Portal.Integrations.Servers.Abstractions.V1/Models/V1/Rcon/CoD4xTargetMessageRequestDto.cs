@@ -7,4 +7,6 @@ public record CoD4xTargetMessageRequestDto
     public string? Message { get; init; }
 
     public IReadOnlyCollection<string>? Messages { get; init; }
+
+    public string? FirstFragmentHeader { get; init; }
 }

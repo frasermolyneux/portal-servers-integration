@@ -15,6 +15,14 @@ public class InfoAndHealthTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetRoot_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetInfo_ReturnsOkWithVersionInfo()
     {
         var response = await _client.GetAsync("/v1.0/info");

@@ -87,7 +87,8 @@ internal static class RconMessageBatch
                     await Task.Delay(FragmentInterval, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (gameType == GameType.CallOfDuty4x &&
+                // The first fragment uses the fresh budget that was used to prepare the batch.
+                if (completed > 0 && gameType == GameType.CallOfDuty4x &&
                     channel is RuleMessageChannels.RconPublicChat or RuleMessageChannels.RconPrivateChat)
                 {
                     var current = await MessageChannelBudgetResolver.ResolveAsync(gameType, channel, client, logger, cancellationToken).ConfigureAwait(false);

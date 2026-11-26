@@ -99,6 +99,77 @@ public class CoD4xSayAuditTests
             audit.EventName == "RconCoD4xSay" && audit.Properties["CompletedFragments"] == "3")), Times.Once);
     }
 
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(false, 3)]
+    [InlineData(true, 1)]
+    [InlineData(true, 3)]
+    public async Task Chat_ReadsPrefixOncePerFragmentBeforeDispatch(bool privateMessage, int count)
+    {
+        var fixture = new Fixture();
+        var variable = privateMessage ? "sv_contellname" : "sv_consayname";
+        var operation = privateMessage ? "RconCoD4xTell" : "RconCoD4xSay";
+        var calls = new List<string>();
+        fixture.RawClient.Setup(x => x.GetDvar(variable, It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((_, _) => calls.Add("read"))
+            .ReturnsAsync($"\"{variable}\" is: \"Server^7\" default: \"default^7\"");
+        fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((text, _) => calls.Add(text))
+            .Returns(Task.CompletedTask);
+        fixture.Client.Setup(x => x.Tell("3", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, CancellationToken>((_, text, _) => calls.Add(text))
+            .ReturnsAsync("sent");
+        var messages = new[] { "first", "second", "third" }.Take(count).ToArray();
+
+        var result = privateMessage
+            ? await fixture.Controller.Tell(fixture.ServerId, new CoD4xTargetMessageRequestDto { Target = "3", Messages = messages })
+            : await fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Messages = messages });
+
+        Assert.Equal(200, Assert.IsType<ObjectResult>(result).StatusCode);
+        Assert.Equal(messages.SelectMany(message => new[] { "read", message }), calls);
+        fixture.RawClient.Verify(x => x.GetDvar(variable, It.IsAny<CancellationToken>()), Times.Exactly(count));
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.EventName == operation && audit.Properties["CompletedFragments"] == count.ToString())), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto => dto.EventType == operation), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Chat_UnavailablePreparationPrefixDoesNotDispatchOrAudit(bool privateMessage)
+    {
+        var fixture = new Fixture();
+        var variable = privateMessage ? "sv_contellname" : "sv_consayname";
+        fixture.RawClient.Setup(x => x.GetDvar(variable, It.IsAny<CancellationToken>())).ReturnsAsync("invalid");
+
+        var result = privateMessage
+            ? await fixture.Controller.Tell(fixture.ServerId, new CoD4xTargetMessageRequestDto { Target = "3", Message = "hello" })
+            : await fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" });
+
+        Assert.Equal(400, Assert.IsType<ObjectResult>(result).StatusCode);
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Client.Verify(x => x.Tell(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.AssertNoAuditOrEvent();
+    }
+
+    [Fact]
+    public async Task Say_CancellationAfterPreparationPrefixDoesNotDispatchOrAudit()
+    {
+        var fixture = new Fixture();
+        using var cancellation = new CancellationTokenSource();
+        fixture.Controller.HttpContext.RequestAborted = cancellation.Token;
+        fixture.RawClient.Setup(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>()))
+            .Callback(() => cancellation.Cancel())
+            .ReturnsAsync("\"sv_consayname\" is: \"Server^7\" default: \"default^7\"");
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" }));
+
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.AssertNoAuditOrEvent();
+    }
+
     [Fact]
     public async Task Say_InvalidLaterItemDoesNotDispatchAnything()
     {
@@ -144,7 +215,6 @@ public class CoD4xSayAuditTests
         var fixture = new Fixture();
         fixture.RawClient.SetupSequence(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>()))
             .ReturnsAsync("\"sv_consayname\" is: \"^2Server: ^7^7\" default: \"default^7\"")
-            .ReturnsAsync("\"sv_consayname\" is: \"^2Server: ^7^7\" default: \"default^7\"")
             .ReturnsAsync($"\"sv_consayname\" is: \"{new string('p', 140)}^7\" default: \"default^7\"");
         fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
@@ -155,6 +225,36 @@ public class CoD4xSayAuditTests
         Assert.Contains("Dispatched 1 of 2", System.Text.Json.JsonSerializer.Serialize(response.Value));
         fixture.Client.Verify(x => x.Say(new string('a', 137), It.IsAny<CancellationToken>()), Times.Once);
         fixture.Client.Verify(x => x.Say(new string('a', 13), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.RawClient.Verify(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>()), Times.Exactly(2));
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.EventName == "RconCoD4xSay.PartialDispatch" && audit.Properties["CompletedFragments"] == "1")), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto => dto.EventType == "RconCoD4xSay.PartialDispatch" &&
+                dto.EventData.Contains("\"OutcomeUnknown\":false")), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Tell_StopsIfPrefixGrowsAfterTheFirstFragment()
+    {
+        var fixture = new Fixture();
+        fixture.RawClient.SetupSequence(x => x.GetDvar("sv_contellname", It.IsAny<CancellationToken>()))
+            .ReturnsAsync("\"sv_contellname\" is: \"Server^7\" default: \"default^7\"")
+            .ReturnsAsync($"\"sv_contellname\" is: \"{new string('p', 140)}^7\" default: \"default^7\"");
+        fixture.Client.Setup(x => x.Tell("3", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync("sent");
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Tell(fixture.ServerId,
+            new CoD4xTargetMessageRequestDto { Target = "3", Messages = ["first", new string('a', 10)] }));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Contains("Dispatched 1 of 2", System.Text.Json.JsonSerializer.Serialize(response.Value));
+        fixture.Client.Verify(x => x.Tell("3", "first", It.IsAny<CancellationToken>()), Times.Once);
+        fixture.Client.Verify(x => x.Tell("3", new string('a', 10), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.RawClient.Verify(x => x.GetDvar("sv_contellname", It.IsAny<CancellationToken>()), Times.Exactly(2));
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.EventName == "RconCoD4xTell.PartialDispatch" && audit.Properties["CompletedFragments"] == "1")), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto => dto.EventType == "RconCoD4xTell.PartialDispatch" &&
+                dto.EventData.Contains("\"OutcomeUnknown\":false")), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]

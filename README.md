@@ -40,8 +40,10 @@ delivery.
 The interim RCON policy allows 149 total display bytes, including prefix and colour
 overhead. CoD4x chat's client buffer is source-verified; other game and
 screen/console cutoffs and the 32-byte prefix allowance are not independently
-verified. CoD4x chat reads its current configured prefix, but localization can
-expand that prefix beyond its raw length. RCON accepts printable ASCII excluding
+verified. Direct CoD4x chat reads the current prefix to prepare and send the first
+fragment, then checks it again before each later fragment. External prefix changes
+between a check and a send cannot be detected atomically, and localization can
+expand the prefix beyond its raw length. RCON accepts printable ASCII excluding
 quotes, backslashes and semicolons; CoD4x also rejects localization inserts of the
 form `&&` followed by a digit. Unsupported text fails rather than being altered.
 

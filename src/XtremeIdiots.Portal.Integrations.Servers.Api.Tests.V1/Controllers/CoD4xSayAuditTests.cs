@@ -153,20 +153,26 @@ public class CoD4xSayAuditTests
         fixture.AssertNoAuditOrEvent();
     }
 
-    [Fact]
-    public async Task Say_CancellationAfterPreparationPrefixDoesNotDispatchOrAudit()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Chat_CancellationAfterPreparationPrefixDoesNotDispatchOrAudit(bool privateMessage)
     {
         var fixture = new Fixture();
         using var cancellation = new CancellationTokenSource();
         fixture.Controller.HttpContext.RequestAborted = cancellation.Token;
-        fixture.RawClient.Setup(x => x.GetDvar("sv_consayname", It.IsAny<CancellationToken>()))
+        var variable = privateMessage ? "sv_contellname" : "sv_consayname";
+        fixture.RawClient.Setup(x => x.GetDvar(variable, It.IsAny<CancellationToken>()))
             .Callback(() => cancellation.Cancel())
-            .ReturnsAsync("\"sv_consayname\" is: \"Server^7\" default: \"default^7\"");
+            .ReturnsAsync($"\"{variable}\" is: \"Server^7\" default: \"default^7\"");
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" }));
+            privateMessage
+                ? fixture.Controller.Tell(fixture.ServerId, new CoD4xTargetMessageRequestDto { Target = "3", Message = "hello" })
+                : fixture.Controller.Say(fixture.ServerId, new CoD4xMessageRequestDto { Message = "hello" }));
 
         fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Client.Verify(x => x.Tell(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         fixture.AssertNoAuditOrEvent();
     }
 

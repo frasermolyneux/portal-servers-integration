@@ -51,6 +51,49 @@ public class GameScopedMessageDeliveryTests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Theory]
+    [InlineData("", false)]
+    [InlineData(" ", false)]
+    [InlineData("", true)]
+    [InlineData(" ", true)]
+    public async Task Say_EmptyOrWhitespaceHeaderIsRetainedInDispatchRecords(string header, bool partialFailure)
+    {
+        var fixture = new Fixture();
+        fixture.Client.Setup(x => x.Say(header + "first", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        if (partialFailure)
+        {
+            fixture.Client.Setup(x => x.Say(header + "second", It.IsAny<CancellationToken>()))
+                .Throws(new IOException("response lost"));
+        }
+        else
+        {
+            fixture.Client.Setup(x => x.Say(header + "second", It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+        }
+
+        var result = await fixture.Controller.Say(fixture.ServerId,
+            new SayRequest { Messages = ["first", "second"], FirstFragmentHeader = header });
+
+        if (partialFailure)
+        {
+            Assert.Equal(502, Assert.IsType<ObjectResult>(result).StatusCode);
+        }
+        else
+        {
+            Assert.Equal(200, Assert.IsType<StatusCodeResult>(result).StatusCode);
+        }
+
+        var eventName = partialFailure ? "RconCod2Say.PartialDispatch" : "RconCod2Say";
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.EventName == eventName && audit.Properties.ContainsKey("FirstFragmentHeader") &&
+            audit.Properties["FirstFragmentHeader"] == header)), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto => dto.EventType == eventName &&
+                dto.EventData.Contains("\"FirstFragmentHeader\":\"" + header + "\"")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     [Fact]
     public async Task Tell_AtomicHeaderKeepsAnUnbrokenBodyOnTheFirstFragment()
     {

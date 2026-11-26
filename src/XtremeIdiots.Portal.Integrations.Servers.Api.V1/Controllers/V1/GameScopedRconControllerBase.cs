@@ -398,15 +398,18 @@ public abstract class GameScopedRconControllerBase(
             if (result.CompletedFragments > 0)
             {
                 var eventName = result.IsSuccess ? operationName : $"{operationName}.PartialDispatch";
-                var operatorData = BuildOperatorData(
+                var operatorData = new Dictionary<string, object?>(BuildOperatorData(
                     ("ClientId", clientId),
                     ("MessageCount", prepared.Items.Count),
                     ("Message", prepared.Items.Count == 1 ? prepared.Items[0] : null),
                     ("Messages", prepared.Items.Count > 1 ? prepared.Items : null),
-                    ("FirstFragmentHeader", firstFragmentHeader),
                     ("CompletedFragments", result.CompletedFragments),
                     ("TotalFragments", result.TotalFragments),
-                    ("OutcomeUnknown", result.OutcomeUnknown));
+                    ("OutcomeUnknown", result.OutcomeUnknown)));
+                if (firstFragmentHeader is not null)
+                {
+                    operatorData["FirstFragmentHeader"] = firstFragmentHeader;
+                }
                 auditSucceeded = await WriteMessageAuditAndEvent(context, eventName, auditAction, clientId, operatorData).ConfigureAwait(false);
                 if (!auditSucceeded && result.IsSuccess)
                 {

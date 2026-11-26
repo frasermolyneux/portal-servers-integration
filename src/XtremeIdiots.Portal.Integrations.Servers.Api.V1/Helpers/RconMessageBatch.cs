@@ -27,7 +27,7 @@ internal static class RconMessageBatch
     private static readonly TimeSpan FragmentInterval = TimeSpan.FromMilliseconds(100);
 
     public static (IReadOnlyList<string>? Items, string? Error) Normalize(
-        GameType gameType, string? message, IEnumerable<string>? messages)
+        GameType gameType, string? message, IEnumerable<string>? messages, string? firstFragmentHeader = null)
     {
         var normalized = MessagePreparation.Normalize(message, messages);
         if (!normalized.IsValid)
@@ -45,13 +45,21 @@ internal static class RconMessageBatch
             return (null, "A message contains characters that cannot be safely represented by this RCON transport.");
         }
 
+        if (firstFragmentHeader is { Length: > 0 } &&
+            !MessageChannelBudgetResolver.IsRepresentable(gameType, firstFragmentHeader))
+        {
+            return (null, "The first-fragment header contains characters that cannot be safely represented by this RCON transport.");
+        }
+
         return (normalized.Items, null);
     }
 
     public static (MessagePreparationResult? Prepared, string? Error) Prepare(
-        GameType gameType, IReadOnlyList<string> items, MessageChannelBudget budget)
+        GameType gameType, IReadOnlyList<string> items, MessageChannelBudget budget, string? firstFragmentHeader = null)
     {
-        var prepared = MessagePreparation.Prepare(null, items, budget);
+        var prepared = firstFragmentHeader is null
+            ? MessagePreparation.Prepare(null, items, budget)
+            : MessagePreparation.Prepare(null, items, budget, firstFragmentHeader);
         if (!prepared.IsValid)
         {
             return (null, string.Join(" ", prepared.Errors.Select(error => error.Message)));
@@ -87,7 +95,8 @@ internal static class RconMessageBatch
                     await Task.Delay(FragmentInterval, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (gameType == GameType.CallOfDuty4x &&
+                // The first fragment uses the fresh budget that was used to prepare the batch.
+                if (completed > 0 && gameType == GameType.CallOfDuty4x &&
                     channel is RuleMessageChannels.RconPublicChat or RuleMessageChannels.RconPrivateChat)
                 {
                     var current = await MessageChannelBudgetResolver.ResolveAsync(gameType, channel, client, logger, cancellationToken).ConfigureAwait(false);

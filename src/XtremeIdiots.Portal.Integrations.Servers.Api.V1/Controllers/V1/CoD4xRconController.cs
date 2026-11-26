@@ -163,7 +163,7 @@ public class CoD4xRconController(
     [Route("rcon/{gameServerId}/cod4x/say")]
     public Task<IActionResult> Say(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
         ExecuteMessageBatch(gameServerId, "RconCoD4xSay", AuditAction.Execute, RuleMessageChannels.RconPublicChat,
-            request?.Message, request?.Messages, null, request is not null, static async (client, _, text, ct) =>
+            request?.Message, request?.Messages, request?.FirstFragmentHeader, null, request is not null, static async (client, _, text, ct) =>
         {
             await client.Say(text, ct).ConfigureAwait(false);
             return string.Empty;
@@ -173,14 +173,14 @@ public class CoD4xRconController(
     [Route("rcon/{gameServerId}/cod4x/screen-say")]
     public Task<IActionResult> ScreenSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
         ExecuteMessageBatch(gameServerId, "RconCoD4xScreenSay", AuditAction.Execute, RuleMessageChannels.RconPublicScreen,
-            request?.Message, request?.Messages, null, request is not null,
+            request?.Message, request?.Messages, request?.FirstFragmentHeader, null, request is not null,
             static (client, _, text, ct) => client.ScreenSay(text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
     [Route("rcon/{gameServerId}/cod4x/con-say")]
     public Task<IActionResult> ConSay(Guid gameServerId, [FromBody] CoD4xMessageRequestDto? request) =>
         ExecuteMessageBatch(gameServerId, "RconCoD4xConSay", AuditAction.Execute, RuleMessageChannels.RconPublicConsole,
-            request?.Message, request?.Messages, null, request is not null,
+            request?.Message, request?.Messages, request?.FirstFragmentHeader, null, request is not null,
             static (client, _, text, ct) => client.ConSay(text, ct), HttpContext.RequestAborted);
 
     [HttpPost]
@@ -368,7 +368,7 @@ public class CoD4xRconController(
         }
 
         return ExecuteMessageBatch(gameServerId, operationName, AuditAction.Moderate, channel,
-            request.Message, request.Messages, target, true,
+            request.Message, request.Messages, request.FirstFragmentHeader, target, true,
             (client, _, text, ct) => dispatch(client, target, text, ct), cancellationToken);
     }
 
@@ -379,6 +379,7 @@ public class CoD4xRconController(
         string channel,
         string? message,
         IEnumerable<string>? messages,
+        string? firstFragmentHeader,
         string? target,
         bool hasBody,
         Func<ICallOfDuty4xRconClient, string?, string, CancellationToken, Task<string>> dispatch,
@@ -389,7 +390,7 @@ public class CoD4xRconController(
             return new ApiResponse<string>(new ApiError(ErrorCodes.INVALID_REQUEST, "Request body cannot be null.")).ToBadRequestResult().ToHttpResult();
         }
 
-        var (items, validationError) = RconMessageBatch.Normalize(GameType.CallOfDuty4x, message, messages);
+        var (items, validationError) = RconMessageBatch.Normalize(GameType.CallOfDuty4x, message, messages, firstFragmentHeader);
         if (items is null)
         {
             return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, validationError!);
@@ -420,7 +421,7 @@ public class CoD4xRconController(
                 return MessageError(HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
             }
 
-            var (prepared, error) = RconMessageBatch.Prepare(GameType.CallOfDuty4x, items, budget.Budget);
+            var (prepared, error) = RconMessageBatch.Prepare(GameType.CallOfDuty4x, items, budget.Budget, firstFragmentHeader);
             if (prepared is null)
             {
                 return MessageError(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);
@@ -444,6 +445,10 @@ public class CoD4xRconController(
                 {
                     audit = audit.WithTarget(target, "Target");
                 }
+                if (firstFragmentHeader is not null)
+                {
+                    audit = audit.WithProperty("FirstFragmentHeader", firstFragmentHeader);
+                }
 
                 var operatorData = new Dictionary<string, object?>
                 {
@@ -457,6 +462,10 @@ public class CoD4xRconController(
                     ["Dispatch"] = "LocalUdpSend",
                     ["PlayerDelivery"] = "Unconfirmed"
                 };
+                if (firstFragmentHeader is not null)
+                {
+                    operatorData["FirstFragmentHeader"] = firstFragmentHeader;
+                }
                 try
                 {
                     auditLogger.LogAudit(audit.Build());

@@ -30,6 +30,11 @@ Message requests accept the existing `message` and an optional ordered `messages
 list. When both are supplied, `message` is sent first. Each rendered item is
 validated and split before dispatch, preserving item order and CoD colour continuation.
 Source game messages treat colour-like sequences as literal text.
+Generic message requests also accept optional `firstFragmentHeader`, including any
+desired trailing separator. It is validated using the channel's character rules
+and kept together on only the first fragment of each item, within the same byte
+budget as the body and colour continuation. Omitted or null headers preserve
+existing behavior; already-frozen rules fragments are not re-prepared.
 All fragments are validated before the first send. A partial failure returns an
 error containing completed and total fragment counts; its final attempted fragment
 may have an unknown outcome. Successful or partially dispatched batches are audited
@@ -40,10 +45,22 @@ delivery.
 The interim RCON policy allows 149 total display bytes, including prefix and colour
 overhead. CoD4x chat's client buffer is source-verified; other game and
 screen/console cutoffs and the 32-byte prefix allowance are not independently
-verified. CoD4x chat reads its current configured prefix, but localization can
-expand that prefix beyond its raw length. RCON accepts printable ASCII excluding
+verified. Direct CoD4x chat reads the current prefix to prepare and send the first
+fragment, then checks it again before each later fragment. External prefix changes
+between a check and a send cannot be detected atomically, and localization can
+expand the prefix beyond its raw length. RCON accepts printable ASCII excluding
 quotes, backslashes and semicolons; CoD4x also rejects localization inserts of the
 form `&&` followed by a digit. Unsupported text fails rather than being altered.
+
+CoD4x bot-owned chat headers require the server operator to configure
+`sv_consayname ""` and `sv_contellname ""` in the actual startup configuration
+after identifying its execution order and overrides. These server-wide settings
+remove automatic headers from all RCON/console `say` and `tell`, not just bots;
+private screen/console messages retain their engine-added PM prefix. The API
+neither changes these settings nor assumes a configuration file path. Verify
+the live values after the configuration is loaded. Release the shared splitter
+package, deploy this API and publish its client contracts before upgrading
+header-aware producers; older API deployments may ignore the new request field.
 
 CoD4x client-kick, only-kick and ban-client requests must include `clientId`;
 slot zero is valid. Structured ban endpoints currently accept only numeric
@@ -112,6 +129,9 @@ do not cause the native command to be sent again.
 | [`XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1`](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1)       | [![NuGet](https://img.shields.io/nuget/v/XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1.svg)](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Abstractions.V1/)       | Shared contracts and DTOs for the Servers Integration API |
 | [`XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1`](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1)           | [![NuGet](https://img.shields.io/nuget/v/XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1.svg)](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Api.Client.V1/)           | Typed client for Servers Integration API V1               |
 | [`XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing`](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing) | [![NuGet](https://img.shields.io/nuget/v/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing.svg)](https://www.nuget.org/packages/XtremeIdiots.Portal.Integrations.Servers.Api.Client.Testing/) | In-memory fakes and factory helpers for consumer tests    |
+
+The Abstractions package requires Settings.Contracts.V1 5.x. Consumers using
+legacy welcome-message types removed in 5.x must migrate those usages when upgrading.
 
 ## Contributing
 Please read the [contributing](CONTRIBUTING.md) guidance; this is a learning and development project.

@@ -117,14 +117,18 @@ public class CoD4xRconApiRouteTests
 
         var result = await api.Say(gameServerId, new CoD4xMessageRequestDto
         {
-            Message = "welcome to the server"
+            Message = "welcome to the server",
+            FirstFragmentHeader = "[BOT] "
         });
 
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         Assert.NotNull(restClientService.LastRequest);
         Assert.Equal($"v1/rcon/{gameServerId}/cod4x/say", restClientService.LastRequest!.Resource);
         Assert.Equal(Method.Post, restClientService.LastRequest.Method);
-        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+        var body = Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+        var request = Assert.IsType<CoD4xMessageRequestDto>(body.Value);
+        Assert.Equal("welcome to the server", request.Message);
+        Assert.Equal("[BOT] ", request.FirstFragmentHeader);
     }
 
     [Fact]

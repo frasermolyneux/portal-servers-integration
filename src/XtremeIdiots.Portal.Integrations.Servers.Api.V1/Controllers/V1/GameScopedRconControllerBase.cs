@@ -78,7 +78,7 @@ public abstract class GameScopedRconControllerBase(
         }
 
         return await ExecuteMessageBatch(gameServerId, operationName, AuditAction.Execute,
-            RuleMessageChannels.RconPublicChat, request.Message, request.Messages, null, cancellationToken).ConfigureAwait(false);
+            RuleMessageChannels.RconPublicChat, request.Message, request.Messages, request.FirstFragmentHeader, null, cancellationToken).ConfigureAwait(false);
     }
 
     protected async Task<IActionResult> Tell(Guid gameServerId, CoD4xTargetMessageRequestDto? request, string operationName, CancellationToken cancellationToken)
@@ -99,7 +99,7 @@ public abstract class GameScopedRconControllerBase(
         }
 
         return await ExecuteMessageBatch(gameServerId, operationName, AuditAction.Moderate,
-            RuleMessageChannels.RconPrivateChat, request.Message, request.Messages, clientId, cancellationToken).ConfigureAwait(false);
+            RuleMessageChannels.RconPrivateChat, request.Message, request.Messages, request.FirstFragmentHeader, clientId, cancellationToken).ConfigureAwait(false);
     }
 
     protected Task<IActionResult> Restart(Guid gameServerId, string operationName, CancellationToken cancellationToken) =>
@@ -346,10 +346,11 @@ public abstract class GameScopedRconControllerBase(
         string channel,
         string? message,
         IEnumerable<string>? messages,
+        string? firstFragmentHeader,
         int? clientId,
         CancellationToken cancellationToken)
     {
-        var (items, validationError) = RconMessageBatch.Normalize(supportedGameType, message, messages);
+        var (items, validationError) = RconMessageBatch.Normalize(supportedGameType, message, messages, firstFragmentHeader);
         if (items is null)
         {
             return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, validationError!);
@@ -375,7 +376,7 @@ public abstract class GameScopedRconControllerBase(
                 return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, code, budget.Detail ?? "Message budget is unavailable.");
             }
 
-            var (prepared, error) = RconMessageBatch.Prepare(supportedGameType, items, budget.Budget);
+            var (prepared, error) = RconMessageBatch.Prepare(supportedGameType, items, budget.Budget, firstFragmentHeader);
             if (prepared is null)
             {
                 return MessageError(clientId.HasValue, HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, error!);
@@ -402,6 +403,7 @@ public abstract class GameScopedRconControllerBase(
                     ("MessageCount", prepared.Items.Count),
                     ("Message", prepared.Items.Count == 1 ? prepared.Items[0] : null),
                     ("Messages", prepared.Items.Count > 1 ? prepared.Items : null),
+                    ("FirstFragmentHeader", firstFragmentHeader),
                     ("CompletedFragments", result.CompletedFragments),
                     ("TotalFragments", result.TotalFragments),
                     ("OutcomeUnknown", result.OutcomeUnknown));
@@ -453,6 +455,10 @@ public abstract class GameScopedRconControllerBase(
         if (clientId is { } id)
         {
             audit = audit.WithTarget(id.ToString(System.Globalization.CultureInfo.InvariantCulture), "ClientId");
+        }
+        if (operatorData.TryGetValue("FirstFragmentHeader", out var header) && header is string headerText)
+        {
+            audit = audit.WithProperty("FirstFragmentHeader", headerText);
         }
 
         var auditSucceeded = true;

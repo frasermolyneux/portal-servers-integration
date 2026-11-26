@@ -5,4 +5,6 @@ public record SayRequest
     public string? Message { get; init; }
 
     public IReadOnlyCollection<string>? Messages { get; init; }
+
+    public string? FirstFragmentHeader { get; init; }
 }

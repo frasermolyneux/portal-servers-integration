@@ -27,6 +27,117 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Controllers;
 public class GameScopedMessageDeliveryTests
 {
     [Fact]
+    public async Task Say_AtomicHeaderIsOnlyOnTheFirstFragmentOfEachItem()
+    {
+        var fixture = new Fixture();
+        var sent = new List<string>();
+        fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((message, _) => sent.Add(message))
+            .Returns(Task.CompletedTask);
+        const string header = "[BOT] ";
+        var body = new string('a', 120);
+
+        var response = Assert.IsType<StatusCodeResult>(await fixture.Controller.Say(fixture.ServerId,
+            new SayRequest { Message = body, Messages = ["second"], FirstFragmentHeader = header }));
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal(new[] { header + new string('a', 111), new string('a', 9), header + "second" }, sent);
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.Properties["FirstFragmentHeader"] == header)), Times.Once);
+        fixture.Repository.Verify(x => x.GameServersEvents.V1.CreateGameServerEvent(
+            It.Is<CreateGameServerEventDto>(dto =>
+                dto.EventData.Contains("\"FirstFragmentHeader\":\"[BOT] \"") &&
+                dto.EventData.Contains("\"Messages\":[\"" + body + "\",\"second\"]")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Tell_AtomicHeaderKeepsAnUnbrokenBodyOnTheFirstFragment()
+    {
+        var fixture = new Fixture();
+        var sent = new List<string>();
+        fixture.Client.Setup(x => x.TellPlayer(3, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<int, string, CancellationToken>((_, message, _) => sent.Add(message))
+            .ReturnsAsync("sent");
+        const string header = "(PM) [BOT] ";
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Tell(fixture.ServerId,
+            new CoD4xTargetMessageRequestDto
+            {
+                Target = "3",
+                Message = new string('a', 130),
+                FirstFragmentHeader = header
+            }));
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal(new[] { header + new string('a', 106), new string('a', 24) }, sent);
+        fixture.Audit.Verify(x => x.LogAudit(It.Is<AuditEvent>(audit =>
+            audit.EventName == "RconCod2Tell" && audit.Properties["FirstFragmentHeader"] == header)), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("bad;command")]
+    [InlineData("bad\"header")]
+    [InlineData("bad\\header")]
+    [InlineData("bad\nheader")]
+    [InlineData("non-ascii-\u00e9")]
+    public async Task Say_InvalidHeaderDoesNotResolveOrDispatch(string header)
+    {
+        var fixture = new Fixture();
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Say(fixture.ServerId,
+            new SayRequest { Message = "safe", FirstFragmentHeader = header }));
+
+        Assert.Equal(400, response.StatusCode);
+        fixture.Repository.Verify(x => x.GameServers.V1.GetGameServer(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Audit.Verify(x => x.LogAudit(It.IsAny<AuditEvent>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("")]
+    public async Task Say_HeaderCannotReplaceARequiredBody(string body)
+    {
+        var fixture = new Fixture();
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Say(fixture.ServerId,
+            new SayRequest { Message = body, FirstFragmentHeader = "[BOT] " }));
+
+        Assert.Equal(400, response.StatusCode);
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Say_HeaderThatLeavesNoBodySpaceDoesNotDispatch()
+    {
+        var fixture = new Fixture();
+
+        var response = Assert.IsType<ObjectResult>(await fixture.Controller.Say(fixture.ServerId,
+            new SayRequest { Messages = ["first", "second"], FirstFragmentHeader = new string('h', 117) }));
+
+        Assert.Equal(400, response.StatusCode);
+        fixture.Client.Verify(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Audit.Verify(x => x.LogAudit(It.IsAny<AuditEvent>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SourceSay_HeaderDoesNotEnableColourContinuation()
+    {
+        var fixture = new Fixture(GameType.Left4Dead2);
+        var sent = new List<string>();
+        fixture.Client.Setup(x => x.Say(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((message, _) => sent.Add(message))
+            .Returns(Task.CompletedTask);
+
+        var response = Assert.IsType<StatusCodeResult>(await fixture.SourceController.Say(fixture.ServerId,
+            new SayRequest { Message = new string('a', 120), FirstFragmentHeader = "^1[BOT] " }));
+
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal(new[] { "^1[BOT] " + new string('a', 109), new string('a', 11) }, sent);
+    }
+
+    [Fact]
     public async Task Say_SplitsBeforeAppendingLaterItemsAndCarriesColour()
     {
         var fixture = new Fixture();

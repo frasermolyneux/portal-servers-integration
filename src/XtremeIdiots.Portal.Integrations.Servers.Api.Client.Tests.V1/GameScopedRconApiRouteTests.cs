@@ -58,14 +58,18 @@ public class GameScopedRconApiRouteTests
         var result = await api.Tell(gameServerId, new CoD4xTargetMessageRequestDto
         {
             Target = "2",
-            Message = "test"
+            Message = "test",
+            FirstFragmentHeader = "^5(PM)^7 [BOT] "
         });
 
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         Assert.NotNull(restClientService.LastRequest);
         Assert.Equal($"v1/rcon/{gameServerId}/cod2/tell", restClientService.LastRequest!.Resource);
         Assert.Equal(Method.Post, restClientService.LastRequest.Method);
-        Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+        var body = Assert.Single(restClientService.LastRequest.Parameters, p => p.Type == ParameterType.RequestBody);
+        var request = Assert.IsType<CoD4xTargetMessageRequestDto>(body.Value);
+        Assert.Equal("test", request.Message);
+        Assert.Equal("^5(PM)^7 [BOT] ", request.FirstFragmentHeader);
     }
 
     [Fact]

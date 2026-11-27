@@ -7,9 +7,12 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal static partial class CodMapRotationParser
 {
-    [GeneratedRegex("\\A\\s*\"sv_mapRotation\"\\s+is:\\s*\"(?<value>.*?)\"(?:\\s+default:\\s*\"[^\"]*\"(?:\\s+info:\\s*\"[^\"]*\")?)?(?:\\s+latched:\\s*\"[^\"]*\")?(?:\\s+Domain is any text)?\\s*\\z",
+    [GeneratedRegex("\\A\\s*\"sv_mapRotation\"\\s+is:\\s*\"(?<value>.*?)\"(?:[ \\t]+default:[ \\t]*\"(?<default>[^\\r\\n]*?)\"(?:[ \\t]+info:[ \\t]*\"(?<info>[^\\r\\n]*?)\")?)?(?:\\r?\\n[ \\t]*latched:[ \\t]*\"(?<latched>[^\\r\\n]*?)\")?(?:\\r?\\n[ \\t]*Domain is any text)?[ \\t\\r\\n]*\\z",
         RegexOptions.IgnoreCase | RegexOptions.Singleline, 1000)]
     private static partial Regex DvarResponseRegex();
+
+    [GeneratedRegex("\"sv_mapRotation\"\\s+is:", RegexOptions.IgnoreCase, 1000)]
+    private static partial Regex DvarHeaderRegex();
 
     public static List<Quake3QueryMap> ParsePackets(IEnumerable<byte[]> packets, GameType game)
     {
@@ -36,7 +39,10 @@ internal static partial class CodMapRotationParser
     private static List<Quake3QueryMap> Parse(string response, GameType game)
     {
         var match = DvarResponseRegex().Match(response);
-        if (!match.Success)
+        if (!match.Success || DvarHeaderRegex().Count(response) != 1 ||
+            HasUnbalancedQuotes(match.Groups["default"].Value) ||
+            HasUnbalancedQuotes(match.Groups["info"].Value) ||
+            HasUnbalancedQuotes(match.Groups["latched"].Value))
         {
             throw new FormatException("Missing, malformed or incomplete sv_mapRotation dvar response.");
         }
@@ -79,6 +85,9 @@ internal static partial class CodMapRotationParser
 
         return maps;
     }
+
+    // Dvar output does not escape embedded quotes; an unmatched quote may be a truncated field.
+    private static bool HasUnbalancedQuotes(string value) => value.Count(character => character == '"') % 2 != 0;
 
     private static List<string> TokenizeCoD4x(string value)
     {

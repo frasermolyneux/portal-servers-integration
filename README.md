@@ -103,6 +103,8 @@ transport failures return `RCON_OPERATION_FAILED` without a snapshot.
 Consumers must check the API error envelope and data, not HTTP 200 alone, and retain
 their previous snapshot on failure. UDP has no sequence numbers: absent middle
 datagrams that happen to leave a valid framed value cannot be detected.
+Embedded quotes in ancillary values are supported when balanced; because the
+server does not escape quotes, an unmatched quote is ambiguous and fails the read.
 
 Stock CoD2/CoD4 rotation executors recognize `map` and `gametype`, not `exec`;
 CoD5 server configurations use the same grammar, but its native executor has not

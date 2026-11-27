@@ -84,6 +84,45 @@ return an error; retrying a push retransfers its selected files. Resumable
 browser uploads/downloads and ZIP collections belong to the redirect manager,
 not a game-server transfer journal.
 
+## CoD map rotation reads
+
+The service-account-only `GET v1/rcon/{gameServerId}/{cod2|cod4|cod4x|cod5}/maps`
+reads `sv_mapRotation`, not the remaining `sv_mapRotationCurrent`. The existing
+typed clients return `ApiResult<RconMapCollectionDto>` containing ordered `Items`
+of `RconMapDto(GameType, MapName)`. Repeated maps remain separate entries, including
+the same map under different game types. A declared `gametype` applies to subsequent
+maps until changed; `GameType = ""` before the first declaration means unspecified,
+not the server's current game type. Mod-defined map and game-type names are not
+restricted to a built-in whitelist.
+
+Only the current quoted dvar value is imported; default, info and latched values
+are not rotation entries. A confirmed empty value succeeds with `Items = []`.
+Missing/malformed dvar output, invalid directives, incomplete tokens or packet
+framing, non-ASCII output unsupported by the existing transport encoding, and
+transport failures return `RCON_OPERATION_FAILED` without a snapshot.
+Consumers must check the API error envelope and data, not HTTP 200 alone, and retain
+their previous snapshot on failure. UDP has no sequence numbers: absent middle
+datagrams that happen to leave a valid framed value cannot be detected.
+
+Stock CoD2/CoD4 rotation executors recognize `map` and `gametype`, not `exec`;
+CoD5 server configurations use the same grammar, but its native executor has not
+been independently source-verified. Unknown directives fail rather than being
+silently discarded. CoD4x has a distinct rotation lexer: directives need a literal
+space, semicolons may separate entries with intervening spaces, and a newline
+terminates the value. Text after that newline fails the import rather than yielding
+a partial rotation. Stock token parsing accepts quoted arguments and comments;
+CoD4x does not treat comments as comments.
+
+This is read-only and cancellable, with no RCON writes, audits or operator events.
+Source games are unchanged. No public DTO/client change or new package dependency
+is required; deploy the API change before enabling replacement imports.
+
+Syntax evidence: [CoD2 reconstructed executor](https://github.com/voron00/CoD2rev_Server/blob/master/src/server/sv_ccmds_mp.cpp),
+[stock CoD4 executor disassembly](https://github.com/callofduty4x/CoD4x_Server/blob/master/tools/cod4_dasm/src/_sv_ccmds_mp.asm),
+[CoD4x executor](https://github.com/callofduty4x/CoD4x_Server/blob/master/src/sv_cmds.c)
+and [lexer](https://github.com/callofduty4x/CoD4x_Server/blob/master/src/qshared.c),
+and [CoD5 configuration](https://github.com/matracey/docker-codwaw/blob/master/server.cfg).
+
 ## RCON roster observations
 
 CoD2, CoD4, CoD5 and CoD4x status responses include an optional `roster` observation.

@@ -13,7 +13,7 @@ using XtremeIdiots.Portal.Repository.Abstractions.Constants.V1;
 
 namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Clients;
 
-public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRosterRconClient, IRulesNativeRconClient
+public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRosterRconClient, IRulesNativeRconClient, IMapRotationRconClient
 {
     private readonly ILogger _logger = logger;
 
@@ -22,9 +22,6 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
     private const string BareIpv6Pattern = @"(?:[0-9A-Fa-f]{0,4}:){2,}[0-9A-Fa-f:%.]*";
     private const string IpAddressPattern = @"(?<ip>(?:" + BracketedIpv6Pattern + @"|" + Ipv4Pattern + @"|" + BareIpv6Pattern + @"))";
     private static readonly char[] InvalidTellMessageCharacters = [';', '\r', '\n'];
-
-    [GeneratedRegex(@"(?:gametype\s+([a-zA-Z0-9]+)\s+)?map\s+([a-zA-Z0-9_]+)", RegexOptions.None, 1000)]
-    private static partial Regex MapRegex();
 
     [GeneratedRegex(@"^\s*(?<num>[0-9]+)\s+(?<score>[0-9-]+)\s+(?<ping>[0-9]+)\s+(?<guid>[0-9]+)\s+(?<name>.*?)\s+(?<lastmsg>[0-9]+?)\s+" + IpAddressPattern + @":?(?<addressPort>-?[0-9]{1,5})\s*(?<qPort>-?[0-9]{1,5})\s+(?<rate>[0-9]+)$", RegexOptions.None, 1000)]
     private static partial Regex CallOfDuty2PlayerRegex();
@@ -162,26 +159,21 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
         return Task.CompletedTask;
     }
 
-    public Task<List<Quake3QueryMap>> GetMaps()
+    public Task<List<Quake3QueryMap>> GetMaps() => GetMaps(CancellationToken.None);
+
+    public Task<List<Quake3QueryMap>> GetMaps(CancellationToken cancellationToken)
     {
-        var maps = MapRotation();
-
-        var mapList = new List<Quake3QueryMap>();
-        // The map rotation is returned in the format:
-        // gametype {gameType} map {mapName}
-        // or in the format map {mapName}
-        // The game type is optional
-
-        var matches = MapRegex().Matches(maps);
-        foreach (Match match in matches)
+        if (GameType is not (GameType.CallOfDuty2 or GameType.CallOfDuty4 or GameType.CallOfDuty4x or GameType.CallOfDuty5))
         {
-            var gameType = match.Groups[1].Success ? match.Groups[1].Value : "";
-            var mapName = match.Groups[2].Value;
-
-            mapList.Add(new Quake3QueryMap { GameType = gameType, MapName = mapName });
+            throw new NotSupportedException($"Game type {GameType} is not supported");
         }
 
-        return Task.FromResult(mapList);
+        var packets = Policy.Handle<Exception>(ex => ex is not OperationCanceledException)
+            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) =>
+                _logger.LogWarning("[{GameServerId}] Failed to query map rotation - retry count: {Count}", ServerId, retryCount))
+            .Execute(token => GetCommandPackets("sv_mapRotation", cancellationToken: token), cancellationToken);
+
+        return Task.FromResult(CodMapRotationParser.ParsePackets(packets, GameType));
     }
 
     public Task<string> Restart()
@@ -552,17 +544,6 @@ public partial class Quake3RconClient(ILogger logger) : IRconClient, IPlayerRost
         var packets = Policy.Handle<Exception>(ex => ex is not OperationCanceledException)
             .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", ServerId, retryCount); })
             .Execute(token => GetCommandPackets("status", cancellationToken: token), cancellationToken);
-
-        _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", ServerId, packets.Count);
-
-        return GetStringFromPackets(packets);
-    }
-
-    private string MapRotation()
-    {
-        var packets = Policy.Handle<Exception>()
-            .WaitAndRetry(GetRetryTimeSpans(), (result, timeSpan, retryCount, context) => { _logger.LogWarning("[{serverName}] Failed to execute rcon command - retry count: {count}", ServerId, retryCount); })
-            .Execute(() => GetCommandPackets("sv_mapRotation"));
 
         _logger.LogDebug("[{GameServerId}] Total status packets retrieved from server: {Count}", ServerId, packets.Count);
 

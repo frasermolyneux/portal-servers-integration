@@ -75,6 +75,9 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"gametype dm map \"mp_default\"^7\"\n")]
         [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"^7\"\nlatched: \"gametype dm map \"mp_next\"\"\nDomain is any text\n")]
         [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map \"mp_default\"^7\" info: \"Rotation \"description\"^7\"\nlatched: \"map \"mp_next\"\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map \"mp_default\"\nmap mp_another^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"^7\"\nlatched: \"map \"mp_next\"\nmap mp_last\"\nDomain is any text\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map mp_default\nmap mp_next^7\" info: \"rotation\n\"description\"^7\"\nlatched: \"map mp_last\nmap mp_next\"\n")]
         public async Task GetMaps_IgnoresQuotedArgumentsInAncillaryDvarValues(string response)
         {
             _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(response));
@@ -131,6 +134,8 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"unfinished\n")]
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"map \"mp_default^7\"\n")]
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\nlatched: \"map \"mp_next\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"map mp_default\nmap \"mp_incomplete^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\nlatched: \"map mp_next\nmap \"mp_incomplete\"\n")]
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\"\n\"sv_mapRotation\" is: \"map mp_other^7\"\n")]
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\n\"sv_mapRotation\" is: \"map mp_other^7\" default: \"^7\"\n")]
         [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\" \"sv_mapRotation\" is: \"map mp_other^7\" default: \"^7\"\n")]

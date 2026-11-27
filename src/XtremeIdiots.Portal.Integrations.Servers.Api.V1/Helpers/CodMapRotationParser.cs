@@ -7,7 +7,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.V1.Helpers;
 
 internal static partial class CodMapRotationParser
 {
-    [GeneratedRegex("\\A\\s*\"sv_mapRotation\"\\s+is:\\s*\"(?<value>.*?)\"(?:[ \\t]+default:[ \\t]*\"(?<default>[^\\r\\n]*?)\"(?:[ \\t]+info:[ \\t]*\"(?<info>[^\\r\\n]*?)\")?)?(?:\\r?\\n[ \\t]*latched:[ \\t]*\"(?<latched>[^\\r\\n]*?)\")?(?:\\r?\\n[ \\t]*Domain is any text)?[ \\t\\r\\n]*\\z",
+    [GeneratedRegex("\\A\\s*\"sv_mapRotation\"\\s+is:\\s*\"(?<value>.*?)\"(?:[ \\t]+default:[ \\t]*\"(?<default>.*?)\"(?:[ \\t]+info:[ \\t]*\"(?<info>.*?)\")?)?(?:\\r?\\n[ \\t]*latched:[ \\t]*\"(?<latched>.*?)\")?(?:\\r?\\n[ \\t]*Domain is any text)?[ \\t\\r\\n]*\\z",
         RegexOptions.IgnoreCase | RegexOptions.Singleline, 1000)]
     private static partial Regex DvarResponseRegex();
 

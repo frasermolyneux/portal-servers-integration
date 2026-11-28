@@ -12,7 +12,7 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         private readonly UdpClient _udpClient;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private Task? _listenTask;
-        private readonly Dictionary<string, Func<string, byte[]>> _commandHandlers;
+        private readonly Dictionary<string, Func<string, IEnumerable<byte[]>>> _commandHandlers;
 
         public int Port { get; }
 
@@ -28,6 +28,11 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
         /// Registers a handler for a specific RCON command
         /// </summary>
         public void RegisterCommandHandler(string command, Func<string, byte[]> handler)
+        {
+            _commandHandlers[command] = text => [handler(text)];
+        }
+
+        public void RegisterCommandPacketsHandler(string command, Func<string, IEnumerable<byte[]>> handler)
         {
             _commandHandlers[command] = handler;
         }
@@ -77,8 +82,10 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1.Helpers
                             {
                                 if (command.StartsWith(kvp.Key))
                                 {
-                                    var response = kvp.Value(command);
-                                    await _udpClient.SendAsync(response, response.Length, remoteEndPoint);
+                                    foreach (var response in kvp.Value(command))
+                                    {
+                                        await _udpClient.SendAsync(response, response.Length, remoteEndPoint);
+                                    }
                                     break;
                                 }
                             }

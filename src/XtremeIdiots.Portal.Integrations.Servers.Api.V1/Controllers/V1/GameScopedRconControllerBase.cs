@@ -65,7 +65,7 @@ public abstract class GameScopedRconControllerBase(
             gameServerId,
             operationName,
             AuditAction.Execute,
-            (client, ct) => client.GetMaps(),
+            (client, ct) => client is IMapRotationRconClient rotationClient ? rotationClient.GetMaps(ct) : client.GetMaps(),
             maps => new RconMapCollectionDto(maps.Select(map => new RconMapDto(map.GameType, map.MapName))),
             cancellationToken,
             emitAuditAndEvent: false);

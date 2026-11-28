@@ -33,6 +33,197 @@ namespace XtremeIdiots.Portal.Integrations.Servers.Api.Tests.V1
         }
 
         [Theory]
+        [InlineData(GameType.CallOfDuty2)]
+        [InlineData(GameType.CallOfDuty4)]
+        [InlineData(GameType.CallOfDuty4x)]
+        [InlineData(GameType.CallOfDuty5)]
+        public async Task GetMaps_PreservesOrderDuplicatesAndInheritedGameTypes(GameType game)
+        {
+            _rconClient.Configure(game, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(
+                "\"sv_mapRotation\" is: \"gametype ftag map mp_4nuketown map mp_remontna " +
+                "map mp_4nuketown gametype sd map mp_4nuketown map mp_other-name.v2^7\" " +
+                "default: \"gametype war map mp_default^7\" info: \"Map rotation^7\"\n" +
+                "latched: \"map mp_latched\"\nDomain is any text\n"));
+            _mockServer.Start();
+
+            var maps = await _rconClient.GetMaps();
+
+            Assert.Equal(
+                [("ftag", "mp_4nuketown"), ("ftag", "mp_remontna"), ("ftag", "mp_4nuketown"),
+                 ("sd", "mp_4nuketown"), ("sd", "mp_other-name.v2")],
+                maps.Select(map => (map.GameType, map.MapName)).ToArray());
+        }
+
+        [Fact]
+        public async Task GetMaps_ReadsWholeFragmentedDvarAndUnspecifiedLeadingGameType()
+        {
+            _mockServer.RegisterCommandPacketsHandler("sv_mapRotation", _ =>
+            [
+                MockUdpServer.CreateQuake3Response("\"sv_mapRotation\" is: \"map mp_first GAME"),
+                MockUdpServer.CreateQuake3Response("TYPE custom_mode MAP \"mp_second\" map mp_first^7\" default: \"^7\"\n")
+            ]);
+            _mockServer.Start();
+
+            var maps = await _rconClient.GetMaps();
+
+            Assert.Equal([("", "mp_first"), ("custom_mode", "mp_second"), ("custom_mode", "mp_first")],
+                maps.Select(map => (map.GameType, map.MapName)).ToArray());
+        }
+
+        [Theory]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"gametype dm map \"mp_default\"^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"^7\"\nlatched: \"gametype dm map \"mp_next\"\"\nDomain is any text\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map \"mp_default\"^7\" info: \"Rotation \"description\"^7\"\nlatched: \"map \"mp_next\"\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map \"mp_default\"\nmap mp_another^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"^7\"\nlatched: \"map \"mp_next\"\nmap mp_last\"\nDomain is any text\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype war map mp_first^7\" default: \"map mp_default\nmap mp_next^7\" info: \"rotation\n\"description\"^7\"\nlatched: \"map mp_last\nmap mp_next\"\n")]
+        public async Task GetMaps_IgnoresQuotedArgumentsInAncillaryDvarValues(string response)
+        {
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(response));
+            _mockServer.Start();
+
+            var maps = await _rconClient.GetMaps();
+
+            Assert.Equal(("war", "mp_first"), (Assert.Single(maps).GameType, maps[0].MapName));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" \t ")]
+        public async Task GetMaps_ConfirmedEmptyDvarReturnsEmptyCollection(string value)
+        {
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(
+                $"\"sv_mapRotation\" is: \"{value}^7\" default: \"gametype war map mp_default^7\"\n"));
+            _mockServer.Start();
+
+            Assert.Empty(await _rconClient.GetMaps());
+        }
+
+        [Theory]
+        [InlineData(GameType.CallOfDuty2)]
+        [InlineData(GameType.CallOfDuty4)]
+        [InlineData(GameType.CallOfDuty5)]
+        public async Task GetMaps_HandlesWhitespaceAndCommentsWithoutRestrictingModGameTypes(GameType game)
+        {
+            _rconClient.Configure(game, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(
+                "\"sv_mapRotation\" is: \"gametype mod_ftag_2\tmap mp_first // map mp_ignored\n" +
+                "/* gametype wrong map mp_ignored */ map mp_second\ngametype sd map mp_first^7\"\n"));
+            _mockServer.Start();
+
+            var maps = await _rconClient.GetMaps();
+
+            Assert.Equal([("mod_ftag_2", "mp_first"), ("mod_ftag_2", "mp_second"), ("sd", "mp_first")],
+                maps.Select(map => (map.GameType, map.MapName)).ToArray());
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("Bad rconpassword.\n")]
+        [InlineData("map mp_first map mp_second")]
+        [InlineData("\"sv_mapRotationCurrent\" is: \"map mp_first^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first map mp_second")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first map^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first gametype^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"gametype sd^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first exec server.cfg map mp_second^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first nonsense mp_second^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first /* unfinished^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map \"mp_first^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"unfinished\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"map \"mp_default^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\nlatched: \"map \"mp_next\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"map mp_default\nmap \"mp_incomplete^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\nlatched: \"map mp_next\nmap \"mp_incomplete\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\"\n\"sv_mapRotation\" is: \"map mp_other^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\"\n\"sv_mapRotation\" is: \"map mp_other^7\" default: \"^7\"\n")]
+        [InlineData("\"sv_mapRotation\" is: \"map mp_first^7\" default: \"^7\" \"sv_mapRotation\" is: \"map mp_other^7\" default: \"^7\"\n")]
+        public async Task GetMaps_RejectsFailedMalformedOrIncompleteResponses(string response)
+        {
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(response));
+            _mockServer.Start();
+
+            await Assert.ThrowsAsync<FormatException>(() => _rconClient.GetMaps());
+        }
+
+        [Fact]
+        public async Task GetMaps_CoD4xPreservesSemicolonSeparatedAndQuotedArguments()
+        {
+            _rconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(
+                "\"sv_mapRotation\" is: \"gametype \"custom_mode\"; map \"mp_first\"; map mp_second^7\" default: \"^7\"\n"));
+            _mockServer.Start();
+
+            var maps = await _rconClient.GetMaps();
+
+            Assert.Equal([("custom_mode", "mp_first"), ("custom_mode", "mp_second")],
+                maps.Select(map => (map.GameType, map.MapName)).ToArray());
+        }
+
+        [Theory]
+        [InlineData("gametype sd map mp_first\nmap mp_second")]
+        [InlineData("gametype sd map mp_first // map mp_second")]
+        [InlineData("gametype sd map mp_first /* ignored */ map mp_second")]
+        [InlineData("gametype\tsd map mp_first")]
+        [InlineData("map mp_first;map mp_second")]
+        public async Task GetMaps_CoD4xRejectsTextItsLexerCannotCompletelyConsume(string rotation)
+        {
+            _rconClient.Configure(GameType.CallOfDuty4x, _testServerId, "127.0.0.1", _mockServer.Port, TestRconPassword);
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ => MockUdpServer.CreateQuake3Response(
+                $"\"sv_mapRotation\" is: \"{rotation}^7\" default: \"^7\"\n"));
+            _mockServer.Start();
+
+            await Assert.ThrowsAsync<FormatException>(() => _rconClient.GetMaps());
+        }
+
+        [Fact]
+        public async Task GetMaps_RejectsInvalidPacketFraming()
+        {
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ =>
+                System.Text.Encoding.ASCII.GetBytes("\"sv_mapRotation\" is: \"map mp_first^7\"\n"));
+            _mockServer.Start();
+
+            await Assert.ThrowsAsync<FormatException>(() => _rconClient.GetMaps());
+        }
+
+        [Fact]
+        public async Task GetMaps_RejectsLossyResponseDecoding()
+        {
+            _mockServer.RegisterCommandHandler("sv_mapRotation", _ =>
+            {
+                var packet = MockUdpServer.CreateQuake3Response("\"sv_mapRotation\" is: \"map mp_first^7\"\n");
+                packet[^6] = 0xe9;
+                return packet;
+            });
+            _mockServer.Start();
+
+            await Assert.ThrowsAsync<FormatException>(() => _rconClient.GetMaps());
+        }
+
+        [Fact]
+        public async Task GetMaps_CancelsAnUnresponsiveServerWithoutRetrying()
+        {
+            var count = 0;
+            var received = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _mockServer.RegisterCommandPacketsHandler("sv_mapRotation", _ =>
+            {
+                Interlocked.Increment(ref count);
+                received.TrySetResult();
+                return [];
+            });
+            _mockServer.Start();
+            using var cancellation = new CancellationTokenSource();
+            var query = Task.Run(() => _rconClient.GetMaps(cancellation.Token));
+            await received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => query.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Equal(1, count);
+        }
+
+        [Theory]
         [InlineData("kick", "clientkick 3")]
         [InlineData("public", "say \" hello \"")]
         [InlineData("private", "tell 3 \" hello \"")]

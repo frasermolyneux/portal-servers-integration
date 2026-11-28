@@ -213,7 +213,7 @@ public class CoD4xRconController(
             gameServerId,
             "RconCoD4xMaps",
             null,
-            (client, ct) => client.GetMaps(),
+            (client, ct) => client is IMapRotationRconClient rotationClient ? rotationClient.GetMaps(ct) : client.GetMaps(),
             maps => new RconMapCollectionDto(maps.Select(map => new RconMapDto(map.GameType, map.MapName))),
             HttpContext.RequestAborted);
 
